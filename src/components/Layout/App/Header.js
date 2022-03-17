@@ -5,7 +5,7 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import { styled } from "@mui/material/styles";
 
-import { upDateLogin } from "../../../store/Auth";
+import { upDateLogin } from "../../../store/AuthStore";
 import { useDispatch } from "react-redux";
 
 import { useNavigate } from "react-router-dom";

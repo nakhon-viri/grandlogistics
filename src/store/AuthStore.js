@@ -36,6 +36,6 @@ export const { upDateLogin } = authSlice.actions;
 //   }, 1000);
 // };
 
-export const authIsLogin = (state) => state.auth.isLogin;
+export const authIsLogin = (state) => state.auth;
 
 export default authSlice.reducer;

@@ -9,7 +9,7 @@ import Register from "./pages/Register";
 import Customer from "./pages/Customer";
 import Order from "./pages/Order";
 
-import { authIsLogin } from "./store/Auth";
+import { authIsLogin } from "./store/AuthStore";
 import { useSelector } from "react-redux";
 
 const RequireAuth = ({ isLogin, location }) => {
