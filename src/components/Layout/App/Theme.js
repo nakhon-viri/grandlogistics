@@ -14,6 +14,10 @@ const theme = createTheme({
       // primary: "#000",
       secondary: "#8595a3",
     },
+    // background: {
+    //   default: " rgb(22, 28, 36)",
+    //   paper: "rgb(22, 28, 36)",
+    // },
   },
   typography: {
     fontFamily: "Sarabun",

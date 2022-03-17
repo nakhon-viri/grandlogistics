@@ -6,21 +6,14 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import ListSubheader from "@mui/material/ListSubheader";
 import List from "@mui/material/List";
-import Brightness2Icon from "@mui/icons-material/Brightness2";
 import MailIcon from "@mui/icons-material/Mail";
-import AddModeratorTwoToneIcon from "@mui/icons-material/AddModeratorTwoTone";
-import ExpandLess from "@mui/icons-material/ExpandLess";
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import Collapse from "@mui/material/Collapse";
-import StarBorder from "@mui/icons-material/StarBorder";
-
 import Box from "@mui/material/Box";
 import Avatar from "@mui/material/Avatar";
 import Typography from "@mui/material/Typography";
 import Hidden from "@mui/material/Hidden";
 import CloseIcon from "@mui/icons-material/Close";
 
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const drawerWidth = 280;
 let opendrawer;
@@ -63,56 +56,15 @@ const DrawerFull = styled(MuiDrawer, {
   }),
 }));
 
-const ListLink2 = (props) => {
-  let { pathname } = useLocation();
-  const MyNavLink = React.useMemo(
-    () =>
-      React.forwardRef((navLinkProps, ref) => {
-        const { className: previousClasses, ...rest } = navLinkProps;
-        const elementClasses = previousClasses?.toString() ?? "";
-        return (
-          <NavLink
-            {...rest}
-            ref={ref}
-            to={props.to}
-            end
-            className={({ isActive }) =>
-              isActive ? elementClasses + " Mui-selected" : elementClasses
-            }
-          />
-        );
-      }),
-    [props.to]
-  );
-
-  return (
-    <ListItemButton
-      component={MyNavLink}
-      sx={pathname === props.to ? styles.listButton : null}
-    >
-      <ListItemIcon
-        sx={{
-          ".Mui-selected > &": { color: (theme) => theme.palette.primary.main },
-        }}
-      >
-        {props.icon}
-      </ListItemIcon>
-      <ListItemText
-        sx={{
-          color: pathname === props.to ? "primary.main" : "text.secondary",
-          opacity: props.open ? 1 : 0,
-        }}
-        primary={props.text}
-      />
-    </ListItemButton>
-  );
-};
-
 const ListLink = ({ to, text, icon }) => {
   let navigate = useNavigate();
   let { pathname } = useLocation();
   return (
-    <ListItemButton onClick={() => navigate(to)} sx={styles.listButton}>
+    <ListItemButton
+      sx={pathname === to ? styles.listButton : null}
+      className={pathname === to ? " Mui-selected" : null}
+      onClick={() => navigate(to)}
+    >
       <ListItemIcon
         sx={{
           ".Mui-selected > &": {
@@ -124,7 +76,7 @@ const ListLink = ({ to, text, icon }) => {
       </ListItemIcon>
       <ListItemText
         sx={{
-          color: pathname === "/" ? "primary.main" : "text.secondary",
+          color: pathname === to ? "primary.main" : "text.secondary",
           opacity: opendrawer ? 1 : 0,
         }}
         primary={text}
@@ -136,88 +88,35 @@ const ListLink = ({ to, text, icon }) => {
 const Menu = ({ handleDrawer2, open }) => {
   opendrawer = open;
 
+  const Brand = ({ text, ...rest }) => (
+    <Typography {...rest} variant="h5" sx={styles.nameBrand}>
+      {text}
+    </Typography>
+  );
+
   const ListMenu = () => (
     <>
-      <Box sx={styles.drawerHeader}>
-        <Box
-          sx={{
-            display: "flex",
-            animationDuration: "400ms",
-          }}
-        >
-          <img src="/img/loggrand.png" style={{ width: 40, height: 40 }} />
-          <Box
-            sx={{
-              display: "flex",
-              opacity: open ? 1 : 0,
-              marginLeft: 1,
-            }}
-          >
-            <Typography
-              color="primary"
-              variant="h5"
-              sx={{ fontFamily: "Prompt", fontWeight: "700" }}
-            >
-              Grand
-            </Typography>
-            <Typography
-              variant="h5"
-              sx={{ fontFamily: "Prompt", fontWeight: "700" }}
-            >
-              Logistics
-            </Typography>
+      <Box sx={styles.container}>
+        <Box sx={styles.headerBrand}>
+          <img src="/img/loggrand.png" style={styles.logo} />
+          <Box sx={styles.containerNameBrand(open)}>
+            <Brand text="Grand" color="primary" />
+            <Brand text="Logistics" />
             <Hidden mdUp>
-              <CloseIcon
-                onClick={handleDrawer2}
-                sx={{ position: "absolute", top: 10, right: 10 }}
-              />
+              <CloseIcon onClick={handleDrawer2} sx={styles.closeBtn} />
             </Hidden>
           </Box>
         </Box>
-        <Typography
-          component="div"
-          sx={{
-            padding: open ? "16px 20px" : "16px 0px",
-            display: "flex",
-            alignItems: "center",
-            mt: 3,
-            backgroundColor: open ? "rgba(145, 158, 171, 0.12)" : "none",
-            borderRadius: 3,
-            transition: "200ms  ",
-          }}
-        >
+        <Typography component="div" sx={styles.containerCard(open)}>
           <Avatar alt="Remy Sharp" src="/img/me.jpg" />
-          <Box
-            sx={{
-              ml: 2,
-              maxHeight: "44px",
-              opacity: open ? 1 : 0,
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                width: "150px",
-              }}
-            >
+          <Box sx={{ ...styles.cardDetail, opacity: open ? 1 : 0 }}>
+            <Typography variant="h6" sx={styles.nameUser}>
               This is Name.!!!
             </Typography>
             <Typography
               variant="p"
               color="text.secondary"
-              sx={{
-                fontSize: "0.9rem",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                width: "150px",
-                fontWeight: "600",
-              }}
+              sx={styles.department}
             >
               admin
             </Typography>
@@ -228,18 +127,41 @@ const Menu = ({ handleDrawer2, open }) => {
         subheader={
           <ListSubheader
             component="li"
-            sx={styles.listsubheader}
+            sx={styles.listsubheader(open)}
             id="nested-list-subheader"
           >
             พนักงาน
           </ListSubheader>
         }
       >
-        <ListLink2 open={open} to="/" text="Employee" icon={<MailIcon />} />
+        <ListLink to="/" text="Employee" icon={<MailIcon />} />
         <ListLink to="/register" text="Employee" icon={<MailIcon />} />
-        {ListLink("/", "Employee", () => (
-          <MailIcon />
-        ))}
+      </List>
+      <List
+        subheader={
+          <ListSubheader
+            component="li"
+            sx={styles.listsubheader(open)}
+            id="nested-list-subheader"
+          >
+            งาน
+          </ListSubheader>
+        }
+      >
+        <ListLink to="/order" text="Order" icon={<MailIcon />} />
+      </List>
+      <List
+        subheader={
+          <ListSubheader
+            component="li"
+            sx={styles.listsubheader(open)}
+            id="nested-list-subheader"
+          >
+            ลูกค้า
+          </ListSubheader>
+        }
+      >
+        <ListLink to="/customer" text="Customer" icon={<MailIcon />} />
       </List>
     </>
   );
@@ -252,7 +174,12 @@ const Menu = ({ handleDrawer2, open }) => {
         </DrawerFull>
       </Hidden>
       <Hidden mdUp>
-        <MuiDrawer anchor={"left"} open={open} onClose={handleDrawer2}>
+        <MuiDrawer
+          sx={styles.drawer}
+          anchor={"left"}
+          open={open}
+          onClose={handleDrawer2}
+        >
           {ListMenu()}
         </MuiDrawer>
       </Hidden>
@@ -263,23 +190,94 @@ const Menu = ({ handleDrawer2, open }) => {
 const styles = {
   drawer: {
     "& .MuiPaper-root": {
-      borderStyle: "dashed",
-      borderBlock: "none",
-      borderLeft: "none",
+      border: "1px dashed rgba(145, 158, 171, 0.24)",
+      borderBlock: 0,
+      borderLeft: 0,
+      overflowY: "overlay",
+    },
+    "& .MuiPaper-root::-webkit-scrollbar": {
+      width: 10,
+      background: "transparent",
+      position: "absolute",
+    },
+
+    "& .MuiPaper-root::-webkit-scrollbar-track": {
+      background: "transparent",
+    },
+    "& .MuiPaper-root::-webkit-scrollbar-thumb": {
+      background: "transparent",
+    },
+    "&:hover .MuiPaper-root::-webkit-scrollbar-thumb": {
+      background: "#ddd",
+      borderRadius: 2,
+      border: "2px solid transparent",
+      backgroundClip: "content-box",
     },
   },
-  drawerHeader: {
+  container: {
     padding: "24px 20px 16px",
     width: "100%",
     maxWidth: 360,
   },
-  listsubheader: {
-    pt: 3,
-    pb: 1,
-    pl: 2,
-    lineHeight: 1.5,
-    color: "text.primary",
-    opacity: open ? 1 : 0,
+  headerBrand: {
+    display: "flex",
+    animationDuration: "400ms",
+  },
+  logo: {
+    width: 40,
+    height: 40,
+  },
+  containerNameBrand: (open) => {
+    return {
+      display: "flex",
+      marginLeft: 1,
+      opacity: open ? 1 : 0,
+    };
+  },
+  nameBrand: {
+    fontFamily: "Prompt",
+    fontWeight: "700",
+  },
+  containerCard: (open) => {
+    return {
+      padding: open ? "16px 20px" : "16px 0px",
+      display: "flex",
+      alignItems: "center",
+      mt: 3,
+      backgroundColor: open ? "rgba(145, 158, 171, 0.12)" : "none",
+      borderRadius: 3,
+      transition: "200ms  ",
+    };
+  },
+  cardDetail: {
+    ml: 2,
+    maxHeight: "44px",
+  },
+  nameUser: {
+    fontWeight: 600,
+    fontSize: "0.875rem",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    width: "150px",
+  },
+  department: {
+    fontSize: "0.9rem",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    width: "150px",
+    fontWeight: "600",
+  },
+  listsubheader: (open) => {
+    return {
+      pt: 3,
+      pb: 1,
+      pl: 2,
+      lineHeight: 1.5,
+      color: "text.primary",
+      opacity: open ? 1 : 0,
+    };
   },
   listButton: {
     "&& .MuiTouchRipple-child": {
@@ -287,6 +285,7 @@ const styles = {
     },
     backgroundColor: "#007bff14",
   },
+  closeBtn: { position: "absolute", top: 10, right: 10 },
 };
 
 export default Menu;
