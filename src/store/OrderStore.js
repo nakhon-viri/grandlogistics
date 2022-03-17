@@ -2,15 +2,15 @@ import { createSlice } from "@reduxjs/toolkit";
 
 export const orderReducer = createSlice({
   name: "order",
-  initialState: null,
+  initialState: { order: null },
   reducers: {
     uploadOrder: (state, action) => {
-      state = action.payload;
+      state.order = action.payload;
     },
   },
 });
 
-export const { upDateLogin } = orderReducer.actions;
+export const { uploadOrder } = orderReducer.actions;
 
 export const orderStore = (state) => state.order;
 

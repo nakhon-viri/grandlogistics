@@ -1,0 +1,24 @@
+https://api-grandlogistics.herokuapp.com/
+
+/order
+    .get("/mobile", requireUser, getOrderMobile);
+        //{ _uid, password }
+    .post("/updatestatus", requireUser, updatestatus);
+    .get("/", requireUser, isAdmin, getOrder);
+    .post("/", requireUser, isAdmin, addOrder);
+    .delete("/:id", requireUser, isAdmin, deleteOrder);
+    .put("/:id", requireUser, isAdmin, editOrder);
+
+
+/personnel
+    .post("/login", login);
+    .post("/loginmobile", loginMobile);
+    .get("/name", getNamePersonnel);
+    .get("/me", requireUser, getProfileMe);
+    .post("/register", requireUser, isAdmin, register);
+    .get("/:id", requireUser, isAdmin, getOnePersonnel);
+    .get("/", requireUser, isAdmin, getAllPersonnel);
+
+/customer
+    .post("/", addCustomer);
+    .get("/", getCustomer);

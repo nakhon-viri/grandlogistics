@@ -7,4 +7,5 @@ export default configureStore({
     auth: authReducer,
     order: orderReducer,
   },
+  // devTools: false,
 });

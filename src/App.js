@@ -20,7 +20,7 @@ const RequireAuth = ({ isLogin, location }) => {
 };
 
 const App = () => {
-  const isLogin = useSelector(authIsLogin);
+  const {isLogin} = useSelector(authIsLogin);
   let location = useLocation();
 
   const reqAuth = {
