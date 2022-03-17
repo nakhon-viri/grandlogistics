@@ -1,0 +1,40 @@
+import * as React from "react";
+import { styled } from "@mui/material/styles";
+import Box from "@mui/material/Box";
+import CssBaseline from "@mui/material/CssBaseline";
+import AppBar from "./Header";
+import Drawer from "./Menu";
+import ThemeProvider from "./Theme";
+import { Outlet } from "react-router-dom";
+const DrawerHeader = styled("div")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  padding: theme.spacing(0, 1),
+  ...theme.mixins.toolbar,
+}));
+
+export default function AppLayOut() {
+  const [open, setOpen] = React.useState(true);
+  const handleDrawer = () => {
+    setOpen(!open);
+  };
+  const handleDrawer2 = () => {
+    setOpen(false);
+  };
+
+  return (
+    <ThemeProvider>
+      <Box sx={{ display: "flex" }}>
+        <CssBaseline />
+        <AppBar handleDrawer={handleDrawer} open={open} />
+        <Drawer handleDrawer2={handleDrawer2}  open={open} />
+
+        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+          <DrawerHeader />
+          <Outlet />
+        </Box>
+      </Box>
+    </ThemeProvider>
+  );
+}
