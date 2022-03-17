@@ -7,9 +7,12 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import LoadingButton from "@mui/lab/LoadingButton";
+import Button from '@mui/material/Button';
 
-import { loginReq, authIsLogin } from "../store/AuthStore";
+import { authIsLogin, loginReq } from "../store/AuthStore";
+import { orderReq } from "../store/OrderStore";
+import { customerReq } from "../store/CustomerStore";
+import { employeeReq } from "../store/EmployeeStore";
 import { useDispatch, useSelector } from "react-redux";
 const theme = createTheme();
 
@@ -17,18 +20,17 @@ const Login = () => {
   const matches = useMediaQuery("(min-width:768px)");
   const dispatch = useDispatch();
   const { loading } = useSelector(authIsLogin);
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    // console.log({
-    //   email: data.get("username"),
-    //   password: data.get("password"),
-    // });
     const account = {
       _uid: data.get("username"),
       password: data.get("password"),
     };
-    dispatch(loginReq(account));
+    await dispatch(loginReq(account));
+    dispatch(employeeReq());
+    dispatch(customerReq());
+    dispatch(orderReq());
   };
 
   return (
@@ -78,7 +80,7 @@ const Login = () => {
               autoComplete="current-password"
               sx={styles.inputField}
             />
-            <LoadingButton
+            <Button
               type="submit"
               fullWidth
               loading={loading ? true : false}
@@ -86,7 +88,7 @@ const Login = () => {
               sx={styles.btnSubmit}
             >
               Sign In
-            </LoadingButton>
+            </Button>
 
             <Link href="#" variant="body2">
               Forgot password?
