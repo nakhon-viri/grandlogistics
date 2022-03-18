@@ -7,19 +7,18 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import Button from '@mui/material/Button';
+import Button from "@mui/material/Button";
 
-import { authIsLogin, loginReq } from "../store/AuthStore";
+import { loginReq } from "../store/AuthStore";
 import { orderReq } from "../store/OrderStore";
 import { customerReq } from "../store/CustomerStore";
 import { employeeReq } from "../store/EmployeeStore";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 const theme = createTheme();
 
 const Login = () => {
   const matches = useMediaQuery("(min-width:768px)");
   const dispatch = useDispatch();
-  const { loading } = useSelector(authIsLogin);
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -83,7 +82,6 @@ const Login = () => {
             <Button
               type="submit"
               fullWidth
-              loading={loading ? true : false}
               variant="contained"
               sx={styles.btnSubmit}
             >

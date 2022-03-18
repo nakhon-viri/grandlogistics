@@ -56,6 +56,6 @@ export const getProfileReq = () => async (dispatch) => {
   }
 };
 
-export const authIsLogin = (state) => state.auth.value;
+export const authStore = (state) => state.auth.value;
 
 export default authSlice.reducer;

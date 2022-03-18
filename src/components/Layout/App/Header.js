@@ -5,11 +5,6 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import { styled } from "@mui/material/styles";
 
-import { upDateLogin } from "../../../store/AuthStore";
-import { useDispatch } from "react-redux";
-
-import { useNavigate } from "react-router-dom";
-
 const drawerWidth = 280;
 
 const AppBar = styled(MuiAppBar, {
@@ -46,44 +41,31 @@ const AppBar = styled(MuiAppBar, {
 }));
 
 const Header = ({ handleDrawer, open }) => {
-  const dispatch = useDispatch();
-  let navigate = useNavigate();
+  const logOut = () => {
+    localStorage.removeItem("ACTO");
+    window.location.reload();
+  };
 
   return (
     <AppBar position="fixed" open={open} sx={{ zIndex: 10 }}>
       <Toolbar>
-        <div style={{ flex: 1, justifyContent: "start" }}></div>
-        <div>
-          <IconButton
-            // aria-label="open drawer"
-            onClick={() => handleDrawer()}
-            edge="start"
-            sx={{
-              marginX: 1,
-              color: "#faf",
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-        </div>
         <IconButton
+          onClick={() => handleDrawer()}
+          edge="start"
           sx={{
             marginX: 1,
-            // color: "#faf",
-          }}
-          color="primary"
-          onClick={() => {
-            navigate("/login");
+            color: "#faf",
           }}
         >
           <MenuIcon />
         </IconButton>
+        <div style={{ flex: 1 }} />
         <IconButton
           sx={{
             marginX: 1,
             color: "#faf",
           }}
-          onClick={() => dispatch(upDateLogin(false))}
+          onClick={() => logOut()}
         >
           <MenuIcon />
         </IconButton>

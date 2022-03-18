@@ -8,7 +8,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 const spin = keyframes`
   0%, 100% {
-    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.5);
+    // animation-timing-function: cubic-bezier(0.5, 0, 1, 0.5);
   }
   0% {
     transform: rotateY(0deg);
