@@ -133,6 +133,7 @@ const Menu = ({ handleDrawer2, open }) => {
             พนักงาน
           </ListSubheader>
         }
+        sx={styles.list}
       >
         <ListLink to="/" text="Employee" icon={<MailIcon />} />
         <ListLink to="/register" text="Employee" icon={<MailIcon />} />
@@ -147,6 +148,7 @@ const Menu = ({ handleDrawer2, open }) => {
             งาน
           </ListSubheader>
         }
+        sx={styles.list}
       >
         <ListLink to="/order" text="Order" icon={<MailIcon />} />
       </List>
@@ -160,6 +162,7 @@ const Menu = ({ handleDrawer2, open }) => {
             ลูกค้า
           </ListSubheader>
         }
+        sx={styles.list}
       >
         <ListLink to="/customer" text="Customer" icon={<MailIcon />} />
       </List>
@@ -168,12 +171,12 @@ const Menu = ({ handleDrawer2, open }) => {
 
   return (
     <>
-      <Hidden mdDown>
+      <Hidden lgDown>
         <DrawerFull variant="permanent" sx={styles.drawer} open={open}>
           {ListMenu()}
         </DrawerFull>
       </Hidden>
-      <Hidden mdUp>
+      <Hidden lgUp>
         <MuiDrawer
           sx={styles.drawer}
           anchor={"left"}
@@ -194,6 +197,8 @@ const styles = {
       borderBlock: 0,
       borderLeft: 0,
       overflowY: "overlay",
+      borderRadius: 0,
+      paddingInline: 0,
     },
     "& .MuiPaper-root::-webkit-scrollbar": {
       width: 10,
@@ -269,6 +274,7 @@ const styles = {
     width: "150px",
     fontWeight: "600",
   },
+  list: { padding: "0px 16px", maxWidth: 360, width: "100%" },
   listsubheader: (open) => {
     return {
       pt: 3,

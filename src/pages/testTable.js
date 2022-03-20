@@ -34,7 +34,6 @@ import Select from "@mui/material/Select";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
-import useMediaQuery from "@mui/material/useMediaQuery";
 
 function createData(name, calories, fat, carbs, protein) {
   return {
@@ -256,8 +255,6 @@ export default function EnhancedTable() {
 
   const [value, setValue] = React.useState("one");
 
-  const tablePagination = useMediaQuery("(min-width:600px)");
-
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -316,7 +313,7 @@ export default function EnhancedTable() {
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
-  const [personName, setPersonName] = React.useState("Oliver Hansen");
+  const [personName, setPersonName] = React.useState([]);
   const names = [
     "Oliver Hansen",
     "Van Henry",
@@ -340,24 +337,22 @@ export default function EnhancedTable() {
   };
 
   return (
-    <Box sx={{}}>
+    <Box sx={{ width: "100%" }}>
       <CssBaseline />
       <Container>
         <Paper
           sx={{
             paddingInline: 0,
-            // width: "100%",
+            width: "100%",
             mb: 2,
             borderRadius: 4,
             overflow: "hidden",
           }}
         >
           <Tabs
-            value={value}
+            value={"one"}
             onChange={handleChange}
             textColor="primary"
-            variant="scrollable"
-            scrollButtons={true}
             indicatorColor="primary"
             sx={{ px: 4, maxHeight: 48, backgroundColor: "rgb(244, 246, 248)" }}
           >
@@ -373,13 +368,22 @@ export default function EnhancedTable() {
               flexDirection: "row",
             }}
           >
+            {/* sx={{
+                    width: "100%",
+                    borderRadius: 2,
+                    "& fieldset": {
+                      borderRadius: 2,
+                    },
+                  }} */}
+            {/* sx={{ flex: 1, margin: 0, maxHeight: 56, maxWidth: 240 }} */}
             <FormControl sx={{ m: 1, width: 300 }}>
               <InputLabel id="demo-multiple-name-label">Name</InputLabel>
               <Select
                 labelId="demo-multiple-name-label"
                 id="demo-multiple-name"
+                multiple
                 value={personName}
-                onChange={handleChange2}
+                onChange={handleChange}
                 input={
                   <OutlinedInput
                     sx={{
@@ -398,11 +402,7 @@ export default function EnhancedTable() {
                   <MenuItem
                     key={name}
                     value={name}
-                    sx={{
-                      width: "100%",
-                      borderRadius: "8px",
-                      mb: 1,
-                    }}
+                    sx={{ width: "100%", borderRadius: "8px", mb: 1 }}
                   >
                     {name}
                   </MenuItem>
@@ -454,9 +454,9 @@ export default function EnhancedTable() {
                         tabIndex={-1}
                         key={row.name}
                         selected={isItemSelected}
-                        // sx={{
-                        //   backgroundColor: index % 2 === 0 ? "#efefef" : "#fff",
-                        // }}
+                        sx={{
+                          backgroundColor: index % 2 === 0 ? "#efefef" : "#fff",
+                        }}
                       >
                         <TableCell
                           padding="checkbox"
@@ -470,7 +470,6 @@ export default function EnhancedTable() {
                             inputProps={{
                               "aria-labelledby": labelId,
                             }}
-                            // sx={{borderRadius: "50%"}}
                           />
                         </TableCell>
                         <TableCell
@@ -500,13 +499,7 @@ export default function EnhancedTable() {
               </TableBody>
             </Table>
           </TableContainer>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: tablePagination ? "row" : "column-reverse",
-              overflowX: "hidden",
-            }}
-          >
+          <Box sx={{ display: "flex", flexDirection: "row" }}>
             <FormControlLabel
               control={
                 <>
@@ -515,16 +508,11 @@ export default function EnhancedTable() {
                     onChange={handleChangeDense}
                     inputProps={{ "aria-label": "ant design" }}
                   />
-                  <Typography sx={{ ml: 1 }}>แคบ</Typography>
+                  <Typography sx={{ ml: 1 }}>แบบแคบ</Typography>
                 </>
               }
               label={""}
-              sx={{
-                flex: 1,
-                margin: 0,
-                pl: "31px",
-                mb: tablePagination ? 0 : 1,
-              }}
+              sx={{ flex: 1, margin: 0, pl: "31px" }}
             />
             <TablePagination
               rowsPerPageOptions={[5, 10, 25]}
@@ -534,10 +522,7 @@ export default function EnhancedTable() {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              labelRowsPerPage={"จำนวนแถว"}
-              sx={{
-                overflow: "none",
-              }}
+              sx={{ width: "60%" }}
             />
           </Box>
         </Paper>

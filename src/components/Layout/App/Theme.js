@@ -23,12 +23,19 @@ const theme = createTheme({
     fontFamily: "Sarabun",
   },
   components: {
-    MuiList: {
+    MuiTableCell: {
       styleOverrides: {
         root: {
-          padding: "0px 16px",
-          width: "100%",
-          maxWidth: 360,
+          borderBlockWidth: 0,
+          borderRadius: 0,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          paddingInline: 8,
         },
       },
     },

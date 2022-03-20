@@ -51,7 +51,7 @@ const Login = () => {
           </Typography>
           <Box
             component="form"
-            noValidate
+            validate
             onSubmit={handleSubmit}
             sx={styles.form}
           >
