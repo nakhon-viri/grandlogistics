@@ -7,29 +7,24 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import Button from "@mui/material/Button";
+import LoadingButton from "@mui/lab/LoadingButton";
 
-import { loginReq } from "../store/AuthStore";
-import { orderReq } from "../store/OrderStore";
-import { customerReq } from "../store/CustomerStore";
-import { employeeReq } from "../store/EmployeeStore";
-import { useDispatch } from "react-redux";
+import { loginReq, authStore } from "../store/AuthStore";
+import { useDispatch, useSelector } from "react-redux";
 const theme = createTheme();
 
 const Login = () => {
   const matches = useMediaQuery("(min-width:768px)");
   const dispatch = useDispatch();
-  const handleSubmit = async (event) => {
+  const { loadingAuth, error } = useSelector(authStore);
+  const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const account = {
       _uid: data.get("username"),
       password: data.get("password"),
     };
-    await dispatch(loginReq(account));
-    dispatch(employeeReq());
-    dispatch(customerReq());
-    dispatch(orderReq());
+    dispatch(loginReq(account));
   };
 
   return (
@@ -59,6 +54,7 @@ const Login = () => {
               margin="normal"
               required
               fullWidth
+              error={error ? true : false}
               id="username"
               label="ชื่อผู้ใช้"
               name="username"
@@ -75,18 +71,21 @@ const Login = () => {
               label="รหัสผ่าน"
               type="password"
               id="password"
+              error={error ? true : false}
+              helperText={error ? error : null}
               InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
               autoComplete="current-password"
               sx={styles.inputField}
             />
-            <Button
+            <LoadingButton
               type="submit"
               fullWidth
+              loading={loadingAuth ? true : false}
               variant="contained"
               sx={styles.btnSubmit}
             >
               Sign In
-            </Button>
+            </LoadingButton>
 
             <Link href="#" variant="body2">
               Forgot password?

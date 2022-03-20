@@ -35,6 +35,13 @@ import OutlinedInput from "@mui/material/OutlinedInput";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import Button from "@mui/material/Button";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import Collapse from "@mui/material/Collapse";
+
+import { orderStore } from "../store/OrderStore";
+import { useSelector } from "react-redux";
 
 function createData(name, calories, fat, carbs, protein) {
   return {
@@ -145,7 +152,8 @@ function EnhancedTableHead(props) {
   return (
     <TableHead>
       <TableRow sx={{ backgroundColor: "rgb(244, 246, 248)" }}>
-        <TableCell padding="checkbox" sx={{ px: 3 }}>
+        <TableCell sx={{ p: 0, pl: 3, maxWidth: "40px" }} />
+        <TableCell padding="checkbox" sx={{ p: 0, pr: 3 }}>
           <Checkbox
             color="primary"
             indeterminate={numSelected > 0 && numSelected < rowCount}
@@ -246,16 +254,102 @@ const MenuProps = {
   },
 };
 
+const Row = ({ row, isItemSelected, labelId, handleClick }) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <TableRow
+        hover
+        onClick={() => setOpen(!open)}
+        // onClick={(event) => handleClick(event, row.name)}
+        role="checkbox"
+        aria-checked={isItemSelected}
+        tabIndex={-1}
+        key={row.name}
+        selected={isItemSelected}
+      >
+        <TableCell sx={{ p: 0, pl: "24px", maxWidth: "40px" }}>
+          <IconButton aria-label="expand row" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        <TableCell
+          padding="checkbox"
+          sx={{ p: 0, cursor: "pointer" }}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleClick(event, row.name);
+          }}
+        >
+          <Checkbox
+            color="primary"
+            checked={isItemSelected}
+            inputProps={{
+              "aria-labelledby": labelId,
+            }}
+          />
+        </TableCell>
+        <TableCell component="th" id={labelId} scope="row" padding="none">
+          {row.name}
+        </TableCell>
+        <TableCell align="right">{row.calories}</TableCell>
+        <TableCell align="right">{row.fat}</TableCell>
+        <TableCell align="right">{row.carbs}</TableCell>
+        <TableCell align="right">{row.protein}</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box sx={{ margin: 1 }}>
+              <Typography variant="h6" gutterBottom component="div">
+                History
+              </Typography>
+              <Table size="small" aria-label="purchases">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                    <TableCell align="right">Total price ($)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell component="th" scope="row">
+                      2020-01-05
+                    </TableCell>
+                    <TableCell>11091700</TableCell>
+                    <TableCell align="right">3</TableCell>
+                    <TableCell align="right">14.97</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell component="th" scope="row">
+                      2020-01-05
+                    </TableCell>
+                    <TableCell>11091700</TableCell>
+                    <TableCell align="right">3</TableCell>
+                    <TableCell align="right">14.97</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+};
+
 export default function EnhancedTable() {
-  const [order, setOrder] = React.useState("asc");
+  const [orderSort, setOrderSort] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("calories");
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
-
   const [value, setValue] = React.useState("one");
 
+  const { order } = useSelector(orderStore);
   const tablePagination = useMediaQuery("(min-width:600px)");
 
   const handleChange = (event, newValue) => {
@@ -263,8 +357,8 @@ export default function EnhancedTable() {
   };
 
   const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
+    const isAsc = orderBy === property && orderSort === "asc";
+    setOrderSort(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
 
@@ -340,9 +434,29 @@ export default function EnhancedTable() {
   };
 
   return (
-    <Box sx={{}}>
+    <Box>
       <CssBaseline />
       <Container>
+        <Box sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h4">Order ทั้งหมด</Typography>
+          </Box>
+          <Box>
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: "rgb(32, 101, 209)",
+                boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+                borderRadius: 2,
+                "&:hover": {
+                  boxShadow: "none",
+                },
+              }}
+            >
+              + New order
+            </Button>
+          </Box>
+        </Box>
         <Paper
           sx={{
             paddingInline: 0,
@@ -357,7 +471,6 @@ export default function EnhancedTable() {
             onChange={handleChange}
             textColor="primary"
             variant="scrollable"
-            scrollButtons={true}
             indicatorColor="primary"
             sx={{ px: 4, maxHeight: 48, backgroundColor: "rgb(244, 246, 248)" }}
           >
@@ -430,62 +543,28 @@ export default function EnhancedTable() {
             >
               <EnhancedTableHead
                 numSelected={selected.length}
-                order={order}
+                order={orderSort}
                 orderBy={orderBy}
                 onSelectAllClick={handleSelectAllClick}
                 onRequestSort={handleRequestSort}
                 rowCount={rows.length}
               />
               <TableBody>
-                {/* if you don't need to support IE11, you can replace the `stableSort` call with:
-                 rows.slice().sort(getComparator(order, orderBy)) */}
-                {stableSort(rows, getComparator(order, orderBy))
+                {rows
+                  .sort(getComparator(orderSort, orderBy))
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row, index) => {
                     const isItemSelected = isSelected(row.name);
                     const labelId = `enhanced-table-checkbox-${index}`;
 
                     return (
-                      <TableRow
-                        hover
-                        onClick={(event) => handleClick(event, row.name)}
-                        role="checkbox"
-                        aria-checked={isItemSelected}
-                        tabIndex={-1}
-                        key={row.name}
-                        selected={isItemSelected}
-                        // sx={{
-                        //   backgroundColor: index % 2 === 0 ? "#efefef" : "#fff",
-                        // }}
-                      >
-                        <TableCell
-                          padding="checkbox"
-                          sx={{
-                            pl: "24px",
-                          }}
-                        >
-                          <Checkbox
-                            color="primary"
-                            checked={isItemSelected}
-                            inputProps={{
-                              "aria-labelledby": labelId,
-                            }}
-                            // sx={{borderRadius: "50%"}}
-                          />
-                        </TableCell>
-                        <TableCell
-                          component="th"
-                          id={labelId}
-                          scope="row"
-                          padding="none"
-                        >
-                          {row.name}
-                        </TableCell>
-                        <TableCell align="right">{row.calories}</TableCell>
-                        <TableCell align="right">{row.fat}</TableCell>
-                        <TableCell align="right">{row.carbs}</TableCell>
-                        <TableCell align="right">{row.protein}</TableCell>
-                      </TableRow>
+                      <Row
+                        key={index}
+                        row={row}
+                        isItemSelected={isItemSelected}
+                        labelId={labelId}
+                        handleClick={handleClick}
+                      />
                     );
                   })}
                 {emptyRows > 0 && (
@@ -536,7 +615,10 @@ export default function EnhancedTable() {
               onRowsPerPageChange={handleChangeRowsPerPage}
               labelRowsPerPage={"จำนวนแถว"}
               sx={{
-                overflow: "none",
+                "& .MuiToolbar-root": {
+                  p: 0,
+                  pr: 2,
+                },
               }}
             />
           </Box>

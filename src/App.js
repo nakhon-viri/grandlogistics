@@ -19,13 +19,26 @@ import { useSelector, useDispatch } from "react-redux";
 
 import { io } from "socket.io-client";
 
-const RequireAuth = ({ isLogin }) => {
+const RequireAuth = () => {
   const [socket, setSocket] = useState(null);
+  const { isLogin, loadingAuth } = useSelector(authStore);
+  const { loadingEmployee } = useSelector(employeeStore);
+  const { loadingCustomer } = useSelector(customerStore);
+  const { loadingOrder } = useSelector(orderStore);
+  const dispatch = useDispatch();
   let location = useLocation();
   const resToken = verifyToken();
 
-  if (!isLogin && !resToken)
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  useEffect(() => {
+    const resToken = verifyToken();
+    if (resToken) {
+      if (!isLogin)  dispatch(getProfileReq());
+
+      dispatch(orderReq());
+      dispatch(customerReq());
+      dispatch(employeeReq());
+    }
+  }, []);
 
   useEffect(() => {
     if (isLogin) {
@@ -41,6 +54,13 @@ const RequireAuth = ({ isLogin }) => {
       return isLogin ? newSocket.close() : null;
     };
   }, []);
+
+  if (!isLogin && !resToken)
+    return <Navigate to="/login" state={{ from: location }} replace />;
+
+  if (loadingAuth || loadingEmployee || loadingCustomer || loadingOrder) {
+    return <Loading />;
+  }
 
   return <Outlet />;
 };
@@ -70,32 +90,32 @@ const verifyToken = () => {
 
 const App = () => {
   const { isLogin, loadingAuth } = useSelector(authStore);
-  const { loadingEmployee } = useSelector(employeeStore);
-  const { loadingCustomer } = useSelector(customerStore);
-  const { loadingOrder } = useSelector(orderStore);
-  const dispatch = useDispatch();
+  // const { loadingEmployee } = useSelector(employeeStore);
+  // const { loadingCustomer } = useSelector(customerStore);
+  // const { loadingOrder } = useSelector(orderStore);
+  // const dispatch = useDispatch();
 
   const reqAuth = {
     isLogin,
   };
 
-  useEffect(() => {
-    const resToken = verifyToken();
-    if (resToken) {
-      dispatch(orderReq());
-      dispatch(getProfileReq());
-      dispatch(customerReq());
-      dispatch(employeeReq());
-    }
-  }, []);
+  // useEffect(() => {
+  //   const resToken = verifyToken();
+  //   if (resToken) {
+  //     dispatch(orderReq());
+  //     dispatch(getProfileReq());
+  //     dispatch(customerReq());
+  //     dispatch(employeeReq());
+  //   }
+  // }, []);
 
-  if (loadingAuth || loadingEmployee || loadingCustomer || loadingOrder) {
-    return <Loading />;
-  }
+  // if (loadingAuth || loadingEmployee || loadingCustomer || loadingOrder) {
+  //   return <Loading />;
+  // }
 
   return (
     <Routes>
-      <Route element={<RequireAuth {...reqAuth} />}>
+      <Route element={<RequireAuth />}>
         <Route element={<AppLayOut />}>
           <Route path="/" element={<Employee />} />
           <Route path="/register" element={<Register />} />

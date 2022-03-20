@@ -8,14 +8,6 @@ import ThemeProvider from "./Theme";
 import { Outlet } from "react-router-dom";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
-const DrawerHeader = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "flex-end",
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
-}));
-
 export default function AppLayOut() {
   const [open, setOpen] = React.useState(true);
 
@@ -35,8 +27,7 @@ export default function AppLayOut() {
         <AppBar handleDrawer={handleDrawer} open={open} />
         <Drawer handleDrawer2={handleDrawer2} open={open} />
 
-        <Box component="main" sx={{ flexGrow: 1, p: 0.1 }}>
-          <DrawerHeader />
+        <Box component="main" sx={{ flexGrow: 1, p: "116px 16px" }}>
           <Outlet />
         </Box>
       </Box>
