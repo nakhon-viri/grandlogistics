@@ -30,9 +30,8 @@ const RequireAuth = () => {
   const resToken = verifyToken();
 
   useEffect(() => {
-    const resToken = verifyToken();
     if (resToken) {
-      if (!isLogin)  dispatch(getProfileReq());
+      if (!isLogin) dispatch(getProfileReq());
 
       dispatch(orderReq());
       dispatch(customerReq());
@@ -41,7 +40,7 @@ const RequireAuth = () => {
   }, []);
 
   useEffect(() => {
-    if (isLogin) {
+    if (resToken) {
       const newSocket = io("https://api-grandlogistics.herokuapp.com", {
         transports: ["websocket"],
       });

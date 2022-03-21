@@ -27,7 +27,7 @@ export default function AppLayOut() {
         <AppBar handleDrawer={handleDrawer} open={open} />
         <Drawer handleDrawer2={handleDrawer2} open={open} />
 
-        <Box component="main" sx={{ flexGrow: 1, p: "116px 16px" }}>
+        <Box component="main" sx={{ flexGrow: 1, p: "116px 8px" }}>
           <Outlet />
         </Box>
       </Box>
