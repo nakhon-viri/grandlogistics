@@ -22,15 +22,15 @@ export default function AppLayOut() {
 
   return (
     <ThemeProvider>
-      <Box sx={{ display: matches ? "flex" : null }}>
-        <CssBaseline />
-        <AppBar handleDrawer={handleDrawer} open={open} />
-        <Drawer handleDrawer2={handleDrawer2} open={open} />
+        <Box sx={{ display: matches ? "flex" : null }}>
+          <CssBaseline />
+          <AppBar handleDrawer={handleDrawer} open={open} />
+          <Drawer handleDrawer2={handleDrawer2} open={open} />
 
-        <Box component="main" sx={{ flexGrow: 1, p: "116px 8px" }}>
-          <Outlet />
+          <Box component="main" sx={{ flexGrow: 1, p: "116px 8px" }}>
+            <Outlet />
+          </Box>
         </Box>
-      </Box>
     </ThemeProvider>
   );
 }

@@ -14,11 +14,14 @@ import Hidden from "@mui/material/Hidden";
 import CloseIcon from "@mui/icons-material/Close";
 import FolderSharedTwoToneIcon from "@mui/icons-material/FolderSharedTwoTone";
 import GroupAddTwoToneIcon from "@mui/icons-material/GroupAddTwoTone";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { themeStore } from "../../../store/ThemeStore";
 import { useSelector } from "react-redux";
+
+import Swal from "sweetalert2";
 
 const drawerWidth = 280;
 let opendrawer;
@@ -152,7 +155,7 @@ const Menu = ({ handleDrawer2, open }) => {
         </Typography>
       </Box>
       <ListGroup title="พนักงาน">
-        <ListLink to="/" text="Employee" icon={<MailIcon />} />
+        <ListLink to="/" text="Employee" icon={<PersonRoundedIcon />} />
         <ListLink
           to="/profile"
           text="Profile"

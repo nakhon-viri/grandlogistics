@@ -15,10 +15,12 @@ import {
   FormControl,
   Stack,
   OutlinedInput,
+  FormHelperText,
 } from "@mui/material";
 import MobileDatePicker from "@mui/lab/MobileDatePicker";
 import AdapterDayjs from "@mui/lab/AdapterDayjs";
 import LocalizationProvider from "@mui/lab/LocalizationProvider";
+import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
 import { AddAPhoto, DateRange, InsertDriveFile } from "@mui/icons-material";
 import {
@@ -27,11 +29,16 @@ import {
   searchAddressByAmphoe,
 } from "thai-address-database";
 import { useState, useRef, useMemo } from "react";
-import { useFormik } from "formik";
 import "dayjs/locale/th";
+import { addEmployee } from "../store/EmployeeStore";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
+import { useForm, Form } from "../components/useForm";
 import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
+import { HttpClient } from "../utils/HttpClient";
 
 const AntSwitch = styled(Switch)(({ theme }) => ({
   width: 35,
@@ -165,14 +172,14 @@ const Provinces = [
   "อุบลราชธานี",
 ];
 
-const InputGrid = ({ sm, ...rest }) => {
+const InputGrid = ({ sm, error = null, ...rest }) => {
   return (
     <Grid item xs={12} sm={sm ? 12 : 6}>
       <TextField
-        required
         fullWidth
         autoComplete="off"
         {...rest}
+        {...(error && { error: true, helperText: error })}
         InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
         sx={styles.inputField}
       />
@@ -180,10 +187,17 @@ const InputGrid = ({ sm, ...rest }) => {
   );
 };
 
-const InputGridAddress = ({ title, addressQuery, forEmpty, name, ...rest }) => {
+const InputGridAddress = ({
+  title,
+  addressQuery,
+  fieldName,
+  forEmpty,
+  error,
+  ...rest
+}) => {
   return (
     <Grid item xs={12} sm={6}>
-      <FormControl fullWidth>
+      <FormControl fullWidth {...(error && { error: true })}>
         <InputLabel id="search-select-label">{title}</InputLabel>
         <Select
           MenuProps={MenuProps}
@@ -212,9 +226,9 @@ const InputGridAddress = ({ title, addressQuery, forEmpty, name, ...rest }) => {
                   borderRadius: "8px",
                   mb: 1,
                 }}
-                value={name ? option[name] : option}
+                value={fieldName ? option[fieldName] : option}
               >
-                {name ? option[name] : option}
+                {fieldName ? option[fieldName] : option}
               </MenuItem>
             );
           })}
@@ -234,6 +248,7 @@ const InputGridAddress = ({ title, addressQuery, forEmpty, name, ...rest }) => {
             </Box>
           )}
         </Select>
+        <FormHelperText>{error && error}</FormHelperText>
       </FormControl>
     </Grid>
   );
@@ -254,99 +269,150 @@ function IsNumeric(input) {
   return RE.test(input);
 }
 
-const Register = () => {
-  const [provinces, setProvinces] = useState("กรุงเทพมหานคร");
-  const [district, setDritict] = useState("");
-  const [amphoe, setAmphoe] = useState("");
-  const [zipCode, setZipCode] = useState("");
+const initialValues = {
+  full_name: {
+    first_name: "",
+    last_name: "",
+  },
+  department: "",
+  reference_id: "",
+  address: {
+    house_no: "",
+    street: "",
+    subdistrict: "",
+    district: "",
+    province: "",
+    zip_code: "",
+  },
+  bank_no: "",
+  bank_name: "",
+  photo: "",
+  car_no: "",
+  password: "",
+  phone_no: "",
+  birthday: "",
+  gender: "",
+};
 
+const formatID = (value, index) => {
+  return value.substring(0, index) + "-" + value.substring(index, value.length);
+};
+
+const convertToDefEventPara = (name, value) => ({
+  target: {
+    name,
+    value,
+  },
+});
+
+const Register = () => {
+  let navigate = useNavigate();
+  let dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
+  //Img
   const [editor, setEditor] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [baseImage, setBaseImage] = useState("");
   const [scaleValue, setScaleValue] = useState(1);
   const [openDialog, setopenDialog] = useState(false);
-
-  const [idNumber, setIdNumber] = useState("");
-  const [validationID, setValidationID] = useState(false);
-
-  const [dateValue, setDateValue] = useState(new Date());
-
-  const [bankID, setBankID] = useState("");
-
-  const [phoneNumber, setPhoneNumber] = useState("");
-
   const removeValue = useRef();
+  //CheckID Card
+  const [validationID, setValidationID] = useState(false);
+  //Hooks
   let [hover, eventHover] = useHover();
+  //Form
+  const validate = (fieldValues = values) => {
+    let temp = { ...errors };
+    let labelEmpty = "โปรดใส่ข้อมูลให้ครบถ้วน";
+    if ("first_name" in fieldValues.full_name)
+      temp.first_name = fieldValues.full_name.first_name ? "" : labelEmpty;
+    if ("last_name" in fieldValues.full_name)
+      temp.last_name = fieldValues.full_name.last_name ? "" : labelEmpty;
+    if ("car_no" in fieldValues)
+      temp.car_no = fieldValues.car_no ? "" : labelEmpty;
+    if ("birthday" in fieldValues)
+      temp.birthday = fieldValues.birthday ? "" : labelEmpty;
+    if ("password" in fieldValues)
+      temp.password = fieldValues.password ? "" : labelEmpty;
+    if ("phone_no" in fieldValues) {
+      temp.phone_no = fieldValues.phone_no ? "" : labelEmpty;
+      if (fieldValues.phone_no.length != 12 && fieldValues.phone_no)
+        temp.phone_no = "หมายเลขโทรศัพท์ไม่ถูกต้อง";
+    }
+    if ("gender" in fieldValues)
+      temp.gender = fieldValues.gender ? "" : labelEmpty;
+    if ("department" in fieldValues)
+      temp.department = fieldValues.department ? "" : labelEmpty;
+    if ("reference_id" in fieldValues) {
+      temp.reference_id = fieldValues.reference_id ? "" : labelEmpty;
+      if (
+        (validationID || fieldValues.reference_id.length != 17) &&
+        fieldValues.reference_id
+      )
+        temp.reference_id = "เลขบัตรประจำตัวประชาชนไม่ถูกต้อง";
+    }
+    if ("bank_no" in fieldValues) {
+      temp.bank_no = fieldValues.bank_no ? "" : labelEmpty;
+      if (fieldValues.bank_no.length != 13 && fieldValues.bank_no)
+        temp.bank_no = "หมายเลขบัญชีไม่ถูกต้อง";
+    }
+    if ("bank_name" in fieldValues)
+      temp.bank_name = fieldValues.bank_name ? "" : labelEmpty;
+    if ("house_no" in fieldValues.address)
+      temp.house_no = fieldValues.address.house_no ? "" : labelEmpty;
+    if ("subdistrict" in fieldValues.address)
+      temp.subdistrict = fieldValues.address.subdistrict ? "" : labelEmpty;
+    if ("district" in fieldValues.address)
+      temp.district = fieldValues.address.district ? "" : labelEmpty;
+    if ("province" in fieldValues.address)
+      temp.province = fieldValues.address.province ? "" : labelEmpty;
+    if ("zip_code" in fieldValues.address)
+      temp.zip_code = fieldValues.address.zip_code ? "" : labelEmpty;
+    if ("photo" in fieldValues)
+      temp.photo = fieldValues.photo ? "" : labelEmpty;
 
-  let queryProvinces = useMemo(
-    () => [
-      ...new Map(
-        searchAddressByProvince(provinces, 10000).map((item) => [
-          item.amphoe,
-          item,
-        ])
-      ).values(),
-    ],
-    [provinces]
-  );
-  let queryAmphoe = useMemo(
-    () => [
-      ...new Map(
-        searchAddressByAmphoe(amphoe, 10000).map((item) => [
-          item.district,
-          item,
-        ])
-      ).values(),
-    ],
-    [amphoe]
-  );
-  let queryDistrict = useMemo(
-    () => [
-      ...new Map(
-        searchAddressByDistrict(district, 10000).map((item) => [
-          item.district,
-          item,
-        ])
-      ).values(),
-    ],
-    [district]
+    setErrors({
+      ...temp,
+    });
+    if (fieldValues == values) return Object.values(temp).every((x) => x == "");
+  };
+  const { values, errors, setErrors, handleInputChange } = useForm(
+    initialValues,
+    false,
+    validate
   );
 
-  const { handleSubmit, values, handleChange, isValid, dirty } = useFormik({
-    initialValues: {
-      full_name: {
-        first_name: "",
-        last_name: "",
-      },
-      department: "",
-      reference_id: "",
-      address: {
-        house_no: "",
-        street: "",
-        subdistrict: "",
-        district: "",
-        province: "",
-        zip_code: "",
-      },
-      bank_no: "",
-      bank_name: "",
-      photo: "",
-      car_no: "",
-      password: "",
-      phone_no: "",
-      birthday: "",
-      gender: "",
-    },
-    onSubmit: (values) => {
-      values.photo = baseImage;
-      values.reference_id = idNumber;
-      values.phone_no = phoneNumber;
-      values.birthday = JSON.stringify(dateValue).replace(/"/g, "");
-      values.bank_no = bankID;
-      console.log(values);
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener("mouseenter", Swal.stopTimer);
+      toast.addEventListener("mouseleave", Swal.resumeTimer);
     },
   });
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (validate()) {
+      try {
+        setLoading(true);
+        values.birthday = JSON.stringify(values.birthday).replace(/"/g, "");
+        values.reference_id = values.reference_id.replace(/-/g, "");
+        let res = await HttpClient.post("/personnel/register", values);
+        dispatch(addEmployee(res.data));
+        navigate("/");
+        Toast.fire({
+          icon: "success",
+          title: "Signed in successfully",
+        });
+      } catch (error) {
+        console.log(error.response.data.error.message);
+      }
+    }
+  };
+  //Img
   const profileImageChange = (fileChangeEvent) => {
     const file = fileChangeEvent.target.files[0];
     const { type } = file;
@@ -356,31 +422,27 @@ const Register = () => {
       setopenDialog(true);
     }
   };
-
   const setEditorRef = (editor) => setEditor(editor);
-
   const onCrop = () => {
     const editors = editor;
     if (editor != null) {
       const url = editors.getImageScaledToCanvas().toDataURL("image/jpeg", 0.5);
-      setBaseImage(url);
+      handleInputChange(convertToDefEventPara("photo", url));
       setSelectedImage(null);
       setopenDialog(false);
     }
   };
-
   const onClose = () => {
     if (editor != null) {
       setSelectedImage(null);
       setopenDialog(false);
     }
   };
-
   const onScaleChange = (e) => {
     const scaleValue = parseFloat(e.target.value);
     setScaleValue(scaleValue);
   };
-
+  //FormatID
   function handleCheckID(e) {
     let id = e.target.value;
     id = id.replace(/-/g, "");
@@ -396,29 +458,21 @@ const Register = () => {
       setValidationID(true);
     }
 
-    if (id.length > 1)
-      id = id.substring(0, 1) + "-" + id.substring(1, id.length);
-    if (id.length > 6)
-      id = id.substring(0, 6) + "-" + id.substring(6, id.length);
-    if (id.length > 12)
-      id = id.substring(0, 12) + "-" + id.substring(12, id.length);
-    if (id.length > 15)
-      id = id.substring(0, 15) + "-" + id.substring(15, id.length);
-    setIdNumber(id);
+    if (id.length > 1) id = formatID(id, 1);
+    if (id.length > 6) id = formatID(id, 6);
+    if (id.length > 12) id = formatID(id, 12);
+    if (id.length > 15) id = formatID(id, 15);
+    handleInputChange(convertToDefEventPara("reference_id", id));
   }
-
   function handleFormatBank(e) {
     let id = e.target.value;
     id = id.replace(/-/g, "");
     if (e.target.value.length > 13) return;
 
-    if (id.length > 3)
-      id = id.substring(0, 3) + "-" + id.substring(3, id.length);
-    if (id.length > 5)
-      id = id.substring(0, 5) + "-" + id.substring(5, id.length);
-    if (id.length > 11)
-      id = id.substring(0, 11) + "-" + id.substring(11, id.length);
-    setBankID(id);
+    if (id.length > 3) id = formatID(id, 3);
+    if (id.length > 5) id = formatID(id, 5);
+    if (id.length > 11) id = formatID(id, 11);
+    handleInputChange(convertToDefEventPara("bank_no", id));
   }
   function handleFormatPhoneNumber(e) {
     let number = e.target.value;
@@ -427,21 +481,51 @@ const Register = () => {
 
     let lengthNumber = number.charAt(1) == 6 ? 2 : 3;
 
-    if (number.length > lengthNumber)
-      number =
-        number.substring(0, lengthNumber) +
-        "-" +
-        number.substring(lengthNumber, number.length);
-    if (number.length > 7)
-      number =
-        number.substring(0, 7) + "-" + number.substring(7, number.length);
-    setPhoneNumber(number);
+    if (number.length > lengthNumber) number = formatID(number, lengthNumber);
+    if (number.length > 7) number = formatID(number, 7);
+    handleInputChange(convertToDefEventPara("phone_no", number));
   }
-  console.log(typeof JSON.stringify(dateValue));
+  //QueryAddress
+  let queryProvinces = useMemo(
+    () => [
+      ...new Map(
+        searchAddressByProvince(values.address.province, 10000).map((item) => [
+          item.amphoe,
+          item,
+        ])
+      ).values(),
+    ],
+    [values.address.province]
+  );
+  let queryAmphoe = useMemo(
+    () => [
+      ...new Map(
+        searchAddressByAmphoe(values.address.district, 10000).map((item) => [
+          item.district,
+          item,
+        ])
+      ).values(),
+    ],
+    [values.address.district]
+  );
+  let queryDistrict = useMemo(
+    () => [
+      ...new Map(
+        searchAddressByDistrict(values.address.subdistrict, 10000).map(
+          (item) => [item.district, item]
+        )
+      ).values(),
+    ],
+    [values.address.subdistrict]
+  );
+
   return (
     <LocalizationProvider locale={"th"} dateAdapter={AdapterDayjs}>
       <Container>
-        <Box component="form" validate onSubmit={handleSubmit} sx={styles.form}>
+        <Box sx={{ flexGrow: 1, mb: 5 }}>
+          <Typography variant="h4">Order ทั้งหมด</Typography>
+        </Box>
+        <Form onSubmit={handleSubmit} sx={styles.form}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
               <Paper sx={{ py: 10, px: 3, position: "relative" }}>
@@ -479,6 +563,9 @@ const Register = () => {
                       borderRadius: "50%",
                       p: 1,
                       border: "1px dashed rgba(145, 158, 171, 0.32)",
+                      ...(errors.photo && {
+                        borderColor: "#eb7878",
+                      }),
                     }}
                   >
                     <Box
@@ -547,9 +634,12 @@ const Register = () => {
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
+                            ...(errors.photo && {
+                              backgroundColor: "rgb(255, 231, 217)",
+                            }),
                           }}
                           alt={"Nake"}
-                          src={baseImage && baseImage}
+                          src={values.photo && values.photo}
                         />
                       </Box>
                       <Box
@@ -587,6 +677,15 @@ const Register = () => {
                   >
                     Allowed *.jpeg, *.jpg, *.png
                   </Typography>
+                  <FormHelperText
+                    sx={{
+                      textAlign: "center",
+                      pt: 2,
+                      color: "red",
+                    }}
+                  >
+                    {errors.photo && errors.photo}
+                  </FormHelperText>
                 </Box>
                 <FormControlLabel
                   control={
@@ -635,14 +734,16 @@ const Register = () => {
                     name="full_name.first_name"
                     type="text"
                     value={values.full_name.first_name}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
+                    error={errors.first_name}
                   />
                   <InputGrid
                     name="full_name.last_name"
                     label="นามสกุล"
                     type="text"
                     value={values.full_name.last_name}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
+                    error={errors.last_name}
                   />
                   <InputGrid
                     sm
@@ -650,25 +751,31 @@ const Register = () => {
                     label="รหัสผ่าน"
                     type="password"
                     value={values.password}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
+                    error={errors.password}
                   />
                   <InputGrid
                     name="phone_no"
                     label="เบอร์ติดต่อ"
                     placeholder="__-____-____"
                     type="tel"
-                    value={phoneNumber}
+                    value={values.phone_no}
                     onChange={handleFormatPhoneNumber}
+                    error={errors.phone_no}
                   />
                   <InputGrid
                     label="ทะเบียนรถ"
                     type="text"
                     name="car_no"
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     value={values.car_no}
+                    error={errors.car_no}
                   />
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
+                    <FormControl
+                      fullWidth
+                      {...(errors.gender && { error: true })}
+                    >
                       <InputLabel id="select-gender">เพศ</InputLabel>
                       <Select
                         labelId="select-gender"
@@ -682,7 +789,7 @@ const Register = () => {
                             borderRadius: 2,
                           },
                         }}
-                        onChange={handleChange}
+                        onChange={handleInputChange}
                       >
                         {["ชาย", "หญิง", "อื่น ๆ"].map((item) => (
                           <MenuItem
@@ -698,37 +805,51 @@ const Register = () => {
                           </MenuItem>
                         ))}
                       </Select>
+                      <FormHelperText>
+                        {errors.gender && errors.gender}
+                      </FormHelperText>
                     </FormControl>
                   </Grid>
                   <InputGrid
                     label="แพนก"
                     type="text"
                     name="department"
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     value={values.department}
+                    error={errors.department}
                   />
                   <InputGrid
                     label="บัตรประชาชน"
                     type="text"
                     placeholder="_-____-_____-__-_"
                     name="reference_id"
-                    error={validationID}
                     helperText={
                       validationID ? "เลขประจำตัวประชาชนไม่ถูกต้อง" : null
                     }
                     onChange={handleCheckID}
-                    value={idNumber}
+                    value={values.reference_id}
+                    error={errors.reference_id}
                   />
                   <Grid item xs={12} sm={6}>
                     <Stack>
                       <MobileDatePicker
                         label="วัน/เดือน/ปีเกิด"
-                        value={dateValue}
-                        onChange={(v) => setDateValue(v)}
+                        value={values.birthday}
+                        onChange={(v) =>
+                          handleInputChange(
+                            convertToDefEventPara("birthday", v)
+                          )
+                        }
                         renderInput={(params) => (
                           <TextField
                             {...params}
-                            error={false}
+                            {...(errors.birthday && {
+                              error: true,
+                              helperText: errors.birthday,
+                            })}
+                            {...(!errors.birthday && {
+                              error: false,
+                            })}
                             InputProps={{
                               endAdornment: (
                                 <DateRange sx={{ color: "text.secondary" }} />
@@ -749,51 +870,63 @@ const Register = () => {
                     placeholder="___-_-_____-_"
                     name="bank_no"
                     onChange={handleFormatBank}
-                    value={bankID}
+                    value={values.bank_no}
+                    error={errors.bank_no}
                   />
                   <InputGrid
                     label="ชื่อบัญชีธนาคาร"
                     type="text"
                     name="bank_name"
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     value={values.bank_name}
+                    error={errors.bank_name}
                   />
                   <InputGrid
                     sm
                     label="บ้านเลขที่"
                     type="text"
                     name="address.house_no"
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     value={values.address.house_no}
+                    error={errors.house_no}
                   />
                   <InputGridAddress
                     title="จังหวัด"
-                    value={provinces}
-                    onChange={(e) => setProvinces(e.target.value)}
+                    name="address.province"
+                    value={values.address.province}
+                    onChange={handleInputChange}
                     addressQuery={Provinces}
+                    error={errors.province}
                   />
                   <InputGridAddress
                     title="อำเภอ/เขต"
-                    name="amphoe"
-                    value={amphoe}
-                    onChange={(e) => setAmphoe(e.target.value)}
+                    name="address.district"
+                    forEmpty="จังหวัด"
+                    value={values.address.district}
+                    fieldName="amphoe"
+                    onChange={handleInputChange}
                     addressQuery={queryProvinces}
+                    error={errors.district}
                   />
                   <InputGridAddress
                     title="ตำบล/แขวง"
-                    name="district"
+                    name="address.subdistrict"
                     forEmpty="อำเภอ/เขต"
-                    value={district}
-                    onChange={(e) => setDritict(e.target.value)}
+                    value={values.address.subdistrict}
+                    fieldName="district"
+                    onChange={handleInputChange}
                     addressQuery={queryAmphoe}
+                    error={errors.subdistrict}
                   />
                   <InputGridAddress
                     title="รหัสไปรษณีย์"
                     forEmpty="ตำบล/แขวง"
-                    name="zipcode"
-                    value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
+                    name="address.zip_code"
+                    fieldName="zipcode"
+                    value={values.address.zip_code}
+                    onChange={handleInputChange}
                     addressQuery={queryDistrict}
+                    error={errors.zip_code}
                   />
                 </Grid>
                 <Box
@@ -804,25 +937,20 @@ const Register = () => {
                     marginTop: "24px",
                   }}
                 >
-                  <Button
+                  <LoadingButton
                     type="submit"
                     fullWidth
-                    disabled={
-                      !(isValid && dirty) &&
-                      !idNumber &&
-                      !baseImage &&
-                      !dateValue
-                    }
+                    loading={loading}
                     variant="contained"
                     sx={styles.btnSubmit}
                   >
                     Sign In
-                  </Button>
+                  </LoadingButton>
                 </Box>
               </Paper>
             </Grid>
           </Grid>
-        </Box>
+        </Form>
       </Container>
     </LocalizationProvider>
   );

@@ -20,10 +20,13 @@ export const employeeReducer = createSlice({
     upDateError: (state, action) => {
       state.value = { ...stateDefault, error: action.payload };
     },
+    addEmployee: (state, action) => {
+      state.value.employee.push(action.payload);
+    },
   },
 });
 
-export const { upDateEmployee, upDateLoadingEmp, upDateError } =
+export const { upDateEmployee, addEmployee, upDateLoadingEmp, upDateError } =
   employeeReducer.actions;
 
 export const employeeStore = (state) => state.employee.value;

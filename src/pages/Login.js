@@ -20,8 +20,6 @@ const Login = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    
-    console.log(data);
     const account = {
       _uid: data.get("username"),
       password: data.get("password"),

@@ -33,9 +33,14 @@ import {
   Button,
   useMediaQuery,
   Stack,
+  IconButton,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { styled } from "@mui/material/styles";
+import {
+  KeyboardArrowUp,
+  KeyboardArrowDown,
+  Search,
+} from "@mui/icons-material";
+import { styled, useTheme } from "@mui/material/styles";
 
 import { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
@@ -98,7 +103,7 @@ const UserList = ({ employee, userSelected, handleSelectedUser }) => {
   };
 
   return (
-    <List {...listProps}  dense>
+    <List {...listProps} dense>
       {employee?.map((value, index) => {
         return (
           <ListItem key={value._id} disablePadding>
@@ -194,11 +199,16 @@ const MenuProps = {
 };
 
 const Row = ({ Cell }) => {
+  const theme = useTheme();
   const [open, setOpen] = useState(false);
   return (
     <>
       <TableRow hover onClick={() => setOpen(!open)} sx={{ cursor: "pointer" }}>
-        <TableCell component="th" scope="row"></TableCell>
+        <TableCell component="th" scope="row" sx={{ p: 0, pl: 1 }}>
+          <IconButton aria-label="expand row" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+          </IconButton>
+        </TableCell>
         <TableCell component="th" scope="row">
           {dayjs(Cell.pickup_date).locale("th").format("DD MMMM YYYY")}
         </TableCell>
@@ -210,7 +220,43 @@ const Row = ({ Cell }) => {
         <TableCell align="right">
           {Cell.wage - Cell.cost - Cell.withdraw}
         </TableCell>
-        <TableCell align="right">{Cell.status}</TableCell>
+        <TableCell align="right" sx={{ p: 1.2 }}>
+          <Typography
+            variant="p"
+            sx={{
+              ...(theme.palette.mode === "dark"
+                ? {
+                    bgcolor:
+                      Cell.status === "จัดส่งสำเร็จ"
+                        ? "rgb(95, 325, 55)"
+                        : "rgb(85, 153, 242)",
+                  }
+                : {
+                    bgcolor:
+                      Cell.status === "จัดส่งสำเร็จ"
+                        ? "rgba(95, 325, 55, 0.2)"
+                        : "rgb(85, 153, 242, 0.16)",
+                  }),
+              ...(theme.palette.mode === "dark"
+                ? { color: Cell.status === "จัดส่งสำเร็จ" ? "#000" : "#fff" }
+                : {
+                    color:
+                      Cell.status === "จัดส่งสำเร็จ"
+                        ? "rgb(95, 325, 55)"
+                        : "rgb(85, 153, 242)",
+                  }),
+              px: 0.7,
+              py: 0.5,
+              fontSize: "0.8rem",
+              borderRadius: 2,
+              fontFamily: "Prompt",
+              fontWeight: 500,
+              height: "22px",
+            }}
+          >
+            {Cell.status}
+          </Typography>
+        </TableCell>
       </TableRow>
       <TableRow
         sx={{
@@ -485,177 +531,172 @@ const Employee = () => {
   };
 
   return (
-    <Box
-      sx={{
-        display: media && "flex",
-        flexGrow: 1,
-        justifyContent: "center",
-      }}
-    >
-      <Paper sx={styles.containerUserList}>
-        <UserList {...userListProps} />
-      </Paper>
-      <Box sx={{ width: 16, height: 16 }} />
-      <Box
-        sx={{
-          maxWidth: "1200px",
-          width: "100%",
-        }}
-      >
-        <Box>
-          <Paper
-            sx={{
-              paddingInline: 0,
-              boxSizing: "border-box",
-              mb: 2,
-              borderRadius: 4,
-              overflow: "hidden",
-            }}
-          >
-            <Tabs
-              value={valueTabs}
-              onChange={(e, v) => setValueTabs(v)}
-              variant="scrollable"
-              scrollButtons="auto"
+    <Container maxWidth={"lg"}>
+      <Box sx={{ flexGrow: 1, mb: 5 }}>
+        <Typography variant="h4">Order ทั้งหมด</Typography>
+      </Box>
+      <Grid container spacing={2}>
+        <Grid item xs={12} lg={3}>
+          <Paper sx={styles.containerUserList} elevation={2}>
+            <UserList {...userListProps} />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} lg={9}>
+          <Box>
+            <Paper
               sx={{
-                px: 2,
-                maxHeight: 48,
-                backgroundColor: "rgba(145, 158, 171, 0.16)",
+                paddingInline: 0,
+                boxSizing: "border-box",
+                mb: 2,
+                borderRadius: 4,
+                overflow: "hidden",
               }}
             >
-              <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
-              <Tab value="จัดส่งสำเร็จ" label="จัดส่งสำเร็จ" disableRipple />
-              <Tab
-                value="ยังไม่ถูกจัดส่ง"
-                label="ยังไม่ถูกจัดส่ง"
-                disableRipple
-              />
-            </Tabs>
-            <Divider />
-            <Grid container spacing={2} sx={{ p: 3 }}>
-              <FormSelected
-                text="วัน"
-                dateFormat="DD"
-                xs={6}
-                sm={4}
-                md={2}
-                value={valueDay}
-                changeValue={(e) => setValueDay(e.target.value)}
-              />
-              <FormSelected
-                text="เดือน"
-                dateFormat="MMMM"
-                xs={6}
-                sm={4}
-                md={2}
-                value={valueMonth}
-                changeValue={(e) => setValueMonth(e.target.value)}
-              />
-              <FormSelected
-                text="ปี"
-                dateFormat="YYYY"
-                xs={12}
-                sm={4}
-                md={2}
-                value={valueYear}
-                changeValue={(e) => setValueYear(e.target.value)}
-              />
-              <Grid item xs={12} sm={12} md={6}>
-                <FormControl
-                  sx={{
-                    width: "100%",
-                    "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                  }}
-                >
-                  <TextField
-                    placeholder="Search"
-                    type="search"
-                    variant="outlined"
-                    fullWidth
-                    autoComplete="off"
-                    size="medium"
-                    onChange={(e) => setSearch(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </FormControl>
-              </Grid>
-            </Grid>
-
-            <Box sx={{ flexGrow: 1, overflow: "auto" }}>
-              <TableContainer
+              <Tabs
+                value={valueTabs}
+                onChange={(e, v) => setValueTabs(v)}
+                variant="scrollable"
+                scrollButtons="auto"
                 sx={{
-                  ...(!media && { minWidth: "800px" }),
-                  position: "relative",
+                  px: 2,
+                  maxHeight: 48,
+                  backgroundColor: "rgba(145, 158, 171, 0.16)",
                 }}
               >
-                <Table size={dense ? "small" : "normall"}>
-                  <TableHeader {...tableHeaderProps} />
-                  <TableBody>
-                    {orders &&
-                      orders
-                        .sort(getComparator(sortType, sortByName))
-                        .slice(
-                          page * rowsPerPage,
-                          page * rowsPerPage + rowsPerPage
-                        )
-                        .map((Cell) => <Row key={Cell._id} Cell={Cell} />)}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                overflowX: "hidden",
-              }}
-            >
-              <FormControlLabel
-                control={
-                  <>
-                    <AntSwitch
-                      checked={dense}
-                      onChange={(e) => setDense(e.target.checked)}
-                      inputProps={{ "aria-label": "ant design" }}
+                <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
+                <Tab value="จัดส่งสำเร็จ" label="จัดส่งสำเร็จ" disableRipple />
+                <Tab
+                  value="ยังไม่ถูกจัดส่ง"
+                  label="ยังไม่ถูกจัดส่ง"
+                  disableRipple
+                />
+              </Tabs>
+              <Divider />
+              <Grid container spacing={2} sx={{ p: 3 }}>
+                <FormSelected
+                  text="วัน"
+                  dateFormat="DD"
+                  xs={6}
+                  sm={4}
+                  md={2}
+                  value={valueDay}
+                  changeValue={(e) => setValueDay(e.target.value)}
+                />
+                <FormSelected
+                  text="เดือน"
+                  dateFormat="MMMM"
+                  xs={6}
+                  sm={4}
+                  md={2}
+                  value={valueMonth}
+                  changeValue={(e) => setValueMonth(e.target.value)}
+                />
+                <FormSelected
+                  text="ปี"
+                  dateFormat="YYYY"
+                  xs={12}
+                  sm={4}
+                  md={2}
+                  value={valueYear}
+                  changeValue={(e) => setValueYear(e.target.value)}
+                />
+                <Grid item xs={12} sm={12} md={6}>
+                  <FormControl
+                    sx={{
+                      width: "100%",
+                      "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                    }}
+                  >
+                    <TextField
+                      placeholder="Search"
+                      type="search"
+                      variant="outlined"
+                      fullWidth
+                      autoComplete="off"
+                      size="medium"
+                      onChange={(e) => setSearch(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Search />
+                          </InputAdornment>
+                        ),
+                      }}
                     />
-                    <Typography sx={{ ml: 1 }}>แคบ</Typography>
-                  </>
-                }
-                label={""}
+                  </FormControl>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                <TableContainer
+                  sx={{
+                    position: "relative",
+                    minWidth: "800px",
+                  }}
+                >
+                  <Table size={dense ? "small" : "normall"}>
+                    <TableHeader {...tableHeaderProps} />
+                    <TableBody>
+                      {orders &&
+                        orders
+                          .sort(getComparator(sortType, sortByName))
+                          .slice(
+                            page * rowsPerPage,
+                            page * rowsPerPage + rowsPerPage
+                          )
+                          .map((Cell) => <Row key={Cell._id} Cell={Cell} />)}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+              <Box
                 sx={{
-                  flex: 1,
-                  margin: 0,
-                  pl: "31px",
-                  mb: 1,
+                  display: "flex",
+                  flexDirection: "row",
+                  overflowX: "hidden",
                 }}
-              />
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 20, 25, 30, 35, 40, 45]}
-                component="div"
-                count={orders?.length || 0}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                labelRowsPerPage={"จำนวนแถว"}
-                sx={{
-                  "& .MuiToolbar-root": {
-                    p: 0,
-                    pr: 2,
-                  },
-                }}
-              />
-            </Box>
-          </Paper>
-        </Box>
-      </Box>
-    </Box>
+              >
+                <FormControlLabel
+                  control={
+                    <>
+                      <AntSwitch
+                        checked={dense}
+                        onChange={(e) => setDense(e.target.checked)}
+                        inputProps={{ "aria-label": "ant design" }}
+                      />
+                      <Typography sx={{ ml: 1 }}>แคบ</Typography>
+                    </>
+                  }
+                  label={""}
+                  sx={{
+                    flex: 1,
+                    margin: 0,
+                    pl: "31px",
+                    mb: 1,
+                  }}
+                />
+                <TablePagination
+                  rowsPerPageOptions={[5, 10, 20, 25, 30, 35, 40, 45]}
+                  component="div"
+                  count={orders?.length || 0}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  labelRowsPerPage={"จำนวนแถว"}
+                  sx={{
+                    "& .MuiToolbar-root": {
+                      p: 0,
+                      pr: 2,
+                    },
+                  }}
+                />
+              </Box>
+            </Paper>
+          </Box>
+        </Grid>
+      </Grid>
+    </Container>
   );
 };
 
@@ -672,3 +713,182 @@ const styles = {
 };
 
 export default Employee;
+
+// return (
+//   <Box>
+//     <Box sx={{ flexGrow: 1, mb: 5 }}>
+//       <Typography variant="h4">Order ทั้งหมด</Typography>
+//     </Box>
+//     <Box
+//       sx={{
+//         display: media && "flex",
+//         flexGrow: 1,
+//         justifyContent: "center",
+//       }}
+//     >
+//       <Paper sx={styles.containerUserList}>
+//         <UserList {...userListProps} />
+//       </Paper>
+//       <Box sx={{ width: 16, height: 16 }} />
+//       <Box
+//         sx={{
+//           maxWidth: "1200px",
+//           width: "100%",
+//         }}
+//       >
+//         <Box>
+//           <Paper
+//             sx={{
+//               paddingInline: 0,
+//               boxSizing: "border-box",
+//               mb: 2,
+//               borderRadius: 4,
+//               overflow: "hidden",
+//             }}
+//           >
+//             <Tabs
+//               value={valueTabs}
+//               onChange={(e, v) => setValueTabs(v)}
+//               variant="scrollable"
+//               scrollButtons="auto"
+//               sx={{
+//                 px: 2,
+//                 maxHeight: 48,
+//                 backgroundColor: "rgba(145, 158, 171, 0.16)",
+//               }}
+//             >
+//               <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
+//               <Tab value="จัดส่งสำเร็จ" label="จัดส่งสำเร็จ" disableRipple />
+//               <Tab
+//                 value="ยังไม่ถูกจัดส่ง"
+//                 label="ยังไม่ถูกจัดส่ง"
+//                 disableRipple
+//               />
+//             </Tabs>
+//             <Divider />
+//             <Grid container spacing={2} sx={{ p: 3 }}>
+//               <FormSelected
+//                 text="วัน"
+//                 dateFormat="DD"
+//                 xs={6}
+//                 sm={4}
+//                 md={2}
+//                 value={valueDay}
+//                 changeValue={(e) => setValueDay(e.target.value)}
+//               />
+//               <FormSelected
+//                 text="เดือน"
+//                 dateFormat="MMMM"
+//                 xs={6}
+//                 sm={4}
+//                 md={2}
+//                 value={valueMonth}
+//                 changeValue={(e) => setValueMonth(e.target.value)}
+//               />
+//               <FormSelected
+//                 text="ปี"
+//                 dateFormat="YYYY"
+//                 xs={12}
+//                 sm={4}
+//                 md={2}
+//                 value={valueYear}
+//                 changeValue={(e) => setValueYear(e.target.value)}
+//               />
+//               <Grid item xs={12} sm={12} md={6}>
+//                 <FormControl
+//                   sx={{
+//                     width: "100%",
+//                     "& .MuiOutlinedInput-root": { borderRadius: 2 },
+//                   }}
+//                 >
+//                   <TextField
+//                     placeholder="Search"
+//                     type="search"
+//                     variant="outlined"
+//                     fullWidth
+//                     autoComplete="off"
+//                     size="medium"
+//                     onChange={(e) => setSearch(e.target.value)}
+//                     InputProps={{
+//                       startAdornment: (
+//                         <InputAdornment position="start">
+//                           <Search />
+//                         </InputAdornment>
+//                       ),
+//                     }}
+//                   />
+//                 </FormControl>
+//               </Grid>
+//             </Grid>
+
+//             <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+//               <TableContainer
+//                 sx={{
+//                   ...(!media && { minWidth: "800px" }),
+//                   position: "relative",
+//                 }}
+//               >
+//                 <Table size={dense ? "small" : "normall"}>
+//                   <TableHeader {...tableHeaderProps} />
+//                   <TableBody>
+//                     {orders &&
+//                       orders
+//                         .sort(getComparator(sortType, sortByName))
+//                         .slice(
+//                           page * rowsPerPage,
+//                           page * rowsPerPage + rowsPerPage
+//                         )
+//                         .map((Cell) => <Row key={Cell._id} Cell={Cell} />)}
+//                   </TableBody>
+//                 </Table>
+//               </TableContainer>
+//             </Box>
+//             <Box
+//               sx={{
+//                 display: "flex",
+//                 flexDirection: "row",
+//                 overflowX: "hidden",
+//               }}
+//             >
+//               <FormControlLabel
+//                 control={
+//                   <>
+//                     <AntSwitch
+//                       checked={dense}
+//                       onChange={(e) => setDense(e.target.checked)}
+//                       inputProps={{ "aria-label": "ant design" }}
+//                     />
+//                     <Typography sx={{ ml: 1 }}>แคบ</Typography>
+//                   </>
+//                 }
+//                 label={""}
+//                 sx={{
+//                   flex: 1,
+//                   margin: 0,
+//                   pl: "31px",
+//                   mb: 1,
+//                 }}
+//               />
+//               <TablePagination
+//                 rowsPerPageOptions={[5, 10, 20, 25, 30, 35, 40, 45]}
+//                 component="div"
+//                 count={orders?.length || 0}
+//                 rowsPerPage={rowsPerPage}
+//                 page={page}
+//                 onPageChange={handleChangePage}
+//                 onRowsPerPageChange={handleChangeRowsPerPage}
+//                 labelRowsPerPage={"จำนวนแถว"}
+//                 sx={{
+//                   "& .MuiToolbar-root": {
+//                     p: 0,
+//                     pr: 2,
+//                   },
+//                 }}
+//               />
+//             </Box>
+//           </Paper>
+//         </Box>
+//       </Box>
+//     </Box>
+//   </Box>
+// );
