@@ -1,212 +1,41 @@
-import * as React from "react";
-import PropTypes from "prop-types";
-import { alpha } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell, { tableCellClasses } from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TablePagination from "@mui/material/TablePagination";
-import TableRow from "@mui/material/TableRow";
-import TableSortLabel from "@mui/material/TableSortLabel";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import Paper from "@mui/material/Paper";
-import Checkbox from "@mui/material/Checkbox";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Switch from "@mui/material/Switch";
-import DeleteIcon from "@mui/icons-material/Delete";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import { visuallyHidden } from "@mui/utils";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Divider from "@mui/material/Divider";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
+import {
+  Container,
+  Box,
+  TextField,
+  Typography,
+  Button,
+  Grid,
+  Paper,
+  FormControlLabel,
+  Avatar,
+  Switch,
+  InputLabel,
+  MenuItem,
+  Select,
+  FormControl,
+  Stack,
+  OutlinedInput,
+} from "@mui/material";
+import MobileDatePicker from "@mui/lab/MobileDatePicker";
+import AdapterDayjs from "@mui/lab/AdapterDayjs";
+import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import { styled } from "@mui/material/styles";
-import { Block } from "@mui/icons-material";
-import Select from "@mui/material/Select";
-import OutlinedInput from "@mui/material/OutlinedInput";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import Button from "@mui/material/Button";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import Collapse from "@mui/material/Collapse";
+import { AddAPhoto, DateRange, InsertDriveFile } from "@mui/icons-material";
+import {
+  searchAddressByProvince,
+  searchAddressByDistrict,
+  searchAddressByAmphoe,
+} from "thai-address-database";
+import { useState, useRef, useMemo } from "react";
+import { useFormik } from "formik";
+import "dayjs/locale/th";
 
-
-
-
-import { orderStore } from "../store/OrderStore";
-import { useSelector } from "react-redux";
-
-
-
-function createData(name, calories, fat, carbs, protein) {
-  return {
-    name,
-    calories,
-    fat,
-    carbs,
-    protein,
-  };
-}
-
-const rows = [
-  createData("Cupcake", 305, 3.7, 67, 4.3),
-  createData("Donut", 452, 25.0, 51, 4.9),
-  createData("Eclair", 262, 16.0, 24, 6.0),
-  createData("Frozen yoghurt", 159, 6.0, 24, 4.0),
-  createData("Gingerbread", 356, 16.0, 49, 3.9),
-  createData("Honeycomb", 408, 3.2, 87, 6.5),
-  createData("Ice cream sandwich", 237, 9.0, 37, 4.3),
-  createData("Jelly Bean", 375, 0.0, 94, 0.0),
-  createData("KitKat", 518, 26.0, 65, 7.0),
-  createData("Lollipop", 392, 0.2, 98, 0.0),
-  createData("Marshmallow", 318, 0, 81, 2.0),
-  createData("Nougat", 360, 19.0, 9, 37.0),
-  createData("Oreo", 437, 18.0, 63, 4.0),
-];
-
-function descendingComparator(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
-
-function getComparator(order, orderBy) {
-  return order === "desc"
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
-
-// This method is created for cross-browser compatibility, if you don't
-// need to support IE11, you can use Array.prototype.sort() directly
-function stableSort(array, comparator) {
-  const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) {
-      return order;
-    }
-    return a[1] - b[1];
-  });
-  return stabilizedThis.map((el) => el[0]);
-}
-
-const headCells = [
-  {
-    id: "name",
-    numeric: false,
-    disablePadding: true,
-    label: "Dessert (100g serving)",
-  },
-  {
-    id: "calories",
-    numeric: true,
-    disablePadding: false,
-    label: "Calories",
-  },
-  {
-    id: "fat",
-    numeric: true,
-    disablePadding: false,
-    label: "Fat (g)",
-  },
-  {
-    id: "carbs",
-    numeric: true,
-    disablePadding: false,
-    label: "Carbs (g)",
-  },
-  {
-    id: "protein",
-    numeric: true,
-    disablePadding: false,
-    label: "Protein (g)",
-  },
-];
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  borderLeft: 10,
-}));
-
-function EnhancedTableHead(props) {
-  const {
-    onSelectAllClick,
-    order,
-    orderBy,
-    numSelected,
-    rowCount,
-    onRequestSort,
-  } = props;
-  const createSortHandler = (property) => (event) => {
-    onRequestSort(event, property);
-  };
-
-  return (
-    <TableHead>
-      <TableRow sx={{ backgroundColor: "rgb(244, 246, 248)" }}>
-        <TableCell sx={{ p: 0, pl: 3, maxWidth: "40px" }} />
-        <TableCell padding="checkbox" sx={{ p: 0, pr: 3 }}>
-          <Checkbox
-            color="primary"
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{
-              "aria-label": "select all desserts",
-            }}
-          />
-        </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align={headCell.numeric ? "right" : "left"}
-            padding={headCell.disablePadding ? "none" : "normal"}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : "asc"}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component="span" sx={visuallyHidden}>
-                  {order === "desc" ? "sorted descending" : "sorted ascending"}
-                </Box>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-}
-
-EnhancedTableHead.propTypes = {
-  numSelected: PropTypes.number.isRequired,
-  onRequestSort: PropTypes.func.isRequired,
-  onSelectAllClick: PropTypes.func.isRequired,
-  order: PropTypes.oneOf(["asc", "desc"]).isRequired,
-  orderBy: PropTypes.string.isRequired,
-  rowCount: PropTypes.number.isRequired,
-};
+import useHover from "../hooks/UseHover";
+import ImageCrop from "../utils/ImageCrop";
 
 const AntSwitch = styled(Switch)(({ theme }) => ({
-  width: 28,
-  height: 16,
+  width: 35,
+  height: 20,
   padding: 0,
   display: "flex",
   "&:active": {
@@ -220,7 +49,7 @@ const AntSwitch = styled(Switch)(({ theme }) => ({
   "& .MuiSwitch-switchBase": {
     padding: 2,
     "&.Mui-checked": {
-      transform: "translateX(12px)",
+      transform: "translateX(15px)",
       color: "#fff",
       "& + .MuiSwitch-track": {
         opacity: 1,
@@ -230,15 +59,15 @@ const AntSwitch = styled(Switch)(({ theme }) => ({
   },
   "& .MuiSwitch-thumb": {
     boxShadow: "0 2px 4px 0 rgb(0 35 11 / 20%)",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 15,
+    height: 15,
+    borderRadius: "50%",
     transition: theme.transitions.create(["width"], {
       duration: 200,
     }),
   },
   "& .MuiSwitch-track": {
-    borderRadius: 16 / 2,
+    borderRadius: 20 / 2,
     opacity: 1,
     backgroundColor:
       theme.palette.mode === "dark"
@@ -248,385 +77,837 @@ const AntSwitch = styled(Switch)(({ theme }) => ({
   },
 }));
 
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
 const MenuProps = {
   PaperProps: {
     style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 250,
+      maxHeight: 200,
     },
   },
 };
 
-const Row = ({ row, isItemSelected, labelId, handleClick }) => {
-  const [open, setOpen] = React.useState(false);
+const Provinces = [
+  "กระบี่",
+  "กรุงเทพมหานคร",
+  "กาญจนบุรี",
+  "กาฬสินธุ์",
+  "กำแพงเพชร",
+  "ขอนแก่น",
+  "จันทบุรี",
+  "ฉะเชิงเทรา",
+  "ชลบุรี",
+  "ชัยนาท",
+  "ชัยภูมิ",
+  "ชุมพร",
+  "เชียงราย",
+  "เชียงใหม่",
+  "ตรัง",
+  "ตราด",
+  "ตาก",
+  "นครนายก",
+  "นครปฐม",
+  "นครพนม",
+  "นครราชสีมา",
+  "นครศรีธรรมราช",
+  "นครสวรรค์",
+  "นนทบุรี",
+  "นราธิวาส",
+  "น่าน",
+  "บุรีรัมย์",
+  "บึงกาฬ",
+  "ปทุมธานี",
+  "ประจวบคีรีขันธ์",
+  "ปราจีนบุรี",
+  "ปัตตานี",
+  "พะเยา",
+  "พังงา",
+  "พัทลุง",
+  "พิจิตร",
+  "พิษณุโลก",
+  "เพชรบุรี",
+  "เพชรบูรณ์",
+  "แพร่",
+  "ภูเก็ต",
+  "มหาสารคาม",
+  "มุกดาหาร",
+  "แม่ฮ่องสอน",
+  "ยโสธร",
+  "ยะลา",
+  "ร้อยเอ็ด",
+  "ระนอง",
+  "ระยอง",
+  "ราชบุรี",
+  "ลพบุรี",
+  "ลำปาง",
+  "ลำพูน",
+  "เลย",
+  "ศรีสะเกษ",
+  "สกลนคร",
+  "สงขลา",
+  "สตูล",
+  "สมุทรปราการ",
+  "สมุทรสงคราม",
+  "สมุทรสาคร",
+  "สระแก้ว",
+  "สระบุรี",
+  "สิงห์บุรี",
+  "สุโขทัย",
+  "สุพรรณบุรี",
+  "สุราษฎร์ธานี",
+  "สุรินทร์",
+  "หนองคาย",
+  "หนองบัวลำภู",
+  "พระนครศรีอยุธยา",
+  "อ่างทอง",
+  "อำนาจเจริญ",
+  "อุดรธานี",
+  "อุตรดิตถ์",
+  "อุทัยธานี",
+  "อุบลราชธานี",
+];
+
+const InputGrid = ({ sm, ...rest }) => {
   return (
-    <>
-      <TableRow
-        hover
-        onClick={() => setOpen(!open)}
-        // onClick={(event) => handleClick(event, row.name)}
-        role="checkbox"
-        aria-checked={isItemSelected}
-        tabIndex={-1}
-        key={row.name}
-        selected={isItemSelected}
-      >
-        <TableCell sx={{ p: 0, pl: "24px", maxWidth: "40px" }}>
-          <IconButton aria-label="expand row" onClick={() => setOpen(!open)}>
-            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
-        </TableCell>
-        <TableCell
-          padding="checkbox"
-          sx={{ p: 0, cursor: "pointer" }}
-          onClick={(event) => {
-            event.stopPropagation();
-            handleClick(event, row.name);
-          }}
-        >
-          <Checkbox
-            color="primary"
-            checked={isItemSelected}
-            inputProps={{
-              "aria-labelledby": labelId,
-            }}
-          />
-        </TableCell>
-        <TableCell component="th" id={labelId} scope="row" padding="none">
-          {row.name}
-        </TableCell>
-        <TableCell align="right">{row.calories}</TableCell>
-        <TableCell align="right">{row.fat}</TableCell>
-        <TableCell align="right">{row.carbs}</TableCell>
-        <TableCell align="right">{row.protein}</TableCell>
-      </TableRow>
-      <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box sx={{ margin: 1 }}>
-              <Typography variant="h6" gutterBottom component="div">
-                History
-              </Typography>
-              <Table size="small" aria-label="purchases">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell align="right">Amount</TableCell>
-                    <TableCell align="right">Total price ($)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      2020-01-05
-                    </TableCell>
-                    <TableCell>11091700</TableCell>
-                    <TableCell align="right">3</TableCell>
-                    <TableCell align="right">14.97</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      2020-01-05
-                    </TableCell>
-                    <TableCell>11091700</TableCell>
-                    <TableCell align="right">3</TableCell>
-                    <TableCell align="right">14.97</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-    </>
+    <Grid item xs={12} sm={sm ? 12 : 6}>
+      <TextField
+        required
+        fullWidth
+        autoComplete="off"
+        {...rest}
+        InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
+        sx={styles.inputField}
+      />
+    </Grid>
   );
 };
 
-export default function EnhancedTable() {
-  const [order, setOrder] = React.useState("asc");
-  const [orderBy, setOrderBy] = React.useState("calories");
-  const [selected, setSelected] = React.useState([]);
-  const [page, setPage] = React.useState(0);
-  const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const [value, setValue] = React.useState("one");
-
-  const tablePagination = useMediaQuery("(min-width:600px)");
-
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
-
-  const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
-  };
-
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.name);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1)
-      );
-    }
-
-    setSelected(newSelected);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleChangeDense = (event) => {
-    setDense(event.target.checked);
-  };
-
-  const isSelected = (name) => selected.indexOf(name) !== -1;
-
-  // Avoid a layout jump when reaching the last page with empty rows.
-  const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
-
-  const [personName, setPersonName] = React.useState("Oliver Hansen");
-  const names = [
-    "Oliver Hansen",
-    "Van Henry",
-    "April Tucker",
-    "Ralph Hubbard",
-    "Omar Alexander",
-    "Carlos Abbott",
-    "Miriam Wagner",
-    "Bradley Wilkerson",
-    "Virginia Andrews",
-    "Kelly Snyder",
-  ];
-  const handleChange2 = (event) => {
-    const {
-      target: { value },
-    } = event;
-    setPersonName(
-      // On autofill we get a stringified value.
-      typeof value === "string" ? value.split(",") : value
-    );
-  };
-
+const InputGridAddress = ({ title, addressQuery, forEmpty, name, ...rest }) => {
   return (
-    <Box>
-      <CssBaseline />
-      <Container>
-        <Box sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h4">Order ทั้งหมด</Typography>
-          </Box>
-          <Box>
-            <Button
-              variant="contained"
+    <Grid item xs={12} sm={6}>
+      <FormControl fullWidth>
+        <InputLabel id="search-select-label">{title}</InputLabel>
+        <Select
+          MenuProps={MenuProps}
+          labelId="search-select-label"
+          id="search-select"
+          {...rest}
+          input={
+            <OutlinedInput
               sx={{
-                backgroundColor: "rgb(32, 101, 209)",
-                boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+                width: "100%",
                 borderRadius: 2,
-                "&:hover": {
-                  boxShadow: "none",
+                "& fieldset": {
+                  borderRadius: 2,
                 },
               }}
-            >
-              + New order
-            </Button>
-          </Box>
-        </Box>
-        <Paper
-          sx={{
-            paddingInline: 0,
-            // width: "100%",
-            mb: 2,
-            borderRadius: 4,
-            overflow: "hidden",
-          }}
+              label={title}
+            />
+          }
         >
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            textColor="primary"
-            variant="scrollable"
-            indicatorColor="primary"
-            sx={{ px: 4, maxHeight: 48, backgroundColor: "rgb(244, 246, 248)" }}
-          >
-            <Tab value="one" label="Item One" disableRipple />
-            <Tab value="two" label="Item Two" disableRipple />
-            <Tab value="three" label="Item Three" disableRipple />
-          </Tabs>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              padding: "20px 24px",
-              flexDirection: "row",
-            }}
-          >
-            <FormControl sx={{ m: 1, width: 300 }}>
-              <InputLabel id="demo-multiple-name-label">Name</InputLabel>
-              <Select
-                labelId="demo-multiple-name-label"
-                id="demo-multiple-name"
-                value={personName}
-                onChange={handleChange2}
-                input={
-                  <OutlinedInput
-                    sx={{
-                      width: "100%",
-                      borderRadius: 2,
-                      "& fieldset": {
-                        borderRadius: 2,
-                      },
-                    }}
-                    label="Name"
-                  />
-                }
-                MenuProps={MenuProps}
+          {addressQuery.map((option, i) => {
+            return (
+              <MenuItem
+                key={i}
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mb: 1,
+                }}
+                value={name ? option[name] : option}
               >
-                {names.map((name) => (
-                  <MenuItem
-                    key={name}
-                    value={name}
-                    sx={{
-                      width: "100%",
-                      borderRadius: "8px",
-                      mb: 1,
-                    }}
-                  >
-                    {name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={<Switch checked={dense} onChange={handleChangeDense} />}
-              label="Dense padding"
-              sx={{ flex: 1, margin: 0 }}
-            />
-          </div>
-          <TableContainer>
-            <Table
+                {name ? option[name] : option}
+              </MenuItem>
+            );
+          })}
+          {!addressQuery.length && (
+            <Box
               sx={{
-                minWidth: 750,
-                "& th": { lineHeight: 0 },
-                "& td": dense ? { lineHeight: 0 } : null,
-                "& .MuiCheckbox-root": {
-                  p: 0,
-                  ml: "16px",
-                },
+                color: "text.secondary",
+                height: "100px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
               }}
-              aria-labelledby="tableTitle"
+              value=""
             >
-              <EnhancedTableHead
-                numSelected={selected.length}
-                order={order}
-                orderBy={orderBy}
-                onSelectAllClick={handleSelectAllClick}
-                onRequestSort={handleRequestSort}
-                rowCount={rows.length}
-              />
-              <TableBody>
-                {rows.sort(getComparator(order, orderBy))
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => {
-                    const isItemSelected = isSelected(row.name);
-                    const labelId = `enhanced-table-checkbox-${index}`;
+              <InsertDriveFile />
+              กรุณาเลือก{forEmpty}
+            </Box>
+          )}
+        </Select>
+      </FormControl>
+    </Grid>
+  );
+};
+function Script_checkID(id) {
+  if (!IsNumeric(id)) return false;
+  if (id.substring(0, 1) == 0) return false;
+  if (id.length != 13) return false;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += parseFloat(id.charAt(i)) * (13 - i);
+  if ((11 - (sum % 11)) % 10 != parseFloat(id.charAt(12))) return false;
+  return true;
+}
 
-                    return (
-                      <Row
-                        key={index}
-                        row={row}
-                        isItemSelected={isItemSelected}
-                        labelId={labelId}
-                        handleClick={handleClick}
-                      />
-                    );
-                  })}
-                {emptyRows > 0 && (
-                  <TableRow
-                    style={{
-                      height: (dense ? 33 : 53) * emptyRows,
+function IsNumeric(input) {
+  var RE =
+    /^-?(0|INF|(0[1-7][0-7]*)|(0x[0-9a-fA-F]+)|((0|[1-9][0-9]*|(?=[\.,]))([\.,][0-9]+)?([eE]-?\d+)?))$/;
+  return RE.test(input);
+}
+
+const Register = () => {
+  const [provinces, setProvinces] = useState("กรุงเทพมหานคร");
+  const [district, setDritict] = useState("");
+  const [amphoe, setAmphoe] = useState("");
+  const [zipCode, setZipCode] = useState("");
+
+  const [editor, setEditor] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [baseImage, setBaseImage] = useState("");
+  const [scaleValue, setScaleValue] = useState(1);
+  const [openDialog, setopenDialog] = useState(false);
+
+  const [idNumber, setIdNumber] = useState("");
+  const [validationID, setValidationID] = useState(false);
+
+  const [dateValue, setDateValue] = useState(new Date());
+
+  const [bankID, setBankID] = useState("");
+
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const removeValue = useRef();
+  let [hover, eventHover] = useHover();
+
+  let queryProvinces = useMemo(
+    () => [
+      ...new Map(
+        searchAddressByProvince(provinces, 10000).map((item) => [
+          item.amphoe,
+          item,
+        ])
+      ).values(),
+    ],
+    [provinces]
+  );
+  let queryAmphoe = useMemo(
+    () => [
+      ...new Map(
+        searchAddressByAmphoe(amphoe, 10000).map((item) => [
+          item.district,
+          item,
+        ])
+      ).values(),
+    ],
+    [amphoe]
+  );
+  let queryDistrict = useMemo(
+    () => [
+      ...new Map(
+        searchAddressByDistrict(district, 10000).map((item) => [
+          item.district,
+          item,
+        ])
+      ).values(),
+    ],
+    [district]
+  );
+
+  const { handleSubmit, values, handleChange, isValid, dirty } = useFormik({
+    initialValues: {
+      full_name: {
+        first_name: "",
+        last_name: "",
+      },
+      department: "",
+      reference_id: "",
+      address: {
+        house_no: "",
+        street: "",
+        subdistrict: "",
+        district: "",
+        province: "",
+        zip_code: "",
+      },
+      bank_no: "",
+      bank_name: "",
+      photo: "",
+      car_no: "",
+      password: "",
+      phone_no: "",
+      birthday: "",
+      gender: "",
+    },
+    onSubmit: (values) => {
+      values.photo = baseImage;
+      values.reference_id = idNumber;
+      values.phone_no = phoneNumber;
+      values.birthday = JSON.stringify(dateValue).replace(/"/g, "");
+      values.bank_no = bankID;
+      console.log(values);
+    },
+  });
+
+  const profileImageChange = (fileChangeEvent) => {
+    const file = fileChangeEvent.target.files[0];
+    const { type } = file;
+    if (type.endsWith("jpg") || type.endsWith("png") || type.endsWith("jpeg")) {
+      setSelectedImage(file);
+      removeValue.current.value = "";
+      setopenDialog(true);
+    }
+  };
+
+  const setEditorRef = (editor) => setEditor(editor);
+
+  const onCrop = () => {
+    const editors = editor;
+    if (editor != null) {
+      const url = editors.getImageScaledToCanvas().toDataURL("image/jpeg", 0.5);
+      setBaseImage(url);
+      setSelectedImage(null);
+      setopenDialog(false);
+    }
+  };
+
+  const onClose = () => {
+    if (editor != null) {
+      setSelectedImage(null);
+      setopenDialog(false);
+    }
+  };
+
+  const onScaleChange = (e) => {
+    const scaleValue = parseFloat(e.target.value);
+    setScaleValue(scaleValue);
+  };
+
+  function handleCheckID(e) {
+    let id = e.target.value;
+    id = id.replace(/-/g, "");
+    if (e.target.value.length > 16) return;
+
+    if (id !== undefined && id.toString().length == 13 && Script_checkID(id)) {
+      setValidationID(false);
+    } else if (
+      id !== undefined &&
+      id.toString().length == 13 &&
+      !Script_checkID(id)
+    ) {
+      setValidationID(true);
+    }
+
+    if (id.length > 1)
+      id = id.substring(0, 1) + "-" + id.substring(1, id.length);
+    if (id.length > 6)
+      id = id.substring(0, 6) + "-" + id.substring(6, id.length);
+    if (id.length > 12)
+      id = id.substring(0, 12) + "-" + id.substring(12, id.length);
+    if (id.length > 15)
+      id = id.substring(0, 15) + "-" + id.substring(15, id.length);
+    setIdNumber(id);
+  }
+
+  function handleFormatBank(e) {
+    let id = e.target.value;
+    id = id.replace(/-/g, "");
+    if (e.target.value.length > 13) return;
+
+    if (id.length > 3)
+      id = id.substring(0, 3) + "-" + id.substring(3, id.length);
+    if (id.length > 5)
+      id = id.substring(0, 5) + "-" + id.substring(5, id.length);
+    if (id.length > 11)
+      id = id.substring(0, 11) + "-" + id.substring(11, id.length);
+    setBankID(id);
+  }
+  function handleFormatPhoneNumber(e) {
+    let number = e.target.value;
+    number = number.replace(/-/g, "");
+    if (e.target.value.length > 12) return;
+
+    let lengthNumber = number.charAt(1) == 6 ? 2 : 3;
+
+    if (number.length > lengthNumber)
+      number =
+        number.substring(0, lengthNumber) +
+        "-" +
+        number.substring(lengthNumber, number.length);
+    if (number.length > 7)
+      number =
+        number.substring(0, 7) + "-" + number.substring(7, number.length);
+    setPhoneNumber(number);
+  }
+  console.log(typeof JSON.stringify(dateValue));
+  return (
+    <LocalizationProvider locale={"th"} dateAdapter={AdapterDayjs}>
+      <Container>
+        <Box component="form" validate onSubmit={handleSubmit} sx={styles.form}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Paper sx={{ py: 10, px: 3, position: "relative" }}>
+                <Box
+                  component={"span"}
+                  sx={{
+                    height: "22px",
+                    minWidth: "22px",
+                    lineHeight: 0,
+                    borderRadius: "6px",
+                    cursor: "default",
+                    alignItems: "center",
+                    whiteSpace: "nowrap",
+                    display: "inline-flex",
+                    justifyContent: "center",
+                    padding: "0px 8px",
+                    color: "rgb(255, 164, 141)",
+                    fontSize: "0.75rem",
+                    backgroundColor: "rgba(255, 72, 66, 0.16)",
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    position: "absolute",
+                    top: "24px",
+                    right: "24px",
+                  }}
+                >
+                  {"Active"}
+                </Box>
+                <Box sx={{ mb: "40px" }}>
+                  <Box
+                    sx={{
+                      margin: "auto",
+                      width: 144,
+                      height: 144,
+                      borderRadius: "50%",
+                      p: 1,
+                      border: "1px dashed rgba(145, 158, 171, 0.32)",
                     }}
                   >
-                    <TableCell colSpan={6} />
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: tablePagination ? "row" : "column-reverse",
-              overflowX: "hidden",
-            }}
-          >
-            <FormControlLabel
-              control={
-                <>
-                  <AntSwitch
-                    checked={dense}
-                    onChange={handleChangeDense}
-                    inputProps={{ "aria-label": "ant design" }}
+                    <Box
+                      component={"div"}
+                      role="button"
+                      sx={{
+                        borderRadius: "50%",
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                        outline: "none",
+                        width: "100%",
+                        height: "100%",
+                        p: 0,
+                      }}
+                    >
+                      <input
+                        {...eventHover}
+                        type="file"
+                        autoComplete="off"
+                        ref={removeValue}
+                        onChange={profileImageChange}
+                        style={{
+                          width: "100%",
+                          position: "absolute",
+                          height: "100%",
+                          appearance: "none",
+                          backgroundColor: "initial",
+                          cursor: "pointer",
+                          alignItems: "baseline",
+                          color: "inherit",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "pre",
+                          textAlign: "start",
+                          padding: "initial",
+                          border: "initial",
+                          overflow: "hidden",
+                          zIndex: 2,
+                          opacity: 0,
+                        }}
+                      />
+
+                      <ImageCrop
+                        imageSrc={selectedImage}
+                        setEditorRef={setEditorRef}
+                        onCrop={onCrop}
+                        onClose={onClose}
+                        scaleValue={scaleValue}
+                        onScaleChange={onScaleChange}
+                        openDialog={openDialog}
+                      />
+                      {/* {selectedImage && ()} */}
+                      <Box
+                        component={"span"}
+                        sx={{
+                          overflow: "hidden",
+                          backgroundSize: "cover",
+                          width: "100%",
+                          height: "100%",
+                        }}
+                      >
+                        <Avatar
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                          alt={"Nake"}
+                          src={baseImage && baseImage}
+                        />
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          position: "absolute",
+                          alignItems: "center",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                          color: "#fff",
+                          width: "100%",
+                          height: "100%",
+                          backgroundColor: "rgb(22, 28, 36,0.5)",
+                          opacity: hover ? 1 : 0,
+                        }}
+                        component={"div"}
+                      >
+                        <AddAPhoto />
+                        <Typography
+                          component={"span"}
+                          sx={{ textTransform: "none" }}
+                        >
+                          Update Photo
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                  <Typography
+                    sx={{
+                      m: "16px auto 0px",
+                      textAlign: "center",
+                      color: "text.secondary",
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    Allowed *.jpeg, *.jpg, *.png
+                  </Typography>
+                </Box>
+                <FormControlLabel
+                  control={
+                    <AntSwitch
+                      //   checked={dense}
+                      //   onChange={handleChangeDense}
+                      inputProps={{ "aria-label": "ant design" }}
+                    />
+                  }
+                  label={
+                    <Typography component={"span"}>
+                      <Typography
+                        component={"h6"}
+                        sx={{ fontWeight: 800, fontSize: "0.875rem", mb: 0.5 }}
+                      >
+                        แก้ไขรูป
+                      </Typography>
+                      <Typography
+                        component={"p"}
+                        sx={{
+                          color: "text.secondary",
+                          pr: 5,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        อนุญาตให้พนักงานสามารถแก้ไขรูปภาพของตนเองได้
+                      </Typography>
+                    </Typography>
+                  }
+                  sx={{
+                    m: 0,
+                    width: "100%",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexDirection: "row-reverse",
+                  }}
+                />
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <Paper sx={{ p: 3 }}>
+                <Grid container rowSpacing={3} columnSpacing={2}>
+                  <InputGrid
+                    label="ชื่อ"
+                    name="full_name.first_name"
+                    type="text"
+                    value={values.full_name.first_name}
+                    onChange={handleChange}
                   />
-                  <Typography sx={{ ml: 1 }}>แคบ</Typography>
-                </>
-              }
-              label={""}
-              sx={{
-                flex: 1,
-                margin: 0,
-                pl: "31px",
-                mb: tablePagination ? 0 : 1,
-              }}
-            />
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={rows.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              labelRowsPerPage={"จำนวนแถว"}
-              sx={{
-                "& .MuiToolbar-root": {
-                  p: 0,
-                  pr: 2,
-                },
-              }}
-            />
-          </Box>
-        </Paper>
+                  <InputGrid
+                    name="full_name.last_name"
+                    label="นามสกุล"
+                    type="text"
+                    value={values.full_name.last_name}
+                    onChange={handleChange}
+                  />
+                  <InputGrid
+                    sm
+                    name="password"
+                    label="รหัสผ่าน"
+                    type="password"
+                    value={values.password}
+                    onChange={handleChange}
+                  />
+                  <InputGrid
+                    name="phone_no"
+                    label="เบอร์ติดต่อ"
+                    placeholder="__-____-____"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={handleFormatPhoneNumber}
+                  />
+                  <InputGrid
+                    label="ทะเบียนรถ"
+                    type="text"
+                    name="car_no"
+                    onChange={handleChange}
+                    value={values.car_no}
+                  />
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel id="select-gender">เพศ</InputLabel>
+                      <Select
+                        labelId="select-gender"
+                        name="gender"
+                        value={values.gender}
+                        label="เพศ"
+                        sx={{
+                          width: "100%",
+                          borderRadius: 2,
+                          "& fieldset": {
+                            borderRadius: 2,
+                          },
+                        }}
+                        onChange={handleChange}
+                      >
+                        {["ชาย", "หญิง", "อื่น ๆ"].map((item) => (
+                          <MenuItem
+                            key={item}
+                            value={item}
+                            sx={{
+                              width: "100%",
+                              borderRadius: "8px",
+                              mb: 1,
+                            }}
+                          >
+                            {item}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <InputGrid
+                    label="แพนก"
+                    type="text"
+                    name="department"
+                    onChange={handleChange}
+                    value={values.department}
+                  />
+                  <InputGrid
+                    label="บัตรประชาชน"
+                    type="text"
+                    placeholder="_-____-_____-__-_"
+                    name="reference_id"
+                    error={validationID}
+                    helperText={
+                      validationID ? "เลขประจำตัวประชาชนไม่ถูกต้อง" : null
+                    }
+                    onChange={handleCheckID}
+                    value={idNumber}
+                  />
+                  <Grid item xs={12} sm={6}>
+                    <Stack>
+                      <MobileDatePicker
+                        label="วัน/เดือน/ปีเกิด"
+                        value={dateValue}
+                        onChange={(v) => setDateValue(v)}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            error={false}
+                            InputProps={{
+                              endAdornment: (
+                                <DateRange sx={{ color: "text.secondary" }} />
+                              ),
+                            }}
+                            InputLabelProps={{
+                              style: { fontFamily: "Sarabun" },
+                            }}
+                            sx={styles.inputField}
+                          />
+                        )}
+                      />
+                    </Stack>
+                  </Grid>
+                  <InputGrid
+                    label="เลขบัญชีธนาคาร"
+                    type="text"
+                    placeholder="___-_-_____-_"
+                    name="bank_no"
+                    onChange={handleFormatBank}
+                    value={bankID}
+                  />
+                  <InputGrid
+                    label="ชื่อบัญชีธนาคาร"
+                    type="text"
+                    name="bank_name"
+                    onChange={handleChange}
+                    value={values.bank_name}
+                  />
+                  <InputGrid
+                    sm
+                    label="บ้านเลขที่"
+                    type="text"
+                    name="address.house_no"
+                    onChange={handleChange}
+                    value={values.address.house_no}
+                  />
+                  <InputGridAddress
+                    title="จังหวัด"
+                    value={provinces}
+                    onChange={(e) => setProvinces(e.target.value)}
+                    addressQuery={Provinces}
+                  />
+                  <InputGridAddress
+                    title="อำเภอ/เขต"
+                    name="amphoe"
+                    value={amphoe}
+                    onChange={(e) => setAmphoe(e.target.value)}
+                    addressQuery={queryProvinces}
+                  />
+                  <InputGridAddress
+                    title="ตำบล/แขวง"
+                    name="district"
+                    forEmpty="อำเภอ/เขต"
+                    value={district}
+                    onChange={(e) => setDritict(e.target.value)}
+                    addressQuery={queryAmphoe}
+                  />
+                  <InputGridAddress
+                    title="รหัสไปรษณีย์"
+                    forEmpty="ตำบล/แขวง"
+                    name="zipcode"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    addressQuery={queryDistrict}
+                  />
+                </Grid>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    marginTop: "24px",
+                  }}
+                >
+                  <Button
+                    type="submit"
+                    fullWidth
+                    disabled={
+                      !(isValid && dirty) &&
+                      !idNumber &&
+                      !baseImage &&
+                      !dateValue
+                    }
+                    variant="contained"
+                    sx={styles.btnSubmit}
+                  >
+                    Sign In
+                  </Button>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
       </Container>
-    </Box>
+    </LocalizationProvider>
   );
-}
+};
+
+const styles = {
+  bgImg: {
+    backgroundImage: "url(/img/loginscreen.jpg)",
+    backgroundColor: (t) => t.palette.grey[50],
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    position: "fixed",
+    width: "100%",
+    height: "100%",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  containerForm: (matches) => {
+    return {
+      display: "flex",
+      flexDirection: "column",
+      width: matches ? 385 : "100%",
+      height: "100vh",
+      backgroundColor: "#fff",
+      padding: "50px",
+      paddingTop: 20,
+      zIndex: 2,
+      position: "absolute",
+      left: 0,
+    };
+  },
+  containerBrand: {
+    display: "flex",
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    mr: 2,
+  },
+  nameBrand: {
+    lineHeight: 0.9,
+    fontFamily: "Prompt",
+    fontWeight: "700",
+    fontSize: "2.8em",
+    justifyContent: "center",
+  },
+  textLogin: {
+    fontFamily: "Sarabun",
+    fontWeight: 700,
+    letterSpacing: "0.8px",
+    fontSize: "1.65em",
+  },
+  form: {
+    mt: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  inputField: {
+    borderRadius: 2,
+    "& fieldset": {
+      borderRadius: 2,
+    },
+    "& input::placeholder": {
+      textOverflow: "ellipsis !important",
+      fontWeight: 800,
+      color: "text",
+      opacity: 1,
+    },
+  },
+  btnSubmit: {
+    backgroundColor: "rgb(32, 101, 209)",
+    boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+    borderRadius: 2,
+    minWidth: 16,
+    height: 40,
+    width: "auto",
+    "&:hover": {
+      boxShadow: "none",
+    },
+  },
+};
+export default Register;

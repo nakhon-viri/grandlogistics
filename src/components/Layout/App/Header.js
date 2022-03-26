@@ -3,7 +3,13 @@ import MuiAppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
-import { styled } from "@mui/material/styles";
+import { styled, useTheme } from "@mui/material/styles";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
+
+import { themeStore, upDateTheme } from "../../../store/ThemeStore";
+import { useSelector, useDispatch } from "react-redux";
+
 const drawerWidth = 280;
 
 const AppBar = styled(MuiAppBar, {
@@ -36,15 +42,21 @@ const AppBar = styled(MuiAppBar, {
     },
   }),
   boxShadow: "none",
+  borderRadius: 0,
   backgroundColor: "rgba(255, 255, 255, 0.8)",
 }));
 
 const Header = ({ handleDrawer, open }) => {
+  let dispatch = useDispatch();
+  const theme = useTheme();
+  // let mode = useSelector(themeStore);
   const logOut = () => {
     localStorage.removeItem("ACTO");
     window.location.reload();
   };
-
+  const handleTheme = () => {
+    dispatch(upDateTheme());
+  };
   return (
     <AppBar position="fixed" open={open} sx={{ zIndex: 10 }}>
       <Toolbar>
@@ -60,9 +72,24 @@ const Header = ({ handleDrawer, open }) => {
         </IconButton>
         <div style={{ flex: 1 }} />
         <IconButton
+          color="secondary"
           sx={{
             marginX: 1,
-            color: "#faf",
+            // color: ,
+          }}
+          onClick={handleTheme}
+        >
+          {theme.palette.mode === "dark" ? (
+            <Brightness7Icon />
+          ) : (
+            <Brightness4Icon />
+          )}
+        </IconButton>
+        <IconButton
+          color="secondary"
+          sx={{
+            marginX: 1,
+            // color: ,
           }}
           onClick={() => logOut()}
         >

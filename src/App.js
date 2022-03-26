@@ -9,6 +9,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Customer from "./pages/Customer";
 import Order from "./pages/Order";
+import ProfileEmployee from "./pages/ProfileEmployee";
+import EditOrder from "./pages/EditOrder";
 import Loading from "./components/Loading";
 
 import { authStore, getProfileReq } from "./store/AuthStore";
@@ -39,20 +41,20 @@ const RequireAuth = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (resToken) {
-      const newSocket = io("https://api-grandlogistics.herokuapp.com", {
-        transports: ["websocket"],
-      });
-      newSocket.emit("addUser", "61e309a709a2b863241f457e");
-      newSocket.on("chat message", (data) => {
-        console.log(data);
-      });
-    }
-    return () => {
-      return isLogin ? newSocket.close() : null;
-    };
-  }, []);
+  // useEffect(() => {
+  //   if (resToken) {
+  //     const newSocket = io("https://api-grandlogistics.herokuapp.com", {
+  //       transports: ["websocket"],
+  //     });
+  //     newSocket.emit("addUser", "61e309a709a2b863241f457e");
+  //     newSocket.on("chat message", (data) => {
+  //       console.log(data);
+  //     });
+  //   }
+  //   return () => {
+  //     return resToken ? newSocket.close() : null;
+  //   };
+  // }, []);
 
   if (!isLogin && !resToken)
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -88,38 +90,22 @@ const verifyToken = () => {
 };
 
 const App = () => {
-  const { isLogin, loadingAuth } = useSelector(authStore);
-  // const { loadingEmployee } = useSelector(employeeStore);
-  // const { loadingCustomer } = useSelector(customerStore);
-  // const { loadingOrder } = useSelector(orderStore);
-  // const dispatch = useDispatch();
+  const { isLogin } = useSelector(authStore);
 
   const reqAuth = {
     isLogin,
   };
-
-  // useEffect(() => {
-  //   const resToken = verifyToken();
-  //   if (resToken) {
-  //     dispatch(orderReq());
-  //     dispatch(getProfileReq());
-  //     dispatch(customerReq());
-  //     dispatch(employeeReq());
-  //   }
-  // }, []);
-
-  // if (loadingAuth || loadingEmployee || loadingCustomer || loadingOrder) {
-  //   return <Loading />;
-  // }
 
   return (
     <Routes>
       <Route element={<RequireAuth />}>
         <Route element={<AppLayOut />}>
           <Route path="/" element={<Employee />} />
+          <Route path="/profile" element={<ProfileEmployee />} />
           <Route path="/register" element={<Register />} />
           <Route path="/order" element={<Order />} />
           <Route path="/customer" element={<Customer />} />
+          <Route path="/editorder" element={<EditOrder />} />
         </Route>
       </Route>
       <Route path="/login" element={<NoRequireAuth {...reqAuth} />} />

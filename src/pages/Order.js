@@ -122,13 +122,14 @@ function EnhancedTableHead(props) {
     rowCount,
     onRequestSort,
   } = props;
+  const matches = useMediaQuery("(max-width:900px)");
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
   };
 
   return (
     <TableHead>
-      <TableRow sx={{ backgroundColor: "#c7dcff" }}>
+      <TableRow sx={{ backgroundColor: "rgba(145, 158, 171, 0.16)" }}>
         <TableCell sx={{ p: 0, pl: 3, maxWidth: "40px" }} />
         <TableCell padding="checkbox" sx={{ p: 0, pr: 3 }}>
           <Checkbox
@@ -141,14 +142,14 @@ function EnhancedTableHead(props) {
             }}
           />
         </TableCell>
-        {headCells.map((headCell) => (
+        {headCells.map((headCell,index) => (
           <TableCell
             key={headCell.id}
             align={"center"}
             sx={{
               py: 2,
-              px: 0,
-              Width: "100%",
+              px: 2,
+              color: "text.secondary",
             }}
             sortDirection={orderBy === headCell.id ? order : false}
           >
@@ -156,6 +157,10 @@ function EnhancedTableHead(props) {
               active={orderBy === headCell.id}
               direction={orderBy === headCell.id ? order : "asc"}
               onClick={createSortHandler(headCell.id)}
+              sx={{
+                width: matches && index !== 0 ? "90px" : "auto",
+                textAlign: "center",
+              }}
             >
               {headCell.label}
               {orderBy === headCell.id ? (
@@ -233,6 +238,142 @@ const MenuProps = {
     },
   },
 };
+const Row = ({ row, isItemSelected, labelId, handleClick }) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <TableRow
+        hover
+        onClick={() => setOpen(!open)}
+        role="checkbox"
+        sx={{
+          backgroundColor: open ? "#c7dcff" : null,
+          "&&:hover": {
+            backgroundColor: open ? "#b3d0ff" : null,
+          },
+        }}
+      >
+        <TableCell sx={{ p: 0, pl: "24px", maxWidth: "40px" }}>
+          <IconButton aria-label="expand row" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        <TableCell
+          role="checkbox"
+          tabIndex={-1}
+          aria-checked={isItemSelected}
+          selected={isItemSelected}
+          padding="checkbox"
+          sx={{ p: 0, cursor: "pointer" }}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleClick(event, row);
+          }}
+        >
+          <Checkbox
+            color="primary"
+            checked={isItemSelected}
+            inputProps={{
+              "aria-labelledby": labelId,
+            }}
+          />
+        </TableCell>
+        <TableCell align="left" sx={{ paddingRight: 6 }}>
+          {row.row_number}
+        </TableCell>
+        <TableCell align="left" id={labelId}>
+          {dayjs(row.pickup_date).locale("th").format("DD MMMM YYYY")}
+        </TableCell>
+        <TableCell align="left">{row.pickup_location}</TableCell>
+        <TableCell align="left">{row.delivery_location}</TableCell>
+        <TableCell align="left">{row.driver}</TableCell>
+        <TableCell align="left">{row.per_time}</TableCell>
+        <TableCell align="left">{row.price_order}</TableCell>
+        <TableCell
+          align="left"
+          sx={{ color: row.status === "จัดส่งสำเร็จ" ? "#4a4" : "#4a93ed" }}
+        >
+          {row.status}
+        </TableCell>
+      </TableRow>
+      <TableRow
+        sx={{
+          borderBottom: open ? 1 : 0,
+          borderBottomColor: "#ccc",
+        }}
+      >
+        <TableCell sx={{ paddingBottom: 0, paddingTop: 0 }} colSpan={18}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box
+              sx={{
+                margin: 1,
+                borderBottom: 1,
+                borderBottomColor: "#aeaeae",
+              }}
+            >
+              <Typography variant="h6" gutterBottom component="div">
+                รายละเอียด
+              </Typography>
+              <Table size="normal">
+                <TableHead>
+                  <TableRow
+                    sx={{
+                      backgroundColor: "rgba(145, 158, 171, 0.16)",
+                      borderRadius: 2,
+                    }}
+                  >
+                    {Object.entries(row.pickup_point).map((p, i) => {
+                      if (p[1]) {
+                        return (
+                          <TableCell
+                            key={i}
+                            sx={{
+                              py: 2.5,
+                              borderRadius: i === 0 ? "16px 0px 0px 16px" : 0,
+                            }}
+                          >
+                            {"จุดที่ " + (i + 1)}
+                          </TableCell>
+                        );
+                      }
+                    })}
+                    <TableCell>จ่ายค่างาน</TableCell>
+                    <TableCell>กำไร</TableCell>
+                    <TableCell align="right">น้ำมัน</TableCell>
+                    <TableCell align="right">ตจว./กทม.</TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ borderRadius: "0px 16px 16px 0px" }}
+                    >
+                      Action
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    {Object.entries(row.pickup_point).map((p, i) => {
+                      if (p[1]) {
+                        return <TableCell key={i}>{p[1]}</TableCell>;
+                      }
+                    })}
+                    <TableCell>{row.wage}</TableCell>
+                    <TableCell>{row.profit}</TableCell>
+                    <TableCell align="right">{row.cost}</TableCell>
+                    <TableCell align="right">{row.area}</TableCell>
+                    <TableCell align="right">
+                      <Button>asdf</Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Box>
+            <Box>Something Feature</Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+};
 
 export default function EnhancedTable() {
   const [orderSort, setOrderSort] = React.useState("desc");
@@ -241,7 +382,7 @@ export default function EnhancedTable() {
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const [value, setValue] = React.useState("one");
+  const [value, setValue] = React.useState("ทั้งหมด");
   const [filterYear, setFilterYear] = React.useState("ทั้งหมด");
   const { order } = useSelector(orderStore);
 
@@ -282,7 +423,6 @@ export default function EnhancedTable() {
         selected.slice(selectedIndex + 1)
       );
     }
-    console.log(newSelected);
     setSelected(newSelected);
   };
 
@@ -340,13 +480,24 @@ export default function EnhancedTable() {
   const newOrder =
     React.useMemo(() => {
       let queryOrder = order?.filter((a) => a) || [];
-      let number = 0;
-      queryOrder = queryOrder.filter((a) => {
-        if (filterYear !== "ทั้งหมด") {
-          return dayjs(a.pickup_date).format("YYYY") === filterYear;
-        }
-        return a;
-      });
+      queryOrder = queryOrder
+        .filter((a) => {
+          if (value !== "ทั้งหมด") {
+            if (value === "จัดส่งสำเร็จ") {
+              return a.status === value;
+            }
+            return (
+              a.status === "ยังไม่ถูกจัดส่ง" || a.status === "ยังไม่ถูกจักส่ง"
+            );
+          }
+          return a;
+        })
+        .filter((a) => {
+          if (filterYear !== "ทั้งหมด") {
+            return dayjs(a.pickup_date).format("YYYY") === filterYear;
+          }
+          return a;
+        });
       setMonth([...queryOrder]);
       queryOrder = queryOrder.filter((a) => {
         if (filterMonth !== "ทั้งหมด") {
@@ -363,6 +514,7 @@ export default function EnhancedTable() {
         }
         return a;
       });
+      
       for (var i = 0; i < queryOrder.length; i++) {
         queryOrder[i] = { ...queryOrder[i], row_number: i };
       }
@@ -385,150 +537,17 @@ export default function EnhancedTable() {
       }
 
       return queryOrder;
-    }, [order, filterYear, filterMonth, personName, search]) || [];
-  // Avoid a layout jump when reaching the last page with empty rows.
+    }, [
+      order,
+      filterYear,
+      filterMonth,
+      personName,
+      search,
+      value,
+    ]) || [];
+
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - newOrder.length) : 0;
-
-  const Row = ({ row, isItemSelected, labelId, handleClick }) => {
-    const [open, setOpen] = React.useState(false);
-    // console.log("Row");
-    return (
-      <>
-        <TableRow
-          hover
-          onClick={() => {
-            console.log("open", !open);
-            setOpen(!open);
-          }}
-          role="checkbox"
-          sx={{
-            backgroundColor: open ? "#c7dcff" : null,
-            "&&:hover": {
-              backgroundColor: open ? "#b3d0ff" : null,
-            },
-          }}
-        >
-          <TableCell sx={{ p: 0, pl: "24px", maxWidth: "40px" }}>
-            <IconButton aria-label="expand row" onClick={() => setOpen(!open)}>
-              {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-            </IconButton>
-          </TableCell>
-          <TableCell
-            role="checkbox"
-            tabIndex={-1}
-            aria-checked={isItemSelected}
-            selected={isItemSelected}
-            padding="checkbox"
-            sx={{ p: 0, cursor: "pointer" }}
-            onClick={(event) => {
-              event.stopPropagation();
-              handleClick(event, row);
-            }}
-          >
-            <Checkbox
-              color="primary"
-              checked={isItemSelected}
-              inputProps={{
-                "aria-labelledby": labelId,
-              }}
-            />
-          </TableCell>
-          <TableCell align="right" sx={{ paddingRight: 6 }}>
-            {row.row_number}
-          </TableCell>
-          <TableCell align="left" id={labelId} scope="row" padding="none">
-            {dayjs(row.pickup_date).locale("th").format("DD MMMM YYYY")}
-          </TableCell>
-          <TableCell align="center">{row.pickup_location}</TableCell>
-          <TableCell align="center">{row.delivery_location}</TableCell>
-          <TableCell align="center">{row.driver}</TableCell>
-          <TableCell align="center">{row.per_time}</TableCell>
-          <TableCell align="center">{row.price_order}</TableCell>
-          <TableCell
-            align="center"
-            sx={{ color: row.status === "จัดส่งสำเร็จ" ? "#4a4" : "#4a93ed" }}
-          >
-            {row.status}
-          </TableCell>
-        </TableRow>
-        <TableRow
-          sx={{
-            borderBottom: open ? 1 : 0,
-            borderBottomColor: "#ccc",
-          }}
-        >
-          <TableCell sx={{ paddingBottom: 0, paddingTop: 0 }} colSpan={18}>
-            <Collapse in={open} timeout="auto" unmountOnExit>
-              <Box
-                sx={{
-                  margin: 1,
-                  borderBottom: 1,
-                  borderBottomColor: "#aeaeae",
-                }}
-              >
-                <Typography variant="h6" gutterBottom component="div">
-                  รายละเอียด
-                </Typography>
-                <Table size="normal">
-                  <TableHead>
-                    <TableRow
-                      sx={{ backgroundColor: "#eaeaea", borderRadius: 2 }}
-                    >
-                      {Object.entries(row.pickup_point).map((p, i) => {
-                        if (p[1]) {
-                          return (
-                            <TableCell
-                              key={i}
-                              sx={{
-                                py: 2.5,
-                                borderRadius: i === 0 ? "16px 0px 0px 16px" : 0,
-                              }}
-                            >
-                              {"จุดที่ " + (i + 1)}
-                            </TableCell>
-                          );
-                        }
-                      })}
-                      <TableCell>จ่ายค่างาน</TableCell>
-                      <TableCell>กำไร</TableCell>
-                      <TableCell align="right">น้ำมัน</TableCell>
-                      <TableCell align="right">ตจว./กทม.</TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ borderRadius: "0px 16px 16px 0px" }}
-                      >
-                        Action
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    <TableRow>
-                      {Object.entries(row.pickup_point).map((p, i) => {
-                        if (p[1]) {
-                          return <TableCell key={i}>{p[1]}</TableCell>;
-                        }
-                      })}
-                      <TableCell>{row.wage}</TableCell>
-                      <TableCell>{row.profit}</TableCell>
-                      <TableCell align="right">{row.cost}</TableCell>
-                      <TableCell align="right">{row.area}</TableCell>
-                      <TableCell align="right">
-                        <Button>asdf</Button>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </Box>
-              <Box>
-                <img src="/img/me.jpg" alt="" />
-              </Box>
-            </Collapse>
-          </TableCell>
-        </TableRow>
-      </>
-    );
-  };
 
   return (
     <Box>
@@ -566,14 +585,20 @@ export default function EnhancedTable() {
           <Tabs
             value={value}
             onChange={handleChange}
-            textColor="primary"
             variant="scrollable"
-            indicatorColor="primary"
-            sx={{ px: 4, maxHeight: 48, backgroundColor: "#c7dcff" }}
+            sx={{
+              px: 4,
+              maxHeight: 48,
+              backgroundColor: "rgba(145, 158, 171, 0.16)",
+            }}
           >
-            <Tab value="one" label="Item One" disableRipple />
-            <Tab value="two" label="Item Two" disableRipple />
-            <Tab value="three" label="Item Three" disableRipple />
+            <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
+            <Tab value="จัดส่งสำเร็จ" label="จัดส่งสำเร็จ" disableRipple />
+            <Tab
+              value="ยังไม่ถูกจัดส่ง"
+              label="ยังไม่ถูกจัดส่ง"
+              disableRipple
+            />
           </Tabs>
           <Divider />
           <Grid container spacing={2} sx={{ p: 3 }}>
@@ -795,7 +820,6 @@ export default function EnhancedTable() {
           <TableContainer>
             <Table
               sx={{
-                "& th": { lineHeight: 0 },
                 "& td": dense ? { lineHeight: 0 } : null,
                 "& .MuiCheckbox-root": {
                   p: 0,
@@ -826,7 +850,7 @@ export default function EnhancedTable() {
 
                         return (
                           <Row
-                            key={index}
+                            key={row._id}
                             row={row}
                             isItemSelected={isItemSelected}
                             labelId={labelId}

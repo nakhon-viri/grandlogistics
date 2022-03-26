@@ -34,7 +34,7 @@ export const employeeReq = () => async (dispatch) => {
 
     let resEmployee = await HttpClient.get("/personnel");
 
-    dispatch(upDateEmployee(resEmployee.data));
+    dispatch(upDateEmployee(resEmployee.data.data));
   } catch (error) {
     dispatch(upDateError(error.response.data.error.message));
   }

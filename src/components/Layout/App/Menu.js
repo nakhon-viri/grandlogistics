@@ -12,8 +12,13 @@ import Avatar from "@mui/material/Avatar";
 import Typography from "@mui/material/Typography";
 import Hidden from "@mui/material/Hidden";
 import CloseIcon from "@mui/icons-material/Close";
+import FolderSharedTwoToneIcon from "@mui/icons-material/FolderSharedTwoTone";
+import GroupAddTwoToneIcon from "@mui/icons-material/GroupAddTwoTone";
 
 import { useLocation, useNavigate } from "react-router-dom";
+
+import { themeStore } from "../../../store/ThemeStore";
+import { useSelector } from "react-redux";
 
 const drawerWidth = 280;
 let opendrawer;
@@ -70,6 +75,7 @@ const ListLink = ({ to, text, icon }) => {
           ".Mui-selected > &": {
             color: (theme) => theme.palette.primary.main,
           },
+          color: "text.secondary",
         }}
       >
         {icon}
@@ -85,8 +91,30 @@ const ListLink = ({ to, text, icon }) => {
   );
 };
 
+const ListGroup = ({ title, children }) => {
+  let mode = useSelector(themeStore);
+  return (
+    <List
+      subheader={
+        <ListSubheader
+          component="li"
+          sx={styles.listsubheader(opendrawer, mode)}
+          id="nested-list-subheader"
+        >
+          {title}
+        </ListSubheader>
+      }
+      sx={styles.list}
+    >
+      {children}
+    </List>
+  );
+};
+
 const Menu = ({ handleDrawer2, open }) => {
   opendrawer = open;
+
+  let mode = useSelector(themeStore);
 
   const Brand = ({ text, ...rest }) => (
     <Typography {...rest} variant="h5" sx={styles.nameBrand}>
@@ -111,7 +139,7 @@ const Menu = ({ handleDrawer2, open }) => {
           <Avatar alt="Remy Sharp" src="/img/me.jpg" />
           <Box sx={{ ...styles.cardDetail, opacity: open ? 1 : 0 }}>
             <Typography variant="h6" sx={styles.nameUser}>
-              This is Name.!!!
+              This is Name.!!!dfgsdfgsdfgdfsgsdfgkkkkkkkkkk
             </Typography>
             <Typography
               variant="p"
@@ -123,62 +151,39 @@ const Menu = ({ handleDrawer2, open }) => {
           </Box>
         </Typography>
       </Box>
-      <List
-        subheader={
-          <ListSubheader
-            component="li"
-            sx={styles.listsubheader(open)}
-            id="nested-list-subheader"
-          >
-            พนักงาน
-          </ListSubheader>
-        }
-        sx={styles.list}
-      >
+      <ListGroup title="พนักงาน">
         <ListLink to="/" text="Employee" icon={<MailIcon />} />
-        <ListLink to="/register" text="Employee" icon={<MailIcon />} />
-      </List>
-      <List
-        subheader={
-          <ListSubheader
-            component="li"
-            sx={styles.listsubheader(open)}
-            id="nested-list-subheader"
-          >
-            งาน
-          </ListSubheader>
-        }
-        sx={styles.list}
-      >
+        <ListLink
+          to="/profile"
+          text="Profile"
+          icon={<FolderSharedTwoToneIcon />}
+        />
+        <ListLink
+          to="/register"
+          text="Register"
+          icon={<GroupAddTwoToneIcon />}
+        />
+      </ListGroup>
+      <ListGroup title="งาน">
         <ListLink to="/order" text="Order" icon={<MailIcon />} />
-      </List>
-      <List
-        subheader={
-          <ListSubheader
-            component="li"
-            sx={styles.listsubheader(open)}
-            id="nested-list-subheader"
-          >
-            ลูกค้า
-          </ListSubheader>
-        }
-        sx={styles.list}
-      >
+      </ListGroup>
+      <ListGroup title="ลูกค้า">
         <ListLink to="/customer" text="Customer" icon={<MailIcon />} />
-      </List>
+        <ListLink to="/editorder" text="EditOrder" icon={<MailIcon />} />
+      </ListGroup>
     </>
   );
 
   return (
     <>
       <Hidden lgDown>
-        <DrawerFull variant="permanent" sx={styles.drawer} open={open}>
+        <DrawerFull variant="permanent" sx={styles.drawer(mode)} open={open}>
           {ListMenu()}
         </DrawerFull>
       </Hidden>
       <Hidden lgUp>
         <MuiDrawer
-          sx={styles.drawer}
+          sx={styles.drawer(mode)}
           anchor={"left"}
           open={open}
           onClose={handleDrawer2}
@@ -191,33 +196,39 @@ const Menu = ({ handleDrawer2, open }) => {
 };
 
 const styles = {
-  drawer: {
-    "& .MuiPaper-root": {
-      border: "1px dashed rgba(145, 158, 171, 0.24)",
-      borderBlock: 0,
-      borderLeft: 0,
-      overflowY: "overlay",
-      borderRadius: 0,
-      paddingInline: 0,
-    },
-    "& .MuiPaper-root::-webkit-scrollbar": {
-      width: 10,
-      background: "transparent",
-      position: "absolute",
-    },
+  drawer: (mode) => {
+    return {
+      "& .MuiPaper-root": {
+        border: "1px dashed rgba(145, 158, 171, 0.24)",
+        borderBlock: 0,
+        borderLeft: 0,
+        overflowY: "overlay",
+        borderRadius: 0,
+        paddingInline: 0,
+        backgroundColor: mode === "dark" && "rgb(22, 28, 36)",
+      },
+      "& .MuiDrawer-paper": {
+        backgroundImage: "none",
+      },
+      "& .MuiPaper-root::-webkit-scrollbar": {
+        width: 10,
+        background: "transparent",
+        position: "absolute",
+      },
 
-    "& .MuiPaper-root::-webkit-scrollbar-track": {
-      background: "transparent",
-    },
-    "& .MuiPaper-root::-webkit-scrollbar-thumb": {
-      background: "transparent",
-    },
-    "&:hover .MuiPaper-root::-webkit-scrollbar-thumb": {
-      background: "#ddd",
-      borderRadius: 2,
-      border: "2px solid transparent",
-      backgroundClip: "content-box",
-    },
+      "& .MuiPaper-root::-webkit-scrollbar-track": {
+        background: "transparent",
+      },
+      "& .MuiPaper-root::-webkit-scrollbar-thumb": {
+        background: "transparent",
+      },
+      "&:hover .MuiPaper-root::-webkit-scrollbar-thumb": {
+        background: "#ddd",
+        borderRadius: 2,
+        border: "2px solid transparent",
+        backgroundClip: "content-box",
+      },
+    };
   },
   container: {
     padding: "24px 20px 16px",
@@ -275,7 +286,7 @@ const styles = {
     fontWeight: "600",
   },
   list: { padding: "0px 16px", maxWidth: 360, width: "100%" },
-  listsubheader: (open) => {
+  listsubheader: (open, mode) => {
     return {
       pt: 3,
       pb: 1,
@@ -283,6 +294,7 @@ const styles = {
       lineHeight: 1.5,
       color: "text.primary",
       opacity: open ? 1 : 0,
+      backgroundColor: mode === "dark" && "rgb(22, 28, 36)",
     };
   },
   listButton: {
