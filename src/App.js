@@ -11,6 +11,10 @@ import Customer from "./pages/Customer";
 import Order from "./pages/Order";
 import ProfileEmployee from "./pages/ProfileEmployee";
 import EditOrder from "./pages/EditOrder";
+import Report from "./pages/Report";
+import ReportCustomer from "./pages/ReportCustomer";
+import ReportEmployeeAll from "./pages/ReportEmployeeAll";
+import ReportEmployee from "./pages/ReportEmployee";
 import Loading from "./components/Loading";
 
 import { authStore, getProfileReq } from "./store/AuthStore";
@@ -106,6 +110,10 @@ const App = () => {
           <Route path="/order" element={<Order />} />
           <Route path="/customer" element={<Customer />} />
           <Route path="/editorder" element={<EditOrder />} />
+          <Route path="/reportallemp" element={<ReportEmployeeAll />} />
+          <Route path="/report" element={<Report />} />
+          <Route path="/reportemp" element={<ReportEmployee />} />
+          <Route path="/reportCustomer" element={<ReportCustomer />} />
         </Route>
       </Route>
       <Route path="/login" element={<NoRequireAuth {...reqAuth} />} />

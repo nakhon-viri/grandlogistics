@@ -21,8 +21,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { themeStore } from "../../../store/ThemeStore";
 import { useSelector } from "react-redux";
 
-import Swal from "sweetalert2";
-
 const drawerWidth = 280;
 let opendrawer;
 
@@ -155,7 +153,7 @@ const Menu = ({ handleDrawer2, open }) => {
         </Typography>
       </Box>
       <ListGroup title="พนักงาน">
-        <ListLink to="/" text="Employee" icon={<PersonRoundedIcon />} />
+        <ListLink to="/" text="พนักงานทั้งหมด" icon={<PersonRoundedIcon />} />
         <ListLink
           to="/profile"
           text="Profile"
@@ -163,16 +161,30 @@ const Menu = ({ handleDrawer2, open }) => {
         />
         <ListLink
           to="/register"
-          text="Register"
+          text="ลงทะเบียนพนักงาน"
           icon={<GroupAddTwoToneIcon />}
         />
       </ListGroup>
       <ListGroup title="งาน">
-        <ListLink to="/order" text="Order" icon={<MailIcon />} />
+        <ListLink to="/order" text="เที่ยววิ่งทั้งหมด" icon={<MailIcon />} />
       </ListGroup>
       <ListGroup title="ลูกค้า">
         <ListLink to="/customer" text="Customer" icon={<MailIcon />} />
         <ListLink to="/editorder" text="EditOrder" icon={<MailIcon />} />
+      </ListGroup>
+      <ListGroup title="รายงาน">
+        <ListLink to="/report" text="รายงาน" icon={<MailIcon />} />
+        <ListLink to="/reportcustomer" text="รายงานบริษัทคู่ค้า" icon={<MailIcon />} />
+        <ListLink
+          to="/reportallemp"
+          text="รายงานพนักงานทั้งหมด"
+          icon={<MailIcon />}
+        />
+        <ListLink
+          to="/reportemp"
+          text="รายงานพนักงานรายบุคคล"
+          icon={<MailIcon />}
+        />
       </ListGroup>
     </>
   );

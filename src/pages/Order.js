@@ -142,7 +142,7 @@ function EnhancedTableHead(props) {
             }}
           />
         </TableCell>
-        {headCells.map((headCell,index) => (
+        {headCells.map((headCell, index) => (
           <TableCell
             key={headCell.id}
             align={"center"}
@@ -375,6 +375,37 @@ const Row = ({ row, isItemSelected, labelId, handleClick }) => {
   );
 };
 
+const EnhancedTableToolbar = ({ numSelected }) => {
+  return (
+    <Toolbar
+      sx={{
+        pl: { sm: 2 },
+        pr: { xs: 1, sm: 1 },
+        bgcolor: (theme) =>
+          alpha(
+            theme.palette.primary.main,
+            theme.palette.action.activatedOpacity
+          ),
+      }}
+    >
+      <Typography
+        sx={{ flex: "1 1 100%" }}
+        color="inherit"
+        variant="subtitle1"
+        component="div"
+      >
+        {numSelected} selected
+      </Typography>
+
+      <Tooltip title="Delete">
+        <IconButton>
+          <DeleteIcon />
+        </IconButton>
+      </Tooltip>
+    </Toolbar>
+  );
+};
+
 export default function EnhancedTable() {
   const [orderSort, setOrderSort] = React.useState("desc");
   const [orderBy, setOrderBy] = React.useState("pickup_date");
@@ -514,7 +545,7 @@ export default function EnhancedTable() {
         }
         return a;
       });
-      
+
       for (var i = 0; i < queryOrder.length; i++) {
         queryOrder[i] = { ...queryOrder[i], row_number: i };
       }
@@ -537,14 +568,7 @@ export default function EnhancedTable() {
       }
 
       return queryOrder;
-    }, [
-      order,
-      filterYear,
-      filterMonth,
-      personName,
-      search,
-      value,
-    ]) || [];
+    }, [order, filterYear, filterMonth, personName, search, value]) || [];
 
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - newOrder.length) : 0;
@@ -816,7 +840,9 @@ export default function EnhancedTable() {
               </FormControl>
             </Grid>
           </Grid>
-
+          {selected.length ? (
+            <EnhancedTableToolbar numSelected={selected.length} />
+          ) : null}
           <TableContainer>
             <Table
               sx={{
