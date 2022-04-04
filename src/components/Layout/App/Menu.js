@@ -15,7 +15,13 @@ import CloseIcon from "@mui/icons-material/Close";
 import FolderSharedTwoToneIcon from "@mui/icons-material/FolderSharedTwoTone";
 import GroupAddTwoToneIcon from "@mui/icons-material/GroupAddTwoTone";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-
+import StoreRoundedIcon from "@mui/icons-material/StoreRounded";
+import WorkRoundedIcon from "@mui/icons-material/WorkRounded";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded";
+import AddBusinessRoundedIcon from "@mui/icons-material/AddBusinessRounded";
+import DescriptionIcon from "@mui/icons-material/Description";
+import FileCopyIcon from "@mui/icons-material/FileCopy";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { themeStore } from "../../../store/ThemeStore";
@@ -155,26 +161,38 @@ const Menu = ({ handleDrawer2, open }) => {
       <ListGroup title="พนักงาน">
         <ListLink to="/" text="พนักงานทั้งหมด" icon={<PersonRoundedIcon />} />
         <ListLink
-          to="/profile"
-          text="Profile"
-          icon={<FolderSharedTwoToneIcon />}
-        />
-        <ListLink
           to="/register"
           text="ลงทะเบียนพนักงาน"
           icon={<GroupAddTwoToneIcon />}
         />
       </ListGroup>
       <ListGroup title="งาน">
-        <ListLink to="/order" text="เที่ยววิ่งทั้งหมด" icon={<MailIcon />} />
+        <ListLink
+          to="/order"
+          text="เที่ยววิ่งทั้งหมด"
+          icon={<WorkRoundedIcon />}
+        />
+        <ListLink to="/addorder" text="เพิ่มงาน" icon={<AddBoxRoundedIcon />} />
       </ListGroup>
       <ListGroup title="ลูกค้า">
-        <ListLink to="/customer" text="Customer" icon={<MailIcon />} />
-        <ListLink to="/editorder" text="EditOrder" icon={<MailIcon />} />
+        <ListLink
+          to="/customer"
+          text="บริษัทคู่ค้า"
+          icon={<StoreRoundedIcon />}
+        />
+        <ListLink
+          to="/addcustomer"
+          text="เพิ่มบริษัทคู่ค้า"
+          icon={<AddBusinessRoundedIcon />}
+        />
       </ListGroup>
       <ListGroup title="รายงาน">
         <ListLink to="/report" text="รายงาน" icon={<MailIcon />} />
-        <ListLink to="/reportcustomer" text="รายงานบริษัทคู่ค้า" icon={<MailIcon />} />
+        <ListLink
+          to="/reportcustomer"
+          text="รายงานบริษัทคู่ค้า"
+          icon={<MailIcon />}
+        />
         <ListLink
           to="/reportallemp"
           text="รายงานพนักงานทั้งหมด"
@@ -185,6 +203,14 @@ const Menu = ({ handleDrawer2, open }) => {
           text="รายงานพนักงานรายบุคคล"
           icon={<MailIcon />}
         />
+      </ListGroup>
+      <ListGroup title="ใบแจ้งหนี้">
+        <ListLink to="/bills" text="ใบวางบิล" icon={<FileCopyIcon />} />
+        <ListLink to="/createbill" text="สร้างใบวางบิล" icon={<FileCopyIcon />} />
+        <ListLink to="/invoices" text="ใบแจ้งหนี้" icon={<DescriptionIcon />} />
+      </ListGroup>
+      <ListGroup title="ถังขยะ">
+        <ListLink to="/trash" text="ถังขยะ" icon={<DeleteRoundedIcon />} />
       </ListGroup>
     </>
   );

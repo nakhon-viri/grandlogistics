@@ -14,3 +14,10 @@
   border: 2px solid transparent;
   background-clip: content-box;
 }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+iframe {
+  border: none;
+}

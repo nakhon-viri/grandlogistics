@@ -8,7 +8,8 @@ axios.interceptors.request.use(async (config) => {
   config.headers.Authorization = token;
 
   if (!isAbsoluteURLRegex.test(config.url)) {
-    config.url = join("https://api-grandlogistics.herokuapp.com", config.url);
+    // config.url = join("https://api-grandlogistics.herokuapp.com", config.url);
+    config.url = join("http://localhost:5000", config.url);
   }
 
   return config;

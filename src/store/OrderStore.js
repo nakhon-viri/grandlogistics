@@ -3,6 +3,7 @@ import { HttpClient } from "../utils/HttpClient";
 
 const stateDefault = {
   order: null,
+  orderDeleted: null,
   loadingOrder: false,
   error: null,
 };
@@ -12,7 +13,11 @@ export const orderReducer = createSlice({
   initialState: { value: stateDefault },
   reducers: {
     upDateOrder: (state, action) => {
-      state.value = { ...stateDefault, order: action.payload };
+      state.value = {
+        ...stateDefault,
+        order: action.payload.filter((item) => item.deleted === false),
+        orderDeleted: action.payload.filter((item) => item.deleted === true),
+      };
     },
     upDateLoading: (state, action) => {
       state.value = { ...stateDefault, loadingOrder: true };
@@ -20,10 +25,47 @@ export const orderReducer = createSlice({
     upDateError: (state, action) => {
       state.value = { ...stateDefault, error: action.payload };
     },
+    addOrder: (state, action) => {
+      state.value.order.push(action.payload);
+    },
+    deleteOrder: (state, action) => {
+      let orderDeleted = [];
+      state.value.order = state.value.order.filter((item) => {
+        if (item._id === action.payload) {
+          item.deleted = true;
+          orderDeleted.push(item);
+          return;
+        }
+        return item;
+      });
+
+      state.value.orderDeleted.push(...orderDeleted);
+    },
+    recoverOrder: (state, action) => {
+      let order = [];
+      let orderDeleted = [];
+      order = state.value.orderDeleted.filter((item) => {
+        if (item._id === action.payload) {
+          item.deleted = false;
+          return item;
+        } else {
+          orderDeleted.push(item);
+        }
+      });
+      state.value.order.push(...order);
+      state.value.orderDeleted = orderDeleted;
+    },
   },
 });
 
-export const { upDateOrder, upDateLoading, upDateError } = orderReducer.actions;
+export const {
+  upDateOrder,
+  deleteOrder,
+  recoverOrder,
+  upDateLoading,
+  addOrder,
+  upDateError,
+} = orderReducer.actions;
 
 export const orderStore = (state) => state.order.value;
 

@@ -15,6 +15,8 @@ const TableHeader = ({
   onRequestSort,
   headCell,
   children,
+  isOpenFirstCell,
+  styleCellProps,
 }) => {
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
@@ -25,10 +27,12 @@ const TableHeader = ({
       <TableRow
         sx={{
           backgroundColor: "rgba(145, 158, 171, 0.16)",
-          "& td, & th": { px: 0, py: 1 },
+          "& td, & th": { px: 0, py: 2, ...styleCellProps },
         }}
       >
-        <TableCell sx={{ p: 0, pl: 3, maxWidth: "40px" }} />
+        {!isOpenFirstCell ? (
+          <TableCell sx={{ p: 0, pl: 3, maxWidth: "40px" }} />
+        ) : null}
         {children}
         {headCell.map((Cell) => (
           <TableCell

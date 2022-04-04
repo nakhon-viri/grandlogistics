@@ -39,16 +39,19 @@ import {
   KeyboardArrowUp,
   KeyboardArrowDown,
   Search,
+  ManageAccounts,
 } from "@mui/icons-material";
 import { styled, useTheme } from "@mui/material/styles";
 
 import { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import { employeeStore } from "../store/EmployeeStore";
 import TableHeader from "../components/TableHeader";
+import StatusColor from "../components/StatusColor";
 
 const AntSwitch = styled(Switch)(({ theme }) => ({
   width: 28,
@@ -210,11 +213,14 @@ const Row = ({ Cell }) => {
           </IconButton>
         </TableCell>
         <TableCell component="th" scope="row">
+          {Cell._oid}
+        </TableCell>
+        <TableCell component="th" scope="row">
           {dayjs(Cell.pickup_date).locale("th").format("DD MMMM YYYY")}
         </TableCell>
         <TableCell align="right">{Cell.pickup_location}</TableCell>
         <TableCell align="right">{Cell.delivery_location}</TableCell>
-        <TableCell align="right">{Cell.price_order}</TableCell>
+        <TableCell align="right">{Cell.wage}</TableCell>
         <TableCell align="right">{Cell.cost}</TableCell>
         <TableCell align="right">{Cell.withdraw}</TableCell>
         <TableCell align="right">
@@ -224,27 +230,14 @@ const Row = ({ Cell }) => {
           <Typography
             variant="p"
             sx={{
-              ...(theme.palette.mode === "dark"
-                ? {
-                    bgcolor:
-                      Cell.status === "จัดส่งสำเร็จ"
-                        ? "rgb(95, 325, 55)"
-                        : "rgb(85, 153, 242)",
-                  }
-                : {
-                    bgcolor:
-                      Cell.status === "จัดส่งสำเร็จ"
-                        ? "rgba(95, 325, 55, 0.2)"
-                        : "rgb(85, 153, 242, 0.16)",
-                  }),
-              ...(theme.palette.mode === "dark"
-                ? { color: Cell.status === "จัดส่งสำเร็จ" ? "#000" : "#fff" }
-                : {
-                    color:
-                      Cell.status === "จัดส่งสำเร็จ"
-                        ? "rgb(95, 325, 55)"
-                        : "rgb(85, 153, 242)",
-                  }),
+              bgcolor: StatusColor.colorBgStatus(
+                Cell.status,
+                theme.palette.mode
+              ),
+              color: StatusColor.colorTextStatus(
+                Cell.status,
+                theme.palette.mode
+              ),
               px: 0.7,
               py: 0.5,
               fontSize: "0.8rem",
@@ -318,7 +311,7 @@ const Row = ({ Cell }) => {
                         return <TableCell key={i}>{p[1]}</TableCell>;
                       }
                     })}
-                    <TableCell>{Cell.wage}</TableCell>
+                    <TableCell>{Cell.price_order}</TableCell>
                     <TableCell>{Cell.profit}</TableCell>
                     <TableCell align="right">{Cell.cost}</TableCell>
                     <TableCell align="right">{Cell.area}</TableCell>
@@ -338,6 +331,7 @@ const Row = ({ Cell }) => {
 };
 
 const Employee = () => {
+  const navigate = useNavigate();
   const { employee } = useSelector(employeeStore);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
   const [userSelected, setUserSelected] = useState({ orders: [] });
@@ -365,7 +359,8 @@ const Employee = () => {
   }, [employee]);
 
   let orders = useMemo(() => {
-    let newOrders = [...userSelected.orders] || [];
+    let newOrders =
+      [...userSelected.orders].filter((item) => item.deleted !== true) || [];
 
     if (valueTabs !== "ทั้งหมด") {
       newOrders = newOrders.filter((a) => {
@@ -433,6 +428,11 @@ const Employee = () => {
     setPage(0);
   };
 
+  const clDate = (bd) => {
+    let dateNow = new Date().getFullYear();
+    return dateNow - bd;
+  };
+
   const userListProps = {
     employee: employeeList,
     handleSelectedUser: (user) => {
@@ -450,6 +450,7 @@ const Employee = () => {
     sortByName,
     onRequestSort: handleRequestSort,
     headCell: [
+      { id: "_oid", label: "รหัสงาน" },
       { id: "pickup_date", label: "วันที่" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
@@ -529,7 +530,7 @@ const Employee = () => {
   };
 
   return (
-    <Container maxWidth={"lg"}>
+    <Container maxWidth={"xl"}>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
         <Typography variant="h4">Order ทั้งหมด</Typography>
       </Box>
@@ -540,6 +541,78 @@ const Employee = () => {
           </Paper>
         </Grid>
         <Grid item xs={12} lg={9}>
+          <Box sx={{ marginBottom: 2 }}>
+            <Paper
+              sx={{
+                p: 3,
+                position: "relative",
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+              }}
+            >
+              <Box sx={{ mr: 3 }}>
+                <Avatar
+                  sx={{ height: "150px", width: "150px", fontSize: 50 }}
+                  alt={userSelected?.full_name?.first_name}
+                  src={userSelected.photo}
+                />
+              </Box>
+              <Box sx={{ width: "100%" }}>
+                <Typography variant="h4" sx={{ mb: 1 }}>
+                  {userSelected?.full_name?.first_name +
+                    " " +
+                    userSelected?.full_name?.last_name}
+                </Typography>
+                <Grid container>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="p">
+                      {"รหัสงาน : " + userSelected._uid}
+                    </Typography>
+                    <br />
+                    <Typography variant="p">
+                      {"ทะเบียนรถ : " + userSelected.car_no}
+                    </Typography>
+                    <br />
+                    <Typography variant="p">
+                      {"อายุ : " +
+                        clDate(parseInt(userSelected?.birthday?.split("-")[0]))}
+                    </Typography>
+                    <br />
+                    <Typography variant="p">
+                      {"เพศ : " + userSelected.gender}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={8}>
+                    <Typography variant="p">
+                      {"แผนก : " + userSelected.department}
+                    </Typography>
+                    <br />
+                    <Typography variant="p">
+                      {"เบอร์ติดต่อ : " + userSelected.phone_no}
+                    </Typography>
+                    <br />
+                    <Typography variant="p">
+                      {"เลขบัตรประจำตัวประชาชน : " + userSelected.reference_id}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+              <Button
+                startIcon={<ManageAccounts />}
+                onClick={() =>
+                  navigate("/profile", { state: { user: userSelected } })
+                }
+                sx={{
+                  position: "absolute",
+                  top: "24px",
+                  right: "24px",
+                  borderRadius: 2,
+                }}
+              >
+                รายละเอียด
+              </Button>
+            </Paper>
+          </Box>
           <Box>
             <Paper
               sx={{

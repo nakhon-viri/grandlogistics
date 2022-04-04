@@ -20,10 +20,13 @@ export const customerReducer = createSlice({
     upDateError: (state, action) => {
       state.value = { ...stateDefault, error: action.payload };
     },
+    addCustomer: (state, action) => {
+      state.value.customer.push(action.payload);
+    },
   },
 });
 
-export const { upDateCustomer, upDateLoading, upDateError } =
+export const { upDateCustomer, addCustomer, upDateLoading, upDateError } =
   customerReducer.actions;
 
 export const customerStore = (state) => state.customer.value;

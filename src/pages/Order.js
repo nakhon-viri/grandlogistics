@@ -28,7 +28,7 @@ import Tab from "@mui/material/Tab";
 import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
-import { styled } from "@mui/material/styles";
+import { styled, useTheme } from "@mui/material/styles";
 import { Block } from "@mui/icons-material";
 import Select from "@mui/material/Select";
 import OutlinedInput from "@mui/material/OutlinedInput";
@@ -39,13 +39,18 @@ import Button from "@mui/material/Button";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import Collapse from "@mui/material/Collapse";
+import Add from "@mui/icons-material/Add";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { orderStore } from "../store/OrderStore";
-import { useSelector } from "react-redux";
+import { orderStore, deleteOrder } from "../store/OrderStore";
+import { useSelector, useDispatch } from "react-redux";
 import SearchIcon from "@mui/icons-material/Search";
 import InputAdornment from "@mui/material/InputAdornment";
 import Grid from "@mui/material/Grid";
+import StatusColor from "../components/StatusColor";
+import { useNavigate } from "react-router-dom";
+
+import { HttpClient } from "../utils/HttpClient";
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -68,6 +73,12 @@ const headCells = [
     numeric: true,
     disablePadding: true,
     label: "ลำดับ",
+  },
+  {
+    id: "_oid",
+    numeric: false,
+    disablePadding: true,
+    label: "รหัสงาน",
   },
   {
     id: "pickup_date",
@@ -238,7 +249,8 @@ const MenuProps = {
     },
   },
 };
-const Row = ({ row, isItemSelected, labelId, handleClick }) => {
+const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
+  const theme = useTheme();
   const [open, setOpen] = React.useState(false);
   return (
     <>
@@ -281,6 +293,7 @@ const Row = ({ row, isItemSelected, labelId, handleClick }) => {
         <TableCell align="left" sx={{ paddingRight: 6 }}>
           {row.row_number}
         </TableCell>
+        <TableCell align="left">{row._oid}</TableCell>
         <TableCell align="left" id={labelId}>
           {dayjs(row.pickup_date).locale("th").format("DD MMMM YYYY")}
         </TableCell>
@@ -289,11 +302,29 @@ const Row = ({ row, isItemSelected, labelId, handleClick }) => {
         <TableCell align="left">{row.driver}</TableCell>
         <TableCell align="left">{row.per_time}</TableCell>
         <TableCell align="left">{row.price_order}</TableCell>
-        <TableCell
-          align="left"
-          sx={{ color: row.status === "จัดส่งสำเร็จ" ? "#4a4" : "#4a93ed" }}
-        >
-          {row.status}
+        <TableCell align="left">
+          <Typography
+            variant="p"
+            sx={{
+              bgcolor: StatusColor.colorBgStatus(
+                row.status,
+                theme.palette.mode
+              ),
+              color: StatusColor.colorTextStatus(
+                row.status,
+                theme.palette.mode
+              ),
+              px: 0.7,
+              py: 0.5,
+              fontSize: "0.8rem",
+              borderRadius: 2,
+              fontFamily: "Prompt",
+              fontWeight: 500,
+              height: "22px",
+            }}
+          >
+            {row.status}
+          </Typography>
         </TableCell>
       </TableRow>
       <TableRow
@@ -361,7 +392,12 @@ const Row = ({ row, isItemSelected, labelId, handleClick }) => {
                     <TableCell align="right">{row.cost}</TableCell>
                     <TableCell align="right">{row.area}</TableCell>
                     <TableCell align="right">
-                      <Button>asdf</Button>
+                      <Button
+                        onClick={() => handleDelete(row._id)}
+                        sx={{ color: "red" }}
+                      >
+                        ลบ
+                      </Button>
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -407,6 +443,8 @@ const EnhancedTableToolbar = ({ numSelected }) => {
 };
 
 export default function EnhancedTable() {
+  let dispatch = useDispatch();
+  let navigate = useNavigate();
   const [orderSort, setOrderSort] = React.useState("desc");
   const [orderBy, setOrderBy] = React.useState("pickup_date");
   const [selected, setSelected] = React.useState([]);
@@ -418,6 +456,17 @@ export default function EnhancedTable() {
   const { order } = useSelector(orderStore);
 
   const tablePagination = useMediaQuery("(min-width:600px)");
+
+  const handleDelete = async (id) => {
+    try {
+      let res = await HttpClient.delete("/order/" + id);
+      if (res.data.sucess) {
+        dispatch(deleteOrder(id));
+      }
+    } catch (error) {
+      console.log(error.respose);
+    }
+  };
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -510,7 +559,13 @@ export default function EnhancedTable() {
   // console.log = console.warn = console.error = () => {};
   const newOrder =
     React.useMemo(() => {
-      let queryOrder = order?.filter((a) => a) || [];
+      let queryOrder =
+        order?.filter((a) => {
+          if (a.deleted) return;
+          return a;
+        }) || [];
+
+      console.log(queryOrder);
       queryOrder = queryOrder
         .filter((a) => {
           if (value !== "ทั้งหมด") {
@@ -583,6 +638,8 @@ export default function EnhancedTable() {
           </Box>
           <Box>
             <Button
+              startIcon={<Add />}
+              onClick={() => navigate("/addorder")}
               variant="contained"
               sx={{
                 backgroundColor: "rgb(32, 101, 209)",
@@ -593,7 +650,7 @@ export default function EnhancedTable() {
                 },
               }}
             >
-              + New order
+              เพิ่มงาน
             </Button>
           </Box>
         </Box>
@@ -873,7 +930,6 @@ export default function EnhancedTable() {
                       .map((row, index) => {
                         const isItemSelected = isSelected(row);
                         const labelId = `enhanced-table-checkbox-${index}`;
-
                         return (
                           <Row
                             key={row._id}
@@ -882,6 +938,7 @@ export default function EnhancedTable() {
                             labelId={labelId}
                             handleClick={handleClick}
                             newOrder={newOrder}
+                            handleDelete={handleDelete}
                           />
                         );
                       })

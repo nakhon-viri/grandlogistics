@@ -43,7 +43,10 @@ const AppBar = styled(MuiAppBar, {
   }),
   boxShadow: "none",
   borderRadius: 0,
-  backgroundColor: "rgba(255, 255, 255, 0.8)",
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? "rgb(22, 28, 36, 0.8)"
+      : "rgba(255, 255, 255, 0.8)",
 }));
 
 const Header = ({ handleDrawer, open }) => {

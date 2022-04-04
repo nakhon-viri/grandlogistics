@@ -39,8 +39,10 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
   Search,
+  Add,
 } from "@mui/icons-material";
 
+import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
@@ -50,7 +52,7 @@ import cloneDeep from "lodash.clonedeep";
 import { customerStore } from "../store/CustomerStore";
 import Controls from "../components/controls";
 import TableHeader from "../components/TableHeader";
-
+import StatusColor from "../components/StatusColor";
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Zoom ref={ref} {...props} />;
 });
@@ -72,6 +74,7 @@ function getComparator(sortType, sortByName) {
 }
 
 const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
+  const navigate = useNavigate();
   const handleClose = () => {
     onClose(selectedValue);
   };
@@ -137,14 +140,14 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
               alignItems: "center",
             }}
             button
-            onClick={() => handleListItemClick("addAccount")}
+            onClick={() => navigate("/addcustomer")}
           >
             <ListItemAvatar>
               <Avatar>
                 <AddIcon sx={{ color: "#fff" }} />
               </Avatar>
             </ListItemAvatar>
-            <Typography>sdfassdf</Typography>
+            <Typography>เพิ่มบริษัทคู่ค้า</Typography>
           </ListItem>
         </Box>
       </Paper>
@@ -163,6 +166,7 @@ const Row = ({ Cell }) => {
             {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
           </IconButton>
         </TableCell>
+        <TableCell align="center">{Cell._oid}</TableCell>
         <TableCell component="th" scope="row">
           {dayjs(Cell.pickup_date).locale("th").format("DD MMMM YYYY")}
         </TableCell>
@@ -178,27 +182,14 @@ const Row = ({ Cell }) => {
           <Typography
             variant="p"
             sx={{
-              ...(theme.palette.mode === "dark"
-                ? {
-                    bgcolor:
-                      Cell.status === "จัดส่งสำเร็จ"
-                        ? "rgb(95, 325, 55)"
-                        : "rgb(85, 153, 242)",
-                  }
-                : {
-                    bgcolor:
-                      Cell.status === "จัดส่งสำเร็จ"
-                        ? "rgba(95, 325, 55, 0.2)"
-                        : "rgb(85, 153, 242, 0.16)",
-                  }),
-              ...(theme.palette.mode === "dark"
-                ? { color: Cell.status === "จัดส่งสำเร็จ" ? "#000" : "#fff" }
-                : {
-                    color:
-                      Cell.status === "จัดส่งสำเร็จ"
-                        ? "rgb(95, 325, 55)"
-                        : "rgb(85, 153, 242)",
-                  }),
+              bgcolor: StatusColor.colorBgStatus(
+                Cell.status,
+                theme.palette.mode
+              ),
+              color: StatusColor.colorTextStatus(
+                Cell.status,
+                theme.palette.mode
+              ),
               px: 0.7,
               py: 0.5,
               fontSize: "0.8rem",
@@ -292,6 +283,7 @@ const Row = ({ Cell }) => {
 };
 
 export default function SimpleDialogDemo() {
+  const navigate = useNavigate();
   const { customer } = useSelector(customerStore);
   //Dialog
   const [openDialog, setOpenDialog] = useState(false);
@@ -338,13 +330,13 @@ export default function SimpleDialogDemo() {
 
   useEffect(() => {
     if (customer) {
-      let newList = customer?.slice(0, 1);
+      let newList = customer?.slice(0, 1) || [];
       setSelectedCustomer(newList[0]);
     }
   }, [customer]);
 
   let orders = useMemo(() => {
-    let newOrders = cloneDeep(selectedCustomer.orders) || [];
+    let newOrders = cloneDeep(selectedCustomer?.orders) || [];
     if (valueTabs !== "ทั้งหมด") {
       newOrders = newOrders.filter((a) => {
         if (valueTabs === "จัดส่งสำเร็จ") {
@@ -416,6 +408,7 @@ export default function SimpleDialogDemo() {
     sortByName,
     onRequestSort: handleRequestSort,
     headCell: [
+      { id: "_oid", label: "รหัสงาน" },
       { id: "pickup_date", label: "วันที่" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
@@ -493,6 +486,8 @@ export default function SimpleDialogDemo() {
     );
   };
 
+  if (!selectedCustomer) return <Box>กรุณาเพิ่มบริษัทคู่ค้า</Box>;
+
   return (
     <Container>
       <Grid
@@ -526,8 +521,11 @@ export default function SimpleDialogDemo() {
               เปลี่ยนบริษัท
             </Button>
             <Button
+              startIcon={<Add />}
               variant="contained"
-              onClick={handleClickOpen}
+              onClick={() =>
+                navigate("/addorder", { state: { customer: selectedCustomer } })
+              }
               sx={{
                 backgroundColor: "rgb(32, 101, 209)",
                 boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
@@ -537,7 +535,7 @@ export default function SimpleDialogDemo() {
                 },
               }}
             >
-              เปลี่ยนบริษัท
+              เพิ่มงาน
             </Button>
           </Box>
         </Grid>

@@ -8,19 +8,27 @@ import Employee from "./pages/Employee";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Customer from "./pages/Customer";
+import AddCustomer from "./pages/AddCustomer";
 import Order from "./pages/Order";
+import AddOrder from "./pages/AddOrder";
 import ProfileEmployee from "./pages/ProfileEmployee";
 import EditOrder from "./pages/EditOrder";
 import Report from "./pages/Report";
 import ReportCustomer from "./pages/ReportCustomer";
 import ReportEmployeeAll from "./pages/ReportEmployeeAll";
 import ReportEmployee from "./pages/ReportEmployee";
+import Trash from "./pages/Trash";
+import Bills from "./pages/Bills";
+import CreateBill from "./pages/CreateBill";
+import Invoices from "./pages/Invoices";
 import Loading from "./components/Loading";
 
 import { authStore, getProfileReq } from "./store/AuthStore";
 import { orderReq, orderStore } from "./store/OrderStore";
 import { customerReq, customerStore } from "./store/CustomerStore";
 import { employeeReq, employeeStore } from "./store/EmployeeStore";
+import { billReq, billStore } from "./store/BillStore";
+import { invoiceReq, invoiceStore } from "./store/InvoiceStore";
 import { useSelector, useDispatch } from "react-redux";
 
 import { io } from "socket.io-client";
@@ -31,6 +39,8 @@ const RequireAuth = () => {
   const { loadingEmployee } = useSelector(employeeStore);
   const { loadingCustomer } = useSelector(customerStore);
   const { loadingOrder } = useSelector(orderStore);
+  const { loadingBill } = useSelector(billStore);
+  const { loadingInvoice } = useSelector(invoiceStore);
   const dispatch = useDispatch();
   let location = useLocation();
   const resToken = verifyToken();
@@ -42,6 +52,8 @@ const RequireAuth = () => {
       dispatch(orderReq());
       dispatch(customerReq());
       dispatch(employeeReq());
+      dispatch(billReq());
+      dispatch(invoiceReq());
     }
   }, []);
 
@@ -63,7 +75,15 @@ const RequireAuth = () => {
   if (!isLogin && !resToken)
     return <Navigate to="/login" state={{ from: location }} replace />;
 
-  if (loadingAuth || loadingEmployee || loadingCustomer || loadingOrder) {
+  if (
+    loadingAuth ||
+    loadingEmployee ||
+    loadingCustomer ||
+    loadingOrder ||
+    loadingBill 
+    ||
+    loadingInvoice
+  ) {
     return <Loading />;
   }
 
@@ -108,12 +128,18 @@ const App = () => {
           <Route path="/profile" element={<ProfileEmployee />} />
           <Route path="/register" element={<Register />} />
           <Route path="/order" element={<Order />} />
+          <Route path="/addorder" element={<AddOrder />} />
           <Route path="/customer" element={<Customer />} />
+          <Route path="/addcustomer" element={<AddCustomer />} />
           <Route path="/editorder" element={<EditOrder />} />
           <Route path="/reportallemp" element={<ReportEmployeeAll />} />
           <Route path="/report" element={<Report />} />
           <Route path="/reportemp" element={<ReportEmployee />} />
           <Route path="/reportCustomer" element={<ReportCustomer />} />
+          <Route path="/trash" element={<Trash />} />
+          <Route path="/bills" element={<Bills />} />
+          <Route path="/createbill" element={<CreateBill />} />
+          <Route path="/invoices" element={<Invoices />} />
         </Route>
       </Route>
       <Route path="/login" element={<NoRequireAuth {...reqAuth} />} />

@@ -23,11 +23,27 @@ export const employeeReducer = createSlice({
     addEmployee: (state, action) => {
       state.value.employee.push(action.payload);
     },
+    editEmployee: (state, action) => {
+      console.log(action.payload);
+      state.value.employee = state.value.employee.map((item) => {
+        console.log(action.payload._id === item._id);
+        if (action.payload._id === item._id) {
+          return action.payload;
+        } else {
+          return item;
+        }
+      });
+    },
   },
 });
 
-export const { upDateEmployee, addEmployee, upDateLoadingEmp, upDateError } =
-  employeeReducer.actions;
+export const {
+  upDateEmployee,
+  editEmployee,
+  addEmployee,
+  upDateLoadingEmp,
+  upDateError,
+} = employeeReducer.actions;
 
 export const employeeStore = (state) => state.employee.value;
 
