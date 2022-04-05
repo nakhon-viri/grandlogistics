@@ -26,18 +26,24 @@ import {
   AddAPhoto,
   DateRange,
   InsertDriveFile,
+  ArrowBackRounded,
   SaveRounded,
+  DeleteRounded,
 } from "@mui/icons-material";
 import {
   searchAddressByProvince,
   searchAddressByDistrict,
   searchAddressByAmphoe,
 } from "thai-address-database";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import "dayjs/locale/th";
-import { addCustomer } from "../store/CustomerStore";
+import {
+  addCustomer,
+  editCustomer,
+  deletedCustomer,
+} from "../store/CustomerStore";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 
 import { useForm, Form } from "../components/useForm";
@@ -45,6 +51,8 @@ import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
 import Controls from "../components/controls";
 import { HttpClient } from "../utils/HttpClient";
+import Loading from "../components/Loading";
+
 const Provinces = [
   "กระบี่",
   "กรุงเทพมหานคร",
@@ -241,10 +249,13 @@ const InputGridAddress = ({
   );
 };
 
-const AddCustomer = () => {
+const EditCustomer = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { state } = useLocation();
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
+  const [IDCustomer, setIDCustomer] = useState(null);
   //Img
   const [editor, setEditor] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -335,7 +346,7 @@ const AddCustomer = () => {
     });
     if (fieldValues == values) return Object.values(temp).every((x) => x == "");
   };
-  const { values, errors, setErrors, handleInputChange } = useForm(
+  const { values, setValues, errors, setErrors, handleInputChange } = useForm(
     initialValues,
     false,
     validate
@@ -358,12 +369,9 @@ const AddCustomer = () => {
     if (validate()) {
       try {
         setLoading(true);
-        let res = await HttpClient.post(
-          "http://localhost:5000/customer",
-          values
-        );
-        dispatch(addCustomer(res.data));
-        navigate("/customer");
+        let res = await HttpClient.put("/customer/" + IDCustomer, values);
+        dispatch(editCustomer(res.data));
+        navigate("/addorder");
         Toast.fire({
           icon: "success",
           title: "Signed in successfully",
@@ -373,6 +381,45 @@ const AddCustomer = () => {
       }
     }
   };
+
+  const handleDel = () => {
+    Swal.fire({
+      title: "คุณต้องการที่จะลบบริษัทนี้ใช่หรือไม่",
+      icon: "warning",
+      showCancelButton: true,
+      showConfirmButton: false,
+      showDenyButton: true,
+      denyButtonText: "ตกลง",
+      cancelButtonText: "ปิด",
+    }).then(async (result) => {
+      if (result.isDenied) {
+        try {
+          setLoadingData(true);
+          let res = await HttpClient.delete("/customer/" + IDCustomer);
+          if (res.data.sucess) {
+            dispatch(deletedCustomer(IDCustomer));
+            Swal.fire("ลบเสร็จสิ้น!", "", "success").then(() =>
+              navigate("/customer")
+            );
+          } else {
+            Swal.fire(
+              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
+              "",
+              "warning"
+            ).then(() => {
+              navigate("/customer");
+              window.location.reload();
+            });
+          }
+        } catch (error) {
+          console.log(error.respose);
+        } finally {
+          setLoadingData(false);
+        }
+      }
+    });
+  };
+
   //QueryAddress
   let queryProvinces = useMemo(
     () => [
@@ -407,18 +454,90 @@ const AddCustomer = () => {
     [values.address.subdistrict]
   );
 
+  useEffect(() => {
+    if (!state) navigate("/customer");
+    if (state) {
+      let customer = JSON.parse(JSON.stringify(state?.customer || null));
+      setIDCustomer(customer._id);
+      setValues({
+        cus_name: customer.cus_name,
+        address: {
+          house_no: customer.address.house_no,
+          street: customer.address.street,
+          district: customer.address.district,
+          subdistrict: customer.address.subdistrict,
+          province: customer.address.province,
+          zip_code: customer.address.zip_code,
+        },
+        phone_no: customer.phone_no,
+        corporate_tax: customer.corporate_tax,
+        cus_img: customer.cus_img,
+        text_id: customer.text_id,
+      });
+    }
+  }, [state]);
+
+  if (loadingData) return <Loading />;
+
   return (
     <Container>
-      <Box sx={{ marginBottom: 5 }}>
+      <Box
+        sx={{
+          marginBottom: 5,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
-          เพิ่มบริษัทคู่ค้า
+          แก้ไขโปรไฟล์ บริษัท {values.cus_name}
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<ArrowBackRounded />}
+          onClick={() => navigate(-1)}
+          sx={{
+            backgroundColor: "rgb(32, 101, 209)",
+            boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+            borderRadius: 2,
+            "&:hover": {
+              boxShadow: "none",
+            },
+            mr: 2,
+          }}
+        >
+          กลับ
+        </Button>
       </Box>
       <Form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}>
             <Paper sx={{ py: 10, px: 3, position: "relative" }}>
-              <Box>
+              <Box
+                component={"span"}
+                sx={{
+                  height: "22px",
+                  minWidth: "22px",
+                  lineHeight: 0,
+                  borderRadius: "6px",
+                  cursor: "default",
+                  alignItems: "center",
+                  whiteSpace: "nowrap",
+                  display: "inline-flex",
+                  justifyContent: "center",
+                  padding: "0px 8px",
+                  color: "rgb(255, 164, 141)",
+                  fontSize: "0.75rem",
+                  backgroundColor: "rgba(255, 72, 66, 0.16)",
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  position: "absolute",
+                  top: "24px",
+                  right: "24px",
+                }}
+              >
+                {"Active"}
+              </Box>
+              <Box sx={{ mb: "40px" }}>
                 <Box
                   sx={{
                     margin: "auto",
@@ -551,6 +670,43 @@ const AddCustomer = () => {
                   {errors.photo && errors.photo}
                 </FormHelperText>
               </Box>
+              <FormControlLabel
+                control={
+                  <Controls.AntSwitch
+                    //   checked={dense}
+                    //   onChange={handleChangeDense}
+                    inputProps={{ "aria-label": "ant design" }}
+                  />
+                }
+                label={
+                  <Typography component={"span"}>
+                    <Typography
+                      component={"h6"}
+                      sx={{ fontWeight: 800, fontSize: "0.875rem", mb: 0.5 }}
+                    >
+                      แก้ไขรูป
+                    </Typography>
+                    <Typography
+                      component={"p"}
+                      sx={{
+                        color: "text.secondary",
+                        pr: 5,
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      อนุญาตให้พนักงานสามารถแก้ไขรูปภาพของตนเองได้
+                    </Typography>
+                  </Typography>
+                }
+                sx={{
+                  m: 0,
+                  width: "100%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexDirection: "row-reverse",
+                }}
+              />
             </Paper>
           </Grid>
           <Grid item xs={12} md={8}>
@@ -637,7 +793,7 @@ const AddCustomer = () => {
                   value={values.address.street}
                 />
                 <InputGridAddress
-                  title="รหัสไปรษณีย์"
+                  title="รหัสไปรษณีย์*"
                   forEmpty="ตำบล/แขวง"
                   name="address.zip_code"
                   fieldName="zipcode"
@@ -650,11 +806,22 @@ const AddCustomer = () => {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: "column",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
                   alignItems: "flex-end",
                   marginTop: "24px",
                 }}
               >
+                <Button
+                  color="error"
+                  startIcon={<DeleteRounded />}
+                  fullWidth
+                  variant="contained"
+                  onClick={handleDel}
+                  sx={styles.btnDel}
+                >
+                  ลบบริษัทนี้ออกจากระบบ
+                </Button>
                 <LoadingButton
                   startIcon={<SaveRounded />}
                   type="submit"
@@ -755,6 +922,16 @@ const styles = {
       boxShadow: "none",
     },
   },
+  btnDel: {
+    boxShadow: "rgb(211 47 47 / 24%) 0px 8px 16px 0px",
+    borderRadius: 2,
+    minWidth: 16,
+    height: 40,
+    width: "auto",
+    "&:hover": {
+      boxShadow: "none",
+    },
+  },
 };
 
-export default AddCustomer;
+export default EditCustomer;

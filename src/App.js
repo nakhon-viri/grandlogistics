@@ -14,6 +14,7 @@ import AddOrder from "./pages/AddOrder";
 import ProfileEmployee from "./pages/ProfileEmployee";
 import EditOrder from "./pages/EditOrder";
 import Report from "./pages/Report";
+import EditCustomer from "./pages/EditCustomer";
 import ReportCustomer from "./pages/ReportCustomer";
 import ReportEmployeeAll from "./pages/ReportEmployeeAll";
 import ReportEmployee from "./pages/ReportEmployee";
@@ -130,6 +131,7 @@ const App = () => {
           <Route path="/order" element={<Order />} />
           <Route path="/addorder" element={<AddOrder />} />
           <Route path="/customer" element={<Customer />} />
+          <Route path="/editcustomer" element={<EditCustomer />} />
           <Route path="/addcustomer" element={<AddCustomer />} />
           <Route path="/editorder" element={<EditOrder />} />
           <Route path="/reportallemp" element={<ReportEmployeeAll />} />

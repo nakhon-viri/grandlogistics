@@ -33,6 +33,8 @@ import {
   DateRange,
   InsertDriveFile,
   Add,
+  ChangeCircleRounded,
+  SaveRounded,
 } from "@mui/icons-material";
 import {
   searchAddressByProvince,
@@ -137,8 +139,7 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
                       bgcolor: "#bbdefb",
                       color: "#1e88e5",
                     }}
-                    // alt={"value.full_name.first_name"}
-                    // src={"value.photo"}
+                    src={item.cus_img}
                   >
                     {item.cus_name.charAt(0).toUpperCase()}
                   </Avatar>
@@ -302,7 +303,9 @@ const AddOrder = () => {
         sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}
       >
         <Grid item xs={12} sm={9} sx={{ flexGrow: 1 }}>
-          <Typography variant="h4">{selectedCustomer.cus_name}</Typography>
+          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+            {"เพิ่มงานบริษัท : " + selectedCustomer.cus_name}
+          </Typography>
         </Grid>
         <Grid item xs={12} sm={3}>
           <Box
@@ -314,6 +317,7 @@ const AddOrder = () => {
             <Button
               variant="contained"
               onClick={handleClickOpen}
+              startIcon={<ChangeCircleRounded />}
               sx={{
                 backgroundColor: "rgb(32, 101, 209)",
                 boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
@@ -540,6 +544,7 @@ const AddOrder = () => {
           >
             <LoadingButton
               type="submit"
+              startIcon={<SaveRounded />}
               fullWidth
               loading={loading}
               variant="contained"

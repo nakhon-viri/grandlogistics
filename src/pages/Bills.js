@@ -30,6 +30,7 @@ import {
   Checkbox,
   TablePagination,
   FormControlLabel,
+  Tooltip,
 } from "@mui/material";
 import {
   Search,
@@ -37,9 +38,12 @@ import {
   RemoveRedEyeRounded,
   Close,
   Add,
+  LocalPrintshopRounded,
+  ChangeCircleRounded,
+  EditRounded,
 } from "@mui/icons-material";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import React, { useState, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import dayjs from "dayjs";
@@ -287,6 +291,45 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
         </Box>
       </Paper>
     </Dialog>
+  );
+};
+
+const EnhancedTableToolbar = ({ numSelected, handleSavePDF }) => {
+  return (
+    <Toolbar
+      sx={{
+        pl: { sm: 2 },
+        pr: { xs: 1, sm: 1 },
+        bgcolor: (theme) =>
+          alpha(
+            theme.palette.primary.main,
+            theme.palette.action.activatedOpacity
+          ),
+      }}
+    >
+      <Typography
+        sx={{ flex: 1 }}
+        color="inherit"
+        variant="subtitle1"
+        component="div"
+      >
+        {numSelected} selected
+      </Typography>
+
+      <Tooltip title="บันทึกใบแจ้งหนี้" sx={{ width: "100%" }}>
+        {/* <IconButton color="primary" onClick={handleSavePDF}>
+          <LocalPrintshopRounded />
+        </IconButton> */}
+        <Button
+          color="primary"
+          sx={{ borderRadius: 2 }}
+          onClick={handleSavePDF}
+          startIcon={<LocalPrintshopRounded />}
+        >
+          บันทึกใบแจ้งหนี้
+        </Button>
+      </Tooltip>
+    </Toolbar>
   );
 };
 
@@ -706,17 +749,35 @@ const Bills = () => {
         customerDetail={selectedCustomer}
         // handleClose={() => setOpenInvoice(false)}
       />
+      <Box sx={{ marginBottom: 5 }}>
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          ใบวางบิลทั้งหมด
+        </Typography>
+      </Box>
       <Paper elevation={3} sx={{ p: 0, overflow: "hidden" }}>
         <Box sx={{ mb: 1, p: 3 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
             <Typography variant="h6">ชื่อและที่อยู่</Typography>
-            <Button
-              sx={{ borderRadius: 2 }}
-              onClick={handleClickOpen}
-              startIcon={<Delete />}
-            >
-              เปลียนบริษัท
-            </Button>
+            <Box>
+              <Button
+                sx={{ borderRadius: 2, mr: 1 }}
+                onClick={() =>
+                  navigate("/editcustomer", {
+                    state: { customer: selectedCustomer },
+                  })
+                }
+                startIcon={<EditRounded />}
+              >
+                แก้ไข
+              </Button>
+              <Button
+                sx={{ borderRadius: 2 }}
+                onClick={handleClickOpen}
+                startIcon={<ChangeCircleRounded />}
+              >
+                เปลียนบริษัท
+              </Button>
+            </Box>
           </Box>
           <Typography variant="p">{selectedCustomer.cus_name}</Typography>
           <br />
@@ -879,6 +940,12 @@ const Bills = () => {
             </FormControl>
           </Grid>
         </Grid>
+        {selected.length ? (
+          <EnhancedTableToolbar
+            numSelected={selected.length}
+            handleSavePDF={handleSavePDF}
+          />
+        ) : null}
         <TableContainer>
           <Table
             size={dense ? "small" : "medium"}
@@ -1023,22 +1090,6 @@ const Bills = () => {
           />
         </Box>
       </Paper>
-      <LoadingButton
-        variant="contained"
-        loading={loadingSubmit}
-        sx={{
-          backgroundColor: "rgb(32, 101, 209)",
-          boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
-          borderRadius: 2,
-          "&:hover": {
-            boxShadow: "none",
-          },
-          mr: 2,
-        }}
-        onClick={handleSavePDF}
-      >
-        save
-      </LoadingButton>
     </Container>
   );
 };

@@ -20,7 +20,11 @@ import {
   IconButton,
   FormControlLabel,
 } from "@mui/material";
-import { Search, RemoveRedEyeRounded } from "@mui/icons-material";
+import {
+  Search,
+  RemoveRedEyeRounded,
+  PersonAddAlt1Rounded,
+} from "@mui/icons-material";
 import { useSelector } from "react-redux";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +32,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 
 import { employeeStore } from "../store/EmployeeStore";
+import { orderStore } from "../store/OrderStore";
 import TableHeader from "../components/TableHeader";
 import Controls from "../components/controls";
 
@@ -65,6 +70,7 @@ const Month = [
 const ReportEmployeeAll = () => {
   const navigate = useNavigate();
   const { employee } = useSelector(employeeStore);
+  const { order } = useSelector(orderStore);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
   //Sort by Header
   const [sortType, setSortType] = useState("desc");
@@ -88,10 +94,12 @@ const ReportEmployeeAll = () => {
   };
 
   let report = useMemo(() => {
+    if (!order) return [];
     let res = [];
     employeeList?.forEach((item) => {
-      let resOrders = item.orders.slice();
-
+      // let resOrders = item.orders.slice();
+      let resOrders = order?.filter((cuur) => cuur.personnel._id === item._id);
+      // console.log(item._id);
       if (valueDay !== "ทั้งเดือน") {
         resOrders = resOrders.filter((order) => {
           let day = dayjs(order.pickup_date).format("D");
@@ -302,6 +310,7 @@ const ReportEmployeeAll = () => {
           >
             <Button
               variant="contained"
+              startIcon={<PersonAddAlt1Rounded />}
               onClick={() => navigate("/register")}
               sx={{
                 backgroundColor: "rgb(32, 101, 209)",

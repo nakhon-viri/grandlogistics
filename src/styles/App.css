@@ -21,3 +21,7 @@ input[type="number"]::-webkit-outer-spin-button {
 iframe {
   border: none;
 }
+.swal2-title {
+  /* font-size: 1.6rem !important; */
+  font-family: "Itim", cursive;
+}

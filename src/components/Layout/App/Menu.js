@@ -23,8 +23,10 @@ import AddBusinessRoundedIcon from "@mui/icons-material/AddBusinessRounded";
 import DescriptionIcon from "@mui/icons-material/Description";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import { useLocation, useNavigate } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
 
 import { themeStore } from "../../../store/ThemeStore";
+import { authStore } from "../../../store/AuthStore";
 import { useSelector } from "react-redux";
 
 const drawerWidth = 280;
@@ -75,7 +77,9 @@ const ListLink = ({ to, text, icon }) => {
     <ListItemButton
       sx={pathname === to ? styles.listButton : null}
       className={pathname === to ? " Mui-selected" : null}
-      onClick={() => navigate(to)}
+      onClick={() => {
+        navigate(to);
+      }}
     >
       <ListItemIcon
         sx={{
@@ -122,12 +126,59 @@ const Menu = ({ handleDrawer2, open }) => {
   opendrawer = open;
 
   let mode = useSelector(themeStore);
+  let { profile } = useSelector(authStore);
+  const [user, setUser] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (profile) {
+      const user = cloneDeep(profile);
+      // console.log(profile?.user);
+      setUser(user);
+      setLoading(false);
+    }
+  }, [profile]);
+
+  if (loading) return <div>someting</div>;
 
   const Brand = ({ text, ...rest }) => (
     <Typography {...rest} variant="h5" sx={styles.nameBrand}>
       {text}
     </Typography>
   );
+
+  const ListLink = ({ to, text, icon }) => {
+    let navigate = useNavigate();
+    let { pathname } = useLocation();
+    return (
+      <ListItemButton
+        sx={pathname === to ? styles.listButton : null}
+        className={pathname === to ? " Mui-selected" : null}
+        onClick={() => {
+          handleDrawer2();
+          navigate(to);
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            ".Mui-selected > &": {
+              color: (theme) => theme.palette.primary.main,
+            },
+            color: "text.secondary",
+          }}
+        >
+          {icon}
+        </ListItemIcon>
+        <ListItemText
+          sx={{
+            color: pathname === to ? "primary.main" : "text.secondary",
+            opacity: opendrawer ? 1 : 0,
+          }}
+          primary={text}
+        />
+      </ListItemButton>
+    );
+  };
 
   const ListMenu = () => (
     <>
@@ -143,17 +194,17 @@ const Menu = ({ handleDrawer2, open }) => {
           </Box>
         </Box>
         <Typography component="div" sx={styles.containerCard(open)}>
-          <Avatar alt="Remy Sharp" src="/img/me.jpg" />
+          <Avatar src={user?.photo || null} />
           <Box sx={{ ...styles.cardDetail, opacity: open ? 1 : 0 }}>
             <Typography variant="h6" sx={styles.nameUser}>
-              This is Name.!!!dfgsdfgsdfgdfsgsdfgkkkkkkkkkk
+              {user?.full_name.first_name + " " + user?.full_name?.last_name}
             </Typography>
             <Typography
               variant="p"
               color="text.secondary"
               sx={styles.department}
             >
-              admin
+              {user?.role}
             </Typography>
           </Box>
         </Typography>
@@ -206,7 +257,11 @@ const Menu = ({ handleDrawer2, open }) => {
       </ListGroup>
       <ListGroup title="ใบแจ้งหนี้">
         <ListLink to="/bills" text="ใบวางบิล" icon={<FileCopyIcon />} />
-        <ListLink to="/createbill" text="สร้างใบวางบิล" icon={<FileCopyIcon />} />
+        <ListLink
+          to="/createbill"
+          text="สร้างใบวางบิล"
+          icon={<FileCopyIcon />}
+        />
         <ListLink to="/invoices" text="ใบแจ้งหนี้" icon={<DescriptionIcon />} />
       </ListGroup>
       <ListGroup title="ถังขยะ">

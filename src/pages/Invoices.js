@@ -11,6 +11,7 @@ import {
   AppBar,
   Toolbar,
   Box,
+  Typography,
 } from "@mui/material";
 import {
   Search,
@@ -154,7 +155,6 @@ const Invoices = () => {
       newOrder.map((currOrder) => {
         curr.id_order.map((currOrder2) => {
           if (currOrder._id === currOrder2) {
-            console.log(currOrder.price_order);
             total.push(currOrder.price_order);
           }
         });
@@ -216,6 +216,11 @@ const Invoices = () => {
 
   return (
     <Container>
+      <Box sx={{ marginBottom: 5 }}>
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          ใบแจ้งหนี้
+        </Typography>
+      </Box>
       <DialogInvoice open={openInvoice} {...invoiceProps} />
       <Paper sx={{ p: 0, overflow: "hidden" }}>
         <TableContainer>

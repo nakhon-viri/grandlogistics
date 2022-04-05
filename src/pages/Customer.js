@@ -40,19 +40,27 @@ import {
   KeyboardArrowUp,
   Search,
   Add,
+  EditRounded,
+  DeleteRounded,
+  ChangeCircleRounded,
 } from "@mui/icons-material";
 
+import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import cloneDeep from "lodash.clonedeep";
 
 import { customerStore } from "../store/CustomerStore";
+import { orderStore, deleteOrder } from "../store/OrderStore";
 import Controls from "../components/controls";
 import TableHeader from "../components/TableHeader";
 import StatusColor from "../components/StatusColor";
+import Loading from "../components/Loading";
+import { HttpClient } from "../utils/HttpClient";
+
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Zoom ref={ref} {...props} />;
 });
@@ -115,7 +123,7 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
                       color: "#1e88e5",
                     }}
                     // alt={"value.full_name.first_name"}
-                    // src={"value.photo"}
+                    src={item.cus_img}
                   >
                     {item.cus_name.charAt(0).toUpperCase()}
                   </Avatar>
@@ -155,8 +163,9 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
   );
 };
 
-const Row = ({ Cell }) => {
+const Row = ({ Cell, handleDelete }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -172,7 +181,7 @@ const Row = ({ Cell }) => {
         </TableCell>
         <TableCell align="right">{Cell.pickup_location}</TableCell>
         <TableCell align="right">{Cell.delivery_location}</TableCell>
-        <TableCell align="right">{Cell.wage}</TableCell>
+        <TableCell align="right">{Cell.price_order}</TableCell>
         <TableCell align="right">{Cell.cost}</TableCell>
         <TableCell align="right">{Cell.withdraw}</TableCell>
         <TableCell align="right">
@@ -249,7 +258,7 @@ const Row = ({ Cell }) => {
                     <TableCell align="right">น้ำมัน</TableCell>
                     <TableCell align="right">ตจว./กทม.</TableCell>
                     <TableCell
-                      align="right"
+                      align="center"
                       sx={{ borderRadius: "0px 16px 16px 0px" }}
                     >
                       Action
@@ -267,8 +276,21 @@ const Row = ({ Cell }) => {
                     <TableCell>{Cell.profit}</TableCell>
                     <TableCell align="right">{Cell.cost}</TableCell>
                     <TableCell align="right">{Cell.area}</TableCell>
-                    <TableCell align="right">
-                      <Button>asdf</Button>
+                    <TableCell align="center">
+                      <IconButton
+                        onClick={() =>
+                          navigate("/editorder", { state: { order: Cell } })
+                        }
+                        color="warning"
+                      >
+                        <EditRounded />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleDelete(Cell._id)}
+                        color="error"
+                      >
+                        <DeleteRounded />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -284,7 +306,10 @@ const Row = ({ Cell }) => {
 
 export default function SimpleDialogDemo() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { customer } = useSelector(customerStore);
+  const { order } = useSelector(orderStore);
+  const [loadingData, setLoadingData] = useState(false);
   //Dialog
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState({});
@@ -328,6 +353,39 @@ export default function SimpleDialogDemo() {
     setSortByName(property);
   };
 
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "คุณต้องการที่จะลบเที่ยววิ่งนี้ใช่หรือไม่",
+      icon: "warning",
+      showCancelButton: true,
+      showConfirmButton: false,
+      showDenyButton: true,
+      denyButtonText: "ตกลง",
+      cancelButtonText: "ปิด",
+    }).then(async (result) => {
+      if (result.isDenied) {
+        try {
+          setLoadingData(true);
+          let res = await HttpClient.delete("/order/" + id);
+          if (res.data.sucess) {
+            dispatch(deleteOrder(id));
+            Swal.fire("ลบเสร็จสิ้น!", "", "success");
+          } else {
+            Swal.fire(
+              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
+              "",
+              "warning"
+            ).then(() => window.location.reload());
+          }
+        } catch (error) {
+          console.log(error.respose);
+        } finally {
+          setLoadingData(false);
+        }
+      }
+    });
+  };
+
   useEffect(() => {
     if (customer) {
       let newList = customer?.slice(0, 1) || [];
@@ -336,14 +394,14 @@ export default function SimpleDialogDemo() {
   }, [customer]);
 
   let orders = useMemo(() => {
-    let newOrders = cloneDeep(selectedCustomer?.orders) || [];
+    if (!order) return [];
+
+    let newOrders = order?.filter(
+      (item) => item.customer._id === selectedCustomer._id
+    );
+
     if (valueTabs !== "ทั้งหมด") {
-      newOrders = newOrders.filter((a) => {
-        if (valueTabs === "จัดส่งสำเร็จ") {
-          return a.status === valueTabs;
-        }
-        return a.status === "ยังไม่ถูกจัดส่ง" || a.status === "ยังไม่ถูกจักส่ง";
-      });
+      newOrders = newOrders.filter((a) => a.status === valueTabs);
     }
 
     if (valueYear !== "ทั้งหมด") {
@@ -386,7 +444,15 @@ export default function SimpleDialogDemo() {
     }
 
     return newOrders;
-  }, [selectedCustomer, valueDay, valueMonth, valueYear, search, valueTabs]);
+  }, [
+    selectedCustomer,
+    order,
+    valueDay,
+    valueMonth,
+    valueYear,
+    search,
+    valueTabs,
+  ]);
 
   let dateQuery = (dateFormat) =>
     useMemo(
@@ -487,6 +553,7 @@ export default function SimpleDialogDemo() {
   };
 
   if (!selectedCustomer) return <Box>กรุณาเพิ่มบริษัทคู่ค้า</Box>;
+  if (loadingData) return <Loading />;
 
   return (
     <Container>
@@ -495,10 +562,12 @@ export default function SimpleDialogDemo() {
         rowSpacing={2}
         sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}
       >
-        <Grid item xs={12} lg={9} sx={{ flexGrow: 1 }}>
-          <Typography variant="h4">{selectedCustomer.cus_name}</Typography>
+        <Grid item xs={12} lg={7} sx={{ flexGrow: 1 }}>
+          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+            {selectedCustomer.cus_name}
+          </Typography>
         </Grid>
-        <Grid item xs={12} lg={3}>
+        <Grid item xs={12} lg={5}>
           <Box
             sx={{
               display: "flex",
@@ -507,6 +576,27 @@ export default function SimpleDialogDemo() {
           >
             <Button
               variant="contained"
+              startIcon={<EditRounded />}
+              onClick={() =>
+                navigate("/editcustomer", {
+                  state: { customer: selectedCustomer },
+                })
+              }
+              sx={{
+                backgroundColor: "rgb(32, 101, 209)",
+                boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+                borderRadius: 2,
+                "&:hover": {
+                  boxShadow: "none",
+                },
+                mr: 2,
+              }}
+            >
+              แก้ไข
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<ChangeCircleRounded />}
               onClick={handleClickOpen}
               sx={{
                 backgroundColor: "rgb(32, 101, 209)",
@@ -564,14 +654,14 @@ export default function SimpleDialogDemo() {
           sx={{
             px: 2,
             maxHeight: 48,
-            borderBottomColor: "#000",
-            borderBottomWidth: 1,
             backgroundColor: "rgba(145, 158, 171, 0.16)",
           }}
         >
           <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
-          <Tab value="จัดส่งสำเร็จ" label="จัดส่งสำเร็จ" disableRipple />
-          <Tab value="ยังไม่ถูกจัดส่ง" label="ยังไม่ถูกจัดส่ง" disableRipple />
+          <Tab value="มอบหมายงานเเล้ว" label="มอบหมายงานเเล้ว" disableRipple />
+          <Tab value="ปฏิเสธงาน" label="ปฏิเสธงาน" disableRipple />
+          <Tab value="ยอมรับ" label="ยอมรับ" disableRipple />
+          <Tab value="ส่งงานเเล้ว" label="ส่งงานเเล้ว" disableRipple />
         </Tabs>
         <Divider />
         <Grid container spacing={2} sx={{ p: 3 }}>
@@ -642,7 +732,11 @@ export default function SimpleDialogDemo() {
                   ?.sort(getComparator(sortType, sortByName))
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((Cell) => (
-                    <Row key={Cell._id} Cell={Cell} />
+                    <Row
+                      key={Cell._id}
+                      Cell={Cell}
+                      handleDelete={handleDelete}
+                    />
                   ))}
               </TableBody>
             </Table>
@@ -677,7 +771,7 @@ export default function SimpleDialogDemo() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 20, 25, 30, 35, 40, 45]}
             component="div"
-            count={selectedCustomer.orders?.length || 0}
+            count={orders?.length || 0}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}

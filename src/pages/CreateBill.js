@@ -30,10 +30,19 @@ import {
   IconButton,
   FormControlLabel,
   TablePagination,
+  Tooltip,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { Delete, Search, Add, Close } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
+import {
+  Delete,
+  Search,
+  Add,
+  Close,
+  ChangeCircleRounded,
+  EditRounded,
+  NoteAddRounded,
+} from "@mui/icons-material";
+import { useTheme, alpha } from "@mui/material/styles";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import React, { useMemo, useState, useEffect } from "react";
@@ -215,6 +224,42 @@ const DialogPDF = ({
         customerDetail={customerDetail}
       />
     </Dialog>
+  );
+};
+
+const EnhancedTableToolbar = ({ numSelected, handleSavePDF }) => {
+  return (
+    <Toolbar
+      sx={{
+        pl: { sm: 2 },
+        pr: { xs: 1, sm: 1 },
+        bgcolor: (theme) =>
+          alpha(
+            theme.palette.primary.main,
+            theme.palette.action.activatedOpacity
+          ),
+      }}
+    >
+      <Typography
+        sx={{ flex: 1 }}
+        color="inherit"
+        variant="subtitle1"
+        component="div"
+      >
+        {numSelected} selected
+      </Typography>
+
+      <Tooltip title="บันทึกใบวางบิล">
+        <Button
+          color="primary"
+          sx={{ borderRadius: 2 }}
+          onClick={handleSavePDF}
+          startIcon={<NoteAddRounded />}
+        >
+          บันทึกใบวางบิล
+        </Button>
+      </Tooltip>
+    </Toolbar>
   );
 };
 
@@ -560,17 +605,35 @@ const CreateBill = () => {
         customerDetail={selectedCustomer}
         handleClose={() => navigate("/bills")}
       />
+      <Box sx={{ marginBottom: 5 }}>
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          สร้างใบวางบิล
+        </Typography>
+      </Box>
       <Paper sx={{ p: 0, overflow: "auto" }}>
         <Box sx={{ mb: 1, p: 3 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
             <Typography variant="h6">ชื่อและที่อยู่</Typography>
-            <Button
-              sx={{ borderRadius: 2 }}
-              onClick={handleClickOpen}
-              startIcon={<Delete />}
-            >
-              เปลียนบริษัท
-            </Button>
+            <Box>
+              <Button
+                sx={{ borderRadius: 2, mr: 1 }}
+                onClick={() =>
+                  navigate("/editcustomer", {
+                    state: { customer: selectedCustomer },
+                  })
+                }
+                startIcon={<EditRounded />}
+              >
+                แก้ไข
+              </Button>
+              <Button
+                sx={{ borderRadius: 2 }}
+                onClick={handleClickOpen}
+                startIcon={<ChangeCircleRounded />}
+              >
+                เปลียนบริษัท
+              </Button>
+            </Box>
           </Box>
           <Typography variant="p">{selectedCustomer.cus_name}</Typography>
           <br />
@@ -693,6 +756,12 @@ const CreateBill = () => {
           </Grid>
         </Grid>
         <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
+          {selected.length ? (
+            <EnhancedTableToolbar
+              numSelected={selected.length}
+              handleSavePDF={handleSavePDF}
+            />
+          ) : null}
           <TableContainer>
             <Table size={dense ? "small" : "normall"}>
               <TableHeader {...tableHeaderProps}>
@@ -807,22 +876,6 @@ const CreateBill = () => {
           />
         </Box>
       </Paper>
-      <LoadingButton
-        variant="contained"
-        onClick={handleSavePDF}
-        loading={loadingSubmit}
-        sx={{
-          backgroundColor: "rgb(32, 101, 209)",
-          boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
-          borderRadius: 2,
-          "&:hover": {
-            boxShadow: "none",
-          },
-          mr: 2,
-        }}
-      >
-        PPINT
-      </LoadingButton>
     </Container>
   );
 };

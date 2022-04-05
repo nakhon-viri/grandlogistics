@@ -3,6 +3,7 @@ import { HttpClient } from "../utils/HttpClient";
 
 const stateDefault = {
   employee: null,
+  deletedEmployee: null,
   loadingEmployee: false,
   error: null,
 };
@@ -12,7 +13,11 @@ export const employeeReducer = createSlice({
   initialState: { value: stateDefault },
   reducers: {
     upDateEmployee: (state, action) => {
-      state.value = { ...stateDefault, employee: action.payload };
+      state.value = {
+        ...stateDefault,
+        employee: action.payload.filter((item) => item.onDuty === true),
+        deletedEmployee: action.payload.filter((item) => item.onDuty === false),
+      };
     },
     upDateLoadingEmp: (state, action) => {
       state.value = { ...stateDefault, loadingEmployee: true };
@@ -33,22 +38,31 @@ export const employeeReducer = createSlice({
       });
     },
     deletedEmployee: (state, action) => {
+      let empDeleted = [];
       state.value.employee = state.value.employee.filter((item) => {
         if (item._id === action.payload) {
           item.onDuty = false;
-          return item;
+          empDeleted.push(item);
+          return;
         }
         return item;
       });
+
+      state.value.deletedEmployee.push(...empDeleted);
     },
     recoverEmployee: (state, action) => {
-      state.value.employee = state.value.employee.filter((item) => {
+      let employee = [];
+      let deletedEmployee = [];
+      employee = state.value.deletedEmployee.filter((item) => {
         if (item._id === action.payload) {
           item.onDuty = true;
           return item;
+        } else {
+          deletedEmployee.push(item);
         }
-        return item;
       });
+      state.value.employee.push(...employee);
+      state.value.deletedEmployee = deletedEmployee;
     },
   },
 });
@@ -63,22 +77,22 @@ export const {
   deletedEmployee,
 } = employeeReducer.actions;
 
-// export const employeeStore = (state) => state.employee.value;
+export const employeeStore = (state) => state.employee.value;
 
-export const employeeStore = (state) => {
-  let { employee, loadingEmployee, error } = state.employee.value;
-  if (!employee) return state.employee.value;
-  let deletedEmployee = [];
-  let newEmp = employee?.filter((item) => {
-    if (item.onDuty) {
-      return item;
-    } else {
-      deletedEmployee.push(item);
-    }
-  });
-  employee = newEmp;
-  return { employee, deletedEmployee, loadingEmployee, error };
-};
+// export const employeeStore = (state) => {
+//   let { employee, loadingEmployee, error } = state.employee.value;
+//   if (!employee) return state.employee.value;
+//   let deletedEmployee = [];
+//   let newEmp = employee?.filter((item) => {
+//     if (item.onDuty) {
+//       return item;
+//     } else {
+//       deletedEmployee.push(item);
+//     }
+//   });
+//   employee = newEmp;
+//   return { employee, deletedEmployee, loadingEmployee, error };
+// };
 
 export const employeeReq = () => async (dispatch) => {
   try {

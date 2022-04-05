@@ -50,6 +50,7 @@ import "dayjs/locale/th";
 import { useSelector } from "react-redux";
 
 import { employeeStore } from "../store/EmployeeStore";
+import { orderStore } from "../store/OrderStore";
 import TableHeader from "../components/TableHeader";
 import Controls from "../components/controls";
 
@@ -184,6 +185,7 @@ const Row = ({ Cell }) => {
 const ReportEmployee = () => {
   let { state } = useLocation();
   const { employee } = useSelector(employeeStore);
+  const { order } = useSelector(orderStore);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
   const [userSelected, setUserSelected] = useState(null);
   //Sort by Header
@@ -213,7 +215,11 @@ const ReportEmployee = () => {
 
   let orders = useMemo(() => {
     if (!userSelected) return;
-    let newOrders = userSelected.orders?.slice() || [];
+    if (!order) return [];
+
+    let newOrders = order?.filter(
+      (item) => item.personnel._id === userSelected._id
+    );
 
     if (valueYear !== "ทั้งหมด") {
       newOrders = newOrders.filter(
@@ -395,7 +401,9 @@ const ReportEmployee = () => {
   return (
     <Container maxWidth={"lg"}>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
-        <Typography variant="h4">Order ทั้งหมด</Typography>
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          การเงินพนักงานรายบุลคล
+        </Typography>
       </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} lg={3}>
@@ -576,14 +584,3 @@ const styles = {
 };
 
 export default ReportEmployee;
-
-// import React from "react";
-// import { useLocation } from "react-router-dom";
-
-// const ReportEmployee = (props) => {
-//   let { state } = useLocation();
-//   console.log(state);
-//   return <div>ReportEmployee</div>;
-// };
-
-// export default ReportEmployee;

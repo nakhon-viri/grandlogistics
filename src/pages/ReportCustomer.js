@@ -46,6 +46,7 @@ import {
   Search,
   Close,
   PrintRounded,
+  ChangeCircleRounded,
 } from "@mui/icons-material";
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
@@ -55,6 +56,7 @@ import cloneDeep from "lodash.clonedeep";
 import { useNavigate } from "react-router-dom";
 
 import { customerStore } from "../store/CustomerStore";
+import { orderStore } from "../store/OrderStore";
 import Controls from "../components/controls";
 import TableHeader from "../components/TableHeader";
 import ReportBill from "../components/ReportBill";
@@ -121,7 +123,7 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
                       color: "#1e88e5",
                     }}
                     // alt={"value.full_name.first_name"}
-                    // src={"value.photo"}
+                    src={item.cus_img}
                   >
                     {item.cus_name.charAt(0).toUpperCase()}
                   </Avatar>
@@ -199,6 +201,7 @@ const EnhancedTableToolbar = ({ title, print }) => {
 
 export default function SimpleDialogDemo() {
   const { customer } = useSelector(customerStore);
+  const { order } = useSelector(orderStore);
   //Dialog
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState({});
@@ -206,7 +209,7 @@ export default function SimpleDialogDemo() {
   const [customerList] = useState(customer?.slice());
   //Sort by Header
   const [sortType, setSortType] = useState("desc");
-  const [sortByName, setSortByName] = useState("price_order");
+  const [sortByName, setSortByName] = useState("pickup_date");
   //TablePagination
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -250,7 +253,11 @@ export default function SimpleDialogDemo() {
   }, [customer]);
 
   let orders = useMemo(() => {
-    let newOrders = cloneDeep(selectedCustomer.orders) || [];
+    if (!order) return [];
+
+    let newOrders = order?.filter(
+      (item) => item.customer._id === selectedCustomer._id
+    );
 
     if (valueSubMonth !== "ทั้งเดือน") {
       newOrders = newOrders.filter((order) => {
@@ -445,7 +452,9 @@ export default function SimpleDialogDemo() {
         sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}
       >
         <Grid item xs={12} lg={9} sx={{ flexGrow: 1 }}>
-          <Typography variant="h4">{selectedCustomer.cus_name}</Typography>
+          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+            {selectedCustomer.cus_name}
+          </Typography>
         </Grid>
         <Grid item xs={12} lg={3}>
           <Box
@@ -456,6 +465,7 @@ export default function SimpleDialogDemo() {
           >
             <Button
               variant="contained"
+              startIcon={<ChangeCircleRounded />}
               onClick={handleClickOpen}
               sx={{
                 backgroundColor: "rgb(32, 101, 209)",
@@ -663,7 +673,7 @@ export default function SimpleDialogDemo() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 20, 25, 30, 35, 40, 45]}
             component="div"
-            count={selectedCustomer.orders?.length || 0}
+            count={orders?.length || 0}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}

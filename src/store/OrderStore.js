@@ -55,6 +55,14 @@ export const orderReducer = createSlice({
       state.value.order.push(...order);
       state.value.orderDeleted = orderDeleted;
     },
+    editOrder: (state, action) => {
+      state.value.order = state.value.order.map((item) => {
+        if (item._id === action.payload._id) {
+          return action.payload;
+        }
+        return item;
+      });
+    },
   },
 });
 
@@ -65,6 +73,7 @@ export const {
   upDateLoading,
   addOrder,
   upDateError,
+  editOrder,
 } = orderReducer.actions;
 
 export const orderStore = (state) => state.order.value;

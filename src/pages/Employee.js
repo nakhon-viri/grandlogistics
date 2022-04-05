@@ -40,6 +40,8 @@ import {
   KeyboardArrowDown,
   Search,
   ManageAccounts,
+  EditRounded,
+  DeleteRounded,
 } from "@mui/icons-material";
 import { styled, useTheme } from "@mui/material/styles";
 
@@ -47,11 +49,16 @@ import { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import cloneDeep from "lodash.clonedeep";
+import Swal from "sweetalert2";
 
 import { employeeStore } from "../store/EmployeeStore";
+import { orderStore, deleteOrder } from "../store/OrderStore";
 import TableHeader from "../components/TableHeader";
 import StatusColor from "../components/StatusColor";
+import { HttpClient } from "../utils/HttpClient";
+import Loading from "../components/Loading";
 
 const AntSwitch = styled(Switch)(({ theme }) => ({
   width: 28,
@@ -201,8 +208,9 @@ const MenuProps = {
   },
 };
 
-const Row = ({ Cell }) => {
+const Row = ({ Cell, handleDelete }) => {
   const theme = useTheme();
+  let navigate = useNavigate();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -292,7 +300,7 @@ const Row = ({ Cell }) => {
                         );
                       }
                     })}
-                    <TableCell>จ่ายค่างาน</TableCell>
+                    <TableCell>ค่างาน</TableCell>
                     <TableCell>กำไร</TableCell>
                     <TableCell align="right">น้ำมัน</TableCell>
                     <TableCell align="right">ตจว./กทม.</TableCell>
@@ -315,8 +323,21 @@ const Row = ({ Cell }) => {
                     <TableCell>{Cell.profit}</TableCell>
                     <TableCell align="right">{Cell.cost}</TableCell>
                     <TableCell align="right">{Cell.area}</TableCell>
-                    <TableCell align="right">
-                      <Button>asdf</Button>
+                    <TableCell align="center">
+                      <IconButton
+                        onClick={() =>
+                          navigate("/editorder", { state: { order: Cell } })
+                        }
+                        color="warning"
+                      >
+                        <EditRounded />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleDelete(Cell._id)}
+                        color="error"
+                      >
+                        <DeleteRounded />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -332,7 +353,10 @@ const Row = ({ Cell }) => {
 
 const Employee = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { employee } = useSelector(employeeStore);
+  const { order } = useSelector(orderStore);
+  const [loadingData, setLoadingData] = useState(false);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
   const [userSelected, setUserSelected] = useState({ orders: [] });
   //Filter by Status
@@ -359,15 +383,15 @@ const Employee = () => {
   }, [employee]);
 
   let orders = useMemo(() => {
-    let newOrders =
-      [...userSelected.orders].filter((item) => item.deleted !== true) || [];
+    if (!order) return [];
+
+    let newOrders = order?.filter(
+      (item) => item.personnel._id === userSelected._id
+    );
 
     if (valueTabs !== "ทั้งหมด") {
       newOrders = newOrders.filter((a) => {
-        if (valueTabs === "จัดส่งสำเร็จ") {
-          return a.status === valueTabs;
-        }
-        return a.status === "ยังไม่ถูกจัดส่ง" || a.status === "ยังไม่ถูกจักส่ง";
+        return a.status === valueTabs;
       });
     }
 
@@ -411,7 +435,40 @@ const Employee = () => {
     }
 
     return newOrders;
-  }, [userSelected, valueDay, valueMonth, valueYear, search, valueTabs]);
+  }, [userSelected, order, valueDay, valueMonth, valueYear, search, valueTabs]);
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "คุณต้องการที่จะลบเที่ยววิ่งนี้ใช่หรือไม่",
+      icon: "warning",
+      showCancelButton: true,
+      showConfirmButton: false,
+      showDenyButton: true,
+      denyButtonText: "ตกลง",
+      cancelButtonText: "ปิด",
+    }).then(async (result) => {
+      if (result.isDenied) {
+        try {
+          setLoadingData(true);
+          let res = await HttpClient.delete("/order/" + id);
+          if (res.data.sucess) {
+            dispatch(deleteOrder(id));
+            Swal.fire("ลบเสร็จสิ้น!", "", "success");
+          } else {
+            Swal.fire(
+              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
+              "",
+              "warning"
+            ).then(() => window.location.reload());
+          }
+        } catch (error) {
+          console.log(error.respose);
+        } finally {
+          setLoadingData(false);
+        }
+      }
+    });
+  };
 
   const handleRequestSort = (event, property) => {
     const isAsc = sortByName === property && sortType === "asc";
@@ -454,7 +511,7 @@ const Employee = () => {
       { id: "pickup_date", label: "วันที่" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
-      { id: "wage", label: "ค่างาน" },
+      { id: "wage", label: "ค่าเที่ยววิ่งพนักงาน" },
       { id: "cost", label: "ค่าน้ำมัน" },
       { id: "withdraw", label: "เบิก" },
       { id: "balance", label: "ยอดคงเหลือ" },
@@ -529,10 +586,14 @@ const Employee = () => {
     );
   };
 
+  if (loadingData) return <Loading />;
+
   return (
     <Container maxWidth={"xl"}>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
-        <Typography variant="h4">Order ทั้งหมด</Typography>
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          พนักงานทั้งหมด
+        </Typography>
       </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} lg={3}>
@@ -635,12 +696,14 @@ const Employee = () => {
                 }}
               >
                 <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
-                <Tab value="จัดส่งสำเร็จ" label="จัดส่งสำเร็จ" disableRipple />
                 <Tab
-                  value="ยังไม่ถูกจัดส่ง"
-                  label="ยังไม่ถูกจัดส่ง"
+                  value="มอบหมายงานเเล้ว"
+                  label="มอบหมายงานเเล้ว"
                   disableRipple
                 />
+                <Tab value="ปฏิเสธงาน" label="ปฏิเสธงาน" disableRipple />
+                <Tab value="ยอมรับ" label="ยอมรับ" disableRipple />
+                <Tab value="ส่งงานเเล้ว" label="ส่งงานเเล้ว" disableRipple />
               </Tabs>
               <Divider />
               <Grid container spacing={2} sx={{ p: 3 }}>
@@ -702,7 +765,7 @@ const Employee = () => {
                 <TableContainer
                   sx={{
                     position: "relative",
-                    minWidth: "800px",
+                    minWidth: "880px",
                   }}
                 >
                   <Table size={dense ? "small" : "normall"}>
@@ -715,7 +778,13 @@ const Employee = () => {
                             page * rowsPerPage,
                             page * rowsPerPage + rowsPerPage
                           )
-                          .map((Cell) => <Row key={Cell._id} Cell={Cell} />)}
+                          .map((Cell) => (
+                            <Row
+                              key={Cell._id}
+                              Cell={Cell}
+                              handleDelete={handleDelete}
+                            />
+                          ))}
                     </TableBody>
                   </Table>
                 </TableContainer>

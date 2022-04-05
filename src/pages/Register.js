@@ -22,7 +22,12 @@ import AdapterDayjs from "@mui/lab/AdapterDayjs";
 import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
-import { AddAPhoto, DateRange, InsertDriveFile } from "@mui/icons-material";
+import {
+  AddAPhoto,
+  DateRange,
+  InsertDriveFile,
+  SaveRounded,
+} from "@mui/icons-material";
 import {
   searchAddressByProvince,
   searchAddressByDistrict,
@@ -523,7 +528,9 @@ const Register = () => {
     <LocalizationProvider locale={"th"} dateAdapter={AdapterDayjs}>
       <Container>
         <Box sx={{ flexGrow: 1, mb: 5 }}>
-          <Typography variant="h4">Order ทั้งหมด</Typography>
+          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+            ลงทะเบียนพนักงาน
+          </Typography>
         </Box>
         <Form onSubmit={handleSubmit} sx={styles.form}>
           <Grid container spacing={2}>
@@ -939,12 +946,13 @@ const Register = () => {
                 >
                   <LoadingButton
                     type="submit"
+                    startIcon={<SaveRounded />}
                     fullWidth
                     loading={loading}
                     variant="contained"
                     sx={styles.btnSubmit}
                   >
-                    Sign In
+                    บันทึก
                   </LoadingButton>
                 </Box>
               </Paper>

@@ -38,7 +38,7 @@ export const loginReq = (account) => async (dispatch) => {
     let resLogin = await axios.post("/personnel/login", account);
     localStorage.setItem("ACTO", resLogin.data.accessToken);
 
-    dispatch(upDateLogin(resLogin.data));
+    dispatch(upDateLogin(resLogin.data.user));
   } catch (error) {
     dispatch(upDateError(error.response.data.error.message));
   }

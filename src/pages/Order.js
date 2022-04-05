@@ -36,9 +36,11 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Button from "@mui/material/Button";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import Collapse from "@mui/material/Collapse";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import Add from "@mui/icons-material/Add";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
@@ -49,8 +51,10 @@ import InputAdornment from "@mui/material/InputAdornment";
 import Grid from "@mui/material/Grid";
 import StatusColor from "../components/StatusColor";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 import { HttpClient } from "../utils/HttpClient";
+import Loading from "../components/Loading";
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -251,6 +255,7 @@ const MenuProps = {
 };
 const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
   const theme = useTheme();
+  let navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
   return (
     <>
@@ -373,7 +378,7 @@ const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
                     <TableCell align="right">น้ำมัน</TableCell>
                     <TableCell align="right">ตจว./กทม.</TableCell>
                     <TableCell
-                      align="right"
+                      align="center"
                       sx={{ borderRadius: "0px 16px 16px 0px" }}
                     >
                       Action
@@ -391,13 +396,21 @@ const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
                     <TableCell>{row.profit}</TableCell>
                     <TableCell align="right">{row.cost}</TableCell>
                     <TableCell align="right">{row.area}</TableCell>
-                    <TableCell align="right">
-                      <Button
-                        onClick={() => handleDelete(row._id)}
-                        sx={{ color: "red" }}
+                    <TableCell align="center">
+                      <IconButton
+                        onClick={() =>
+                          navigate("/editorder", { state: { order: row } })
+                        }
+                        color="warning"
                       >
-                        ลบ
-                      </Button>
+                        <EditRoundedIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleDelete(row._id)}
+                        color="error"
+                      >
+                        <DeleteRoundedIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -451,21 +464,44 @@ export default function EnhancedTable() {
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const [value, setValue] = React.useState("ทั้งหมด");
+  const [valueTabs, setValueTabs] = React.useState("ทั้งหมด");
   const [filterYear, setFilterYear] = React.useState("ทั้งหมด");
   const { order } = useSelector(orderStore);
+  const [loadingData, setLoadingData] = React.useState(false);
 
   const tablePagination = useMediaQuery("(min-width:600px)");
 
-  const handleDelete = async (id) => {
-    try {
-      let res = await HttpClient.delete("/order/" + id);
-      if (res.data.sucess) {
-        dispatch(deleteOrder(id));
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "คุณต้องการที่จะลบเที่ยววิ่งนี้ใช่หรือไม่",
+      icon: "warning",
+      showCancelButton: true,
+      showConfirmButton: false,
+      showDenyButton: true,
+      denyButtonText: "ตกลง",
+      cancelButtonText: "ปิด",
+    }).then(async (result) => {
+      if (result.isDenied) {
+        try {
+          setLoadingData(true);
+          let res = await HttpClient.delete("/order/" + id);
+          if (res.data.sucess) {
+            dispatch(deleteOrder(id));
+            Swal.fire("ลบเสร็จสิ้น!", "", "success");
+          } else {
+            Swal.fire(
+              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
+              "",
+              "warning"
+            ).then(() => window.location.reload());
+          }
+        } catch (error) {
+          console.log(error.respose);
+        } finally {
+          setLoadingData(false);
+        }
       }
-    } catch (error) {
-      console.log(error.respose);
-    }
+    });
   };
 
   const handleChange = (event, newValue) => {
@@ -564,26 +600,17 @@ export default function EnhancedTable() {
           if (a.deleted) return;
           return a;
         }) || [];
+      if (valueTabs !== "ทั้งหมด") {
+        queryOrder = queryOrder.filter((a) => a.status === valueTabs);
+      }
+      
+      queryOrder = queryOrder.filter((a) => {
+        if (filterYear !== "ทั้งหมด") {
+          return dayjs(a.pickup_date).format("YYYY") === filterYear;
+        }
+        return a;
+      });
 
-      console.log(queryOrder);
-      queryOrder = queryOrder
-        .filter((a) => {
-          if (value !== "ทั้งหมด") {
-            if (value === "จัดส่งสำเร็จ") {
-              return a.status === value;
-            }
-            return (
-              a.status === "ยังไม่ถูกจัดส่ง" || a.status === "ยังไม่ถูกจักส่ง"
-            );
-          }
-          return a;
-        })
-        .filter((a) => {
-          if (filterYear !== "ทั้งหมด") {
-            return dayjs(a.pickup_date).format("YYYY") === filterYear;
-          }
-          return a;
-        });
       setMonth([...queryOrder]);
       queryOrder = queryOrder.filter((a) => {
         if (filterMonth !== "ทั้งหมด") {
@@ -623,10 +650,12 @@ export default function EnhancedTable() {
       }
 
       return queryOrder;
-    }, [order, filterYear, filterMonth, personName, search, value]) || [];
+    }, [order, filterYear, filterMonth, personName, search, valueTabs]) || [];
 
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - newOrder.length) : 0;
+
+  if (loadingData) return <Loading />;
 
   return (
     <Box>
@@ -634,7 +663,9 @@ export default function EnhancedTable() {
       <Container>
         <Box sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h4">Order ทั้งหมด</Typography>
+            <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+              เที่ยววิ่งทั้งหมด
+            </Typography>
           </Box>
           <Box>
             <Button
@@ -664,22 +695,25 @@ export default function EnhancedTable() {
           }}
         >
           <Tabs
-            value={value}
-            onChange={handleChange}
+            value={valueTabs}
+            onChange={(e, v) => setValueTabs(v)}
             variant="scrollable"
+            scrollButtons="auto"
             sx={{
-              px: 4,
+              px: 2,
               maxHeight: 48,
               backgroundColor: "rgba(145, 158, 171, 0.16)",
             }}
           >
             <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
-            <Tab value="จัดส่งสำเร็จ" label="จัดส่งสำเร็จ" disableRipple />
             <Tab
-              value="ยังไม่ถูกจัดส่ง"
-              label="ยังไม่ถูกจัดส่ง"
+              value="มอบหมายงานเเล้ว"
+              label="มอบหมายงานเเล้ว"
               disableRipple
             />
+            <Tab value="ปฏิเสธงาน" label="ปฏิเสธงาน" disableRipple />
+            <Tab value="ยอมรับ" label="ยอมรับ" disableRipple />
+            <Tab value="ส่งงานเเล้ว" label="ส่งงานเเล้ว" disableRipple />
           </Tabs>
           <Divider />
           <Grid container spacing={2} sx={{ p: 3 }}>

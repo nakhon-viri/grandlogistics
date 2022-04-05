@@ -22,7 +22,14 @@ import AdapterDayjs from "@mui/lab/AdapterDayjs";
 import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
-import { AddAPhoto, DateRange, InsertDriveFile } from "@mui/icons-material";
+import {
+  AddAPhoto,
+  DateRange,
+  InsertDriveFile,
+  SaveRounded,
+  DeleteRounded,
+  ArrowBackRounded,
+} from "@mui/icons-material";
 import {
   searchAddressByProvince,
   searchAddressByDistrict,
@@ -36,10 +43,15 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 
 import { useForm, Form } from "../components/useForm";
-import { employeeStore, editEmployee } from "../store/EmployeeStore";
+import {
+  employeeStore,
+  editEmployee,
+  deletedEmployee,
+} from "../store/EmployeeStore";
 import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
 import { HttpClient } from "../utils/HttpClient";
+import Loading from "../components/Loading";
 
 const AntSwitch = styled(Switch)(({ theme }) => ({
   width: 35,
@@ -312,6 +324,7 @@ const ProfileEmployee = () => {
   let { state } = useLocation();
   let { employee } = useSelector(employeeStore);
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
   const [IDUser, setIDUser] = useState(null);
   //Img
   const [editor, setEditor] = useState(null);
@@ -401,19 +414,16 @@ const ProfileEmployee = () => {
     e.preventDefault();
     if (validate()) {
       try {
-        // console.log(values);
-        // setLoading(true);
+        setLoading(true);
         // values.birthday = JSON.stringify(values.birthday).replace(/"/g, "");
         // values.reference_id = values.reference_id.replace(/-/g, "");
         let res = await HttpClient.put("/personnel/" + IDUser, values);
-        // console.log(res.data);
         dispatch(editEmployee(res.data));
-        console.log("Hi");
-        // navigate("/");
-        // Toast.fire({
-        //   icon: "success",
-        //   title: "Signed in successfully",
-        // });
+        navigate("/");
+        Toast.fire({
+          icon: "success",
+          title: "Signed in successfully",
+        });
       } catch (error) {
         console.log(error.response.data.error.message);
       }
@@ -493,6 +503,42 @@ const ProfileEmployee = () => {
     handleInputChange(convertToDefEventPara("phone_no", number));
   }
 
+  const handleDel = () => {
+    Swal.fire({
+      title: "คุณต้องการที่จะลบพนักงานนี้ใช่หรือไม่",
+      icon: "warning",
+      showCancelButton: true,
+      showConfirmButton: false,
+      showDenyButton: true,
+      denyButtonText: "ตกลง",
+      cancelButtonText: "ปิด",
+    }).then(async (result) => {
+      if (result.isDenied) {
+        try {
+          setLoadingData(true);
+          let res = await HttpClient.delete("/personnel/" + IDUser);
+          if (res.data.sucess) {
+            dispatch(deletedEmployee(IDUser));
+            Swal.fire("ลบเสร็จสิ้น!", "", "success").then(() => navigate("/"));
+          } else {
+            Swal.fire(
+              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
+              "",
+              "warning"
+            ).then(() => {
+              navigate("/");
+              window.location.reload();
+            });
+          }
+        } catch (error) {
+          console.log(error.respose);
+        } finally {
+          setLoadingData(false);
+        }
+      }
+    });
+  };
+
   useEffect(() => {
     if (!state) navigate("/");
     if (employee && state) {
@@ -559,12 +605,38 @@ const ProfileEmployee = () => {
   );
 
   if (!initialValues) return <div>Something</div>;
+  if (loadingData) return <Loading />;
 
   return (
     <LocalizationProvider locale={"th"} dateAdapter={AdapterDayjs}>
       <Container>
-        <Box sx={{ flexGrow: 1, mb: 5 }}>
-          <Typography variant="h4">Order ทั้งหมด</Typography>
+        <Box
+          sx={{
+            flexGrow: 1,
+            mb: 5,
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+            แก้ไขโปรไฟล์
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<ArrowBackRounded />}
+            onClick={() => navigate(-1)}
+            sx={{
+              backgroundColor: "rgb(32, 101, 209)",
+              boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+              borderRadius: 2,
+              "&:hover": {
+                boxShadow: "none",
+              },
+              mr: 2,
+            }}
+          >
+            กลับ
+          </Button>
         </Box>
         <Form onSubmit={handleSubmit} sx={styles.form}>
           <Grid container spacing={2}>
@@ -964,19 +1036,31 @@ const ProfileEmployee = () => {
                 <Box
                   sx={{
                     display: "flex",
-                    flexDirection: "column",
+                    flexDirection: "row",
                     alignItems: "flex-end",
+                    justifyContent: "space-between",
                     marginTop: "24px",
                   }}
                 >
+                  <Button
+                    color="error"
+                    fullWidth
+                    startIcon={<DeleteRounded />}
+                    variant="contained"
+                    onClick={handleDel}
+                    sx={styles.btnDel}
+                  >
+                    ลบพนักงาน
+                  </Button>
                   <LoadingButton
                     type="submit"
+                    startIcon={<SaveRounded />}
                     fullWidth
                     loading={loading}
                     variant="contained"
                     sx={styles.btnSubmit}
                   >
-                    Sign In
+                    บันทึก
                   </LoadingButton>
                 </Box>
               </Paper>
@@ -1061,6 +1145,16 @@ const styles = {
   btnSubmit: {
     backgroundColor: "rgb(32, 101, 209)",
     boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+    borderRadius: 2,
+    minWidth: 16,
+    height: 40,
+    width: "auto",
+    "&:hover": {
+      boxShadow: "none",
+    },
+  },
+  btnDel: {
+    boxShadow: "rgb(211 47 47 / 24%) 0px 8px 16px 0px",
     borderRadius: 2,
     minWidth: 16,
     height: 40,
