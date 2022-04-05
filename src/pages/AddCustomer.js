@@ -363,7 +363,7 @@ const AddCustomer = () => {
           values
         );
         dispatch(addCustomer(res.data));
-        navigate("/customer");
+        navigate(-1);
         Toast.fire({
           icon: "success",
           title: "Signed in successfully",

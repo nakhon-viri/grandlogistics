@@ -31,6 +31,8 @@ import {
   FormControlLabel,
   TablePagination,
   Tooltip,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 import {
@@ -58,6 +60,7 @@ import TableHeader from "../components/TableHeader";
 import Controls from "../components/controls";
 import ReportBill from "../components/ReportBill";
 import { HttpClient } from "../utils/HttpClient";
+import StatusColor from "../components/StatusColor";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Zoom ref={ref} {...props} />;
@@ -80,6 +83,7 @@ function getComparator(sortType, sortByName) {
 }
 
 const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
+  const navigate = useNavigate();
   const handleClose = () => {
     onClose(selectedValue);
   };
@@ -120,7 +124,7 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
                       color: "#1e88e5",
                     }}
                     // alt={"value.full_name.first_name"}
-                    // src={"value.photo"}
+                    src={item.cus_img}
                   >
                     {item.cus_name.charAt(0).toUpperCase()}
                   </Avatar>
@@ -145,14 +149,14 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
               alignItems: "center",
             }}
             button
-            onClick={() => handleListItemClick("addAccount")}
+            onClick={() => navigate("/addcustomer")}
           >
             <ListItemAvatar>
               <Avatar>
                 <Add sx={{ color: "#fff" }} />
               </Avatar>
             </ListItemAvatar>
-            <Typography>sdfassdf</Typography>
+            <Typography>เพิ่มบริษัทคู่ค้า</Typography>
           </ListItem>
         </Box>
       </Paper>
@@ -265,6 +269,7 @@ const EnhancedTableToolbar = ({ numSelected, handleSavePDF }) => {
 
 const CreateBill = () => {
   const { order } = useSelector(orderStore);
+  const theme = useTheme();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { customer } = useSelector(customerStore);
@@ -295,6 +300,8 @@ const CreateBill = () => {
   const [dateWork, setDateWork] = useState(null);
   const [docID, setDocID] = useState("");
   const [err, setErr] = useState({});
+  //Tabs
+  const [valueTabs, setValueTabs] = useState("ทั้งหมด");
   //Loading
   const [loading, setLoading] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -437,6 +444,10 @@ const CreateBill = () => {
     let newOrder =
       order?.slice().filter((item) => item.deleted === false) || [];
 
+    if (valueTabs !== "ทั้งหมด") {
+      newOrder = newOrder.filter((item) => item.status === valueTabs);
+    }
+
     if (valueDay !== "ทั้งหมด") {
       newOrder = newOrder.filter(
         (item) => dayjs(item.pickup_date).locale("th").format("DD") === valueDay
@@ -480,7 +491,7 @@ const CreateBill = () => {
     }
 
     return newOrder;
-  }, [order, valueDay, valueMonth, valueYear, search]);
+  }, [order, valueDay, valueMonth, valueYear, search, valueTabs]);
 
   let listBil = useMemo(() => {
     let sumReport = {};
@@ -701,6 +712,23 @@ const CreateBill = () => {
             />
           </Grid>
         </Grid>
+        <Tabs
+          value={valueTabs}
+          onChange={(e, v) => setValueTabs(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            px: 2,
+            maxHeight: 48,
+            backgroundColor: "rgba(145, 158, 171, 0.16)",
+          }}
+        >
+          <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
+          <Tab value="มอบหมายงานเเล้ว" label="มอบหมายงานเเล้ว" disableRipple />
+          <Tab value="ปฏิเสธงาน" label="ปฏิเสธงาน" disableRipple />
+          <Tab value="ยอมรับ" label="ยอมรับ" disableRipple />
+          <Tab value="ส่งงานเเล้ว" label="ส่งงานเเล้ว" disableRipple />
+        </Tabs>
         <Grid container spacing={2} sx={{ p: 3 }}>
           <FormSelected
             text="วัน"
@@ -824,7 +852,30 @@ const CreateBill = () => {
                         <TableCell>{Cell.price_order}</TableCell>
                         <TableCell>{Cell.car_type}</TableCell>
                         <TableCell>{Cell.per_time}</TableCell>
-                        <TableCell>{Cell.status}</TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="p"
+                            sx={{
+                              bgcolor: StatusColor.colorBgStatus(
+                                Cell.status,
+                                theme.palette.mode
+                              ),
+                              color: StatusColor.colorTextStatus(
+                                Cell.status,
+                                theme.palette.mode
+                              ),
+                              px: 0.7,
+                              py: 0.5,
+                              fontSize: "0.8rem",
+                              borderRadius: 2,
+                              fontFamily: "Prompt",
+                              fontWeight: 500,
+                              height: "22px",
+                            }}
+                          >
+                            {Cell.status}
+                          </Typography>
+                        </TableCell>
                       </TableRow>
                     );
                   })}

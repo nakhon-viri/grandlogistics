@@ -24,6 +24,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import { useLocation, useNavigate } from "react-router-dom";
 import cloneDeep from "lodash.clonedeep";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 import { themeStore } from "../../../store/ThemeStore";
 import { authStore } from "../../../store/AuthStore";
@@ -70,38 +71,6 @@ const DrawerFull = styled(MuiDrawer, {
   }),
 }));
 
-const ListLink = ({ to, text, icon }) => {
-  let navigate = useNavigate();
-  let { pathname } = useLocation();
-  return (
-    <ListItemButton
-      sx={pathname === to ? styles.listButton : null}
-      className={pathname === to ? " Mui-selected" : null}
-      onClick={() => {
-        navigate(to);
-      }}
-    >
-      <ListItemIcon
-        sx={{
-          ".Mui-selected > &": {
-            color: (theme) => theme.palette.primary.main,
-          },
-          color: "text.secondary",
-        }}
-      >
-        {icon}
-      </ListItemIcon>
-      <ListItemText
-        sx={{
-          color: pathname === to ? "primary.main" : "text.secondary",
-          opacity: opendrawer ? 1 : 0,
-        }}
-        primary={text}
-      />
-    </ListItemButton>
-  );
-};
-
 const ListGroup = ({ title, children }) => {
   let mode = useSelector(themeStore);
   return (
@@ -124,7 +93,7 @@ const ListGroup = ({ title, children }) => {
 
 const Menu = ({ handleDrawer2, open }) => {
   opendrawer = open;
-
+  const matches = useMediaQuery("(max-width:1200px)");
   let mode = useSelector(themeStore);
   let { profile } = useSelector(authStore);
   const [user, setUser] = React.useState(null);
@@ -155,7 +124,7 @@ const Menu = ({ handleDrawer2, open }) => {
         sx={pathname === to ? styles.listButton : null}
         className={pathname === to ? " Mui-selected" : null}
         onClick={() => {
-          handleDrawer2();
+          if (matches) handleDrawer2();
           navigate(to);
         }}
       >

@@ -264,7 +264,7 @@ const AddOrder = () => {
           customer: selectedCustomer,
         });
         dispatch(addOrder(res.data));
-        navigate("/customer");
+        navigate(-1);
         Toast.fire({
           icon: "success",
           title: "successfully",

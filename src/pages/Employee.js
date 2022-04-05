@@ -765,7 +765,7 @@ const Employee = () => {
                 <TableContainer
                   sx={{
                     position: "relative",
-                    minWidth: "880px",
+                    minWidth: "945px",
                   }}
                 >
                   <Table size={dense ? "small" : "normall"}>

@@ -214,6 +214,7 @@ const DialogInvoice = ({
 };
 
 const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
+  const navigate = useNavigate();
   const handleClose = () => {
     onClose(selectedValue);
   };
@@ -254,7 +255,7 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
                       color: "#1e88e5",
                     }}
                     // alt={"value.full_name.first_name"}
-                    // src={"value.photo"}
+                    src={item.cus_img}
                   >
                     {item.cus_name.charAt(0).toUpperCase()}
                   </Avatar>
@@ -279,14 +280,14 @@ const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
               alignItems: "center",
             }}
             button
-            onClick={() => handleListItemClick("addAccount")}
+            onClick={() => navigate("/addcustomer")}
           >
             <ListItemAvatar>
               <Avatar>
                 <Add sx={{ color: "#fff" }} />
               </Avatar>
             </ListItemAvatar>
-            <Typography>sdfassdf</Typography>
+            <Typography>เพิ่มบริษัทคู่ค้า</Typography>
           </ListItem>
         </Box>
       </Paper>
@@ -317,9 +318,6 @@ const EnhancedTableToolbar = ({ numSelected, handleSavePDF }) => {
       </Typography>
 
       <Tooltip title="บันทึกใบแจ้งหนี้" sx={{ width: "100%" }}>
-        {/* <IconButton color="primary" onClick={handleSavePDF}>
-          <LocalPrintshopRounded />
-        </IconButton> */}
         <Button
           color="primary"
           sx={{ borderRadius: 2 }}

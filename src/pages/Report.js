@@ -1,47 +1,42 @@
 import {
-  Container,
+  Box,
+  TablePagination,
+  Typography,
   TableContainer,
   Table,
+  TableBody,
   TableRow,
   TableCell,
-  TableBody,
+  FormControlLabel,
+  Container,
   Paper,
+  Grid,
+  FormControl,
   TextField,
   InputAdornment,
-  FormControl,
-  Box,
-  Grid,
-  Typography,
-  Button,
-  OutlinedInput,
-  MenuItem,
-  InputLabel,
   Select,
-  IconButton,
-  FormControlLabel,
-  Dialog,
-  Zoom,
-  List,
-  ListItem,
-  ListItemAvatar,
-  Avatar,
-  ListItemText,
+  InputLabel,
+  MenuItem,
+  OutlinedInput,
 } from "@mui/material";
-import { Search, RemoveRedEyeRounded, Add } from "@mui/icons-material";
+import {
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  Search,
+  Close,
+  PrintRounded,
+  ChangeCircleRounded,
+} from "@mui/icons-material";
+import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
-import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import cloneDeep from "lodash.clonedeep";
 
+import { orderStore } from "../store/OrderStore";
 import { customerStore } from "../store/CustomerStore";
-import TableHeader from "../components/TableHeader";
 import Controls from "../components/controls";
-
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Zoom ref={ref} {...props} />;
-});
+import TableHeader from "../components/TableHeader";
 
 function descendingComparator(a, b, sortByName) {
   if (b[sortByName] < a[sortByName]) {
@@ -59,172 +54,53 @@ function getComparator(sortType, sortByName) {
     : (a, b) => -descendingComparator(a, b, sortByName);
 }
 
-const Month = [
-  "มกราคม",
-  "กุมภาพันธ์",
-  "มีนาคม",
-  "เมษายน",
-  "พฤษภาคม",
-  "มิถุนายน",
-  "กรกฎาคม",
-  "สิงหาคม",
-  "กันยายน",
-  "ตุลาคม",
-  "พฤศจิกายน",
-  "ธันวาคม",
-];
-
-const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
-  const handleClose = () => {
-    onClose(selectedValue);
-  };
-
-  const handleListItemClick = (value) => {
-    onClose(value);
-  };
-
-  return (
-    <Dialog
-      PaperComponent={Box}
-      onClose={handleClose}
-      TransitionComponent={Transition}
-      open={open}
-    >
-      <Paper sx={{ px: 0, overflow: "hidden" }}>
-        <Box sx={{ backgroundColor: "rgba(145, 158, 171, 0.16)", p: 2 }}>
-          <Typography
-            variant="h5"
-            sx={{ fontFamily: "Itim", textAlign: "center" }}
-          >
-            เลือกบริษัทลูกค้า
-          </Typography>
-        </Box>
-        <Box sx={{ maxHeight: "300px", px: 1, overflow: "auto" }}>
-          <List sx={{ pt: 0 }}>
-            {listCustomer?.map((item, index) => (
-              <ListItem
-                button
-                onClick={() => handleListItemClick(item)}
-                key={index}
-                sx={{ borderRadius: 2, mt: index === 0 && 1 }}
-              >
-                <ListItemAvatar>
-                  <Avatar
-                    sx={{
-                      bgcolor: "#bbdefb",
-                      color: "#1e88e5",
-                    }}
-                    // alt={"value.full_name.first_name"}
-                    // src={"value.photo"}
-                  >
-                    {item.cus_name.charAt(0).toUpperCase()}
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText primary={item.cus_name} />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-        <Box
-          sx={{
-            p: 1,
-            backgroundColor: "rgba(145, 158, 171, 0.16)",
-          }}
-        >
-          <ListItem
-            autoFocus
-            sx={{
-              borderRadius: 2,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            button
-            onClick={() => handleListItemClick("ทั้งหมด")}
-          >
-            <ListItemAvatar>
-              <Avatar>
-                <Add sx={{ color: "#fff" }} />
-              </Avatar>
-            </ListItemAvatar>
-            <Typography>sdfassdf</Typography>
-          </ListItem>
-        </Box>
-      </Paper>
-    </Dialog>
-  );
-};
-
-const ReportEmployeeAll = () => {
-  const navigate = useNavigate();
+const Report = () => {
+  const { order } = useSelector(orderStore);
   const { customer } = useSelector(customerStore);
-  const [customerList, setCustomerList] = useState(customer?.slice());
-  //Dialog
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  //TablePagination
+  const [dense, setDense] = React.useState(false);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [page, setPage] = React.useState(0);
   //Sort by Header
   const [sortType, setSortType] = useState("desc");
-  const [sortByName, setSortByName] = useState("wage");
+  const [sortByName, setSortByName] = useState("pickup_date");
+  //Filter by Date
+  const [valueDay, setValueDay] = useState("ทั้งหมด");
+  const [valueSubMonth, setValueSubMonth] = useState("ทั้งเดือน");
+  const [valueMonth, setValueMonth] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState("ทั้งหมด");
+  const [company, setCompany] = useState("ทั้งหมด");
   //Search
   const [search, setSearch] = useState("");
-  //Filter by Date
-  const [valueDay, setValueDay] = useState(
-    dayjs(new Date()).format("D") > 15 ? "ปลายเดือน" : "ต้นเดือน"
-  );
-  const [valueMonth, setValueMonth] = useState(
-    dayjs(new Date()).locale("th").format("MMMM")
-  );
-  const [valueYear, setValueYear] = useState("");
-  //Dense
-  const [dense, setDense] = useState(false);
 
+  //TablePagination
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  //TableHeader
   const handleRequestSort = (event, property) => {
-    const isAsc = sortByName === property && sortType === "desc";
-    setSortType(isAsc ? "asc" : "desc");
+    const isAsc = sortByName === property && sortType === "asc";
+    setSortType(isAsc ? "desc" : "asc");
     setSortByName(property);
   };
-  //Dialog
-  const handleClickOpen = () => {
-    setOpenDialog(true);
-  };
-  const handleClose = (value) => {
-    setOpenDialog(false);
-    setSelectedCustomer(value);
-  };
 
-  useEffect(() => {
-    let cus = customer?.slice();
-    // if (cus) {
-    // let res = cus?.filter((item) => item._id === state?._id);
-    // setSelectedCustomer(cloneDeep(res)[0]);
-    // } else
-    if (customer) {
-      setSelectedCustomer(...customer.slice(0, 1));
+  const orderList = useMemo(() => {
+    if (!order) return [];
+    let newOrder = cloneDeep(order);
+
+    if (company !== "ทั้งหมด") {
+      newOrder = newOrder.filter((item) => item.customer._id === company);
     }
-  }, [customer]);
 
-  let report = useMemo(() => {
-    if (!selectedCustomer) return;
-    let res = [];
-    if (selectedCustomer === "ทั้งหมด") {
-      customer?.slice().map((item) => {
-        item.orders.map((order) => {
-          let newA = { ...order, cus_name: item.cus_name };
-          return res.push(newA);
-        });
-      });
-      return res;
-    }
-    let resOrders = selectedCustomer?.orders?.slice() || [];
-    resOrders.map((order) => {
-      let newA = { ...order, cus_name: selectedCustomer.cus_name };
-      return res.push(newA);
-    });
-
-    if (valueDay !== "ทั้งเดือน") {
-      res = res.filter((order) => {
+    if (valueSubMonth !== "ทั้งเดือน") {
+      newOrder = newOrder.filter((order) => {
         let day = dayjs(order.pickup_date).format("D");
-        if (valueDay === "ต้นเดือน") {
+        if (valueSubMonth === "ต้นเดือน") {
           return day < 16;
         } else {
           return day > 15;
@@ -232,94 +108,85 @@ const ReportEmployeeAll = () => {
       });
     }
 
-    res = res.filter((order) => {
-      return (
-        dayjs(order.pickup_date).locale("th").format("MMMM") === valueMonth
+    if (valueYear !== "ทั้งหมด") {
+      newOrder = newOrder.filter(
+        (a) => dayjs(a.pickup_date).locale("th").format("YYYY") === valueYear
       );
-    });
-
-    res = res.filter((order) => {
-      return dayjs(order.pickup_date).format("YYYY") === valueYear;
-    });
-
-    return res;
-  }, [valueDay, selectedCustomer, valueMonth, valueYear, search]);
-
-  // let total = useMemo(() => {
-  //   let total = report.reduce(
-  //     (sum, number) => {
-  //       sum.wage += number.wage;
-  //       sum.price_order += number.price_order;
-  //       sum.profit += number.profit;
-  //       sum.withdraw += number.withdraw;
-  //       sum.cost += number.cost;
-  //       sum.balance += number.balance;
-  //       return sum;
-  //     },
-  //     { price_order: 0, wage: 0, profit: 0, withdraw: 0, cost: 0, balance: 0 }
-  //   );
-  //   total.full_name = "Total";
-
-  //   return total;
-  // }, [valueDay, valueMonth]);
-
-  let yearQuery = useMemo(() => {
-    let res = [];
-    customerList?.slice().forEach((emp) => {
-      res.push(...emp.orders);
-    });
-
-    res = [
-      ...new Map(
-        res?.map((item) => [dayjs(item.pickup_date).format("YYYY"), item])
-      ).values(),
-    ].sort(function (a, b) {
-      return new Date(b.pickup_date) - new Date(a.pickup_date);
-    });
-    let yearList = [];
-    let thisYear = null;
-    res.map((item) => {
-      yearList.push(dayjs(item.pickup_date).format("YYYY"));
-      if (
-        dayjs(item.pickup_date).format("YYYY") ==
-        dayjs(new Date()).format("YYYY")
-      ) {
-        setValueYear(dayjs(item.pickup_date).format("YYYY"));
-      }
-    });
-    if (thisYear !== null) {
-      setValueYear(yearList[0]);
     }
-    return yearList;
-  }, []);
+
+    if (valueMonth !== "ทั้งหมด") {
+      newOrder = newOrder.filter(
+        (a) => dayjs(a.pickup_date).locale("th").format("MMMM") === valueMonth
+      );
+    }
+
+    if (valueDay !== "ทั้งหมด") {
+      newOrder = newOrder.filter(
+        (a) => dayjs(a.pickup_date).locale("th").format("DD") === valueDay
+      );
+    }
+
+    if (search) {
+      newOrder = newOrder.filter((s) => {
+        if (
+          s.customer.cus_name
+            .trim()
+            .toString()
+            .toLowerCase()
+            .includes(search.trim().toLowerCase()) ||
+          s._oid.trim().toLowerCase().includes(search.trim().toLowerCase())
+        )
+          return s;
+      });
+    }
+
+    for (var i = 0; i < newOrder.length; i++) {
+      newOrder[i] = { ...newOrder[i], row_number: i + 1 };
+    }
+
+    return newOrder;
+  }, [order, company, valueSubMonth, valueYear, valueMonth, valueDay, search]);
+
+  const total = useMemo(() => {
+    let total = orderList.reduce(
+      (sum, number) => {
+        sum.wage += number.wage;
+        sum.price_order += number.price_order;
+        sum.profit += number.profit;
+        sum.withdraw += number.withdraw;
+        sum.cost += number.cost;
+        sum.balance += number.balance;
+        return sum;
+      },
+      {
+        price_order: 0,
+        wage: 0,
+        profit: 0,
+        withdraw: 0,
+        cost: 0,
+        balance: 0,
+      }
+    );
+    return total;
+  }, [orderList]);
 
   const tableHeaderProps = {
+    isOpenFirstCell: true,
     sortType,
     sortByName,
     onRequestSort: handleRequestSort,
-    styleCellProps: {
-      fontSize: "1.1rem",
-    },
     headCell: [
-      { id: "full_name", label: "ชื่อ" },
-      { id: "price_order", label: "ค่าเที่ยว" },
-      { id: "wage", label: "ค่าเที่ยวพนักงาน" },
+      { id: "row_number", label: "ลำดับ" },
+      { id: "pickup_date", label: "วันที่" },
+      { id: "_oid", label: "รหัสงาน" },
+      { id: "cus_name", label: "ชื่อบริษัทลูกค้า" },
+      { id: "price_order", label: "ค่างาน" },
+      { id: "wage", label: "ค่างานเที่ยวพนักงาน" },
       { id: "profit", label: "กำไร" },
-      { id: "withdraw", label: "เบิก" },
-      { id: "cost", label: "น้ำมัน" },
-      { id: "balance", label: "ยอดคงเหลือ" },
-      // { id: "", label: "" },
     ],
   };
 
-  const FormSelected = ({
-    text,
-    changeValue,
-    queryDate,
-    value,
-    dateFormat,
-    ...rest
-  }) => {
+  const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
     return (
       <Grid item {...rest}>
         <FormControl sx={{ width: "100%" }}>
@@ -349,85 +216,192 @@ const ReportEmployeeAll = () => {
               },
             }}
           >
-            {queryDate.map((row, index) => (
-              <MenuItem
-                key={index}
-                value={row}
-                sx={{
-                  width: "100%",
-                  borderRadius: "8px",
-                  ...(index == queryDate.length - 1 ? null : { mb: 0.5 }),
-                  // mb: index == queryDate.length - 1 ? 1 : 0,
-                }}
-              >
-                {row}
-              </MenuItem>
-            ))}
+            <MenuItem
+              value="ทั้งหมด"
+              sx={{
+                width: "100%",
+                borderRadius: "8px",
+                mb: 1,
+              }}
+            >
+              {text}ทั้งหมด
+            </MenuItem>
+            {[
+              ...new Map(
+                cloneDeep(order)
+                  ?.filter((item) => {
+                    if (company === "ทั้งหมด") {
+                      return item;
+                      // item.customer._id === company
+                    }
+                    return item.customer._id === company;
+                  })
+                  .map((item) => [
+                    dayjs(item.pickup_date).locale("th").format(dateFormat),
+                    item,
+                  ])
+              ).values(),
+            ]
+              .sort(function (a, b) {
+                return (
+                  dayjs(b.pickup_date).format(dateFormat) -
+                  dayjs(a.pickup_date).format(dateFormat)
+                );
+              })
+              .map((row, index) => (
+                <MenuItem
+                  key={index}
+                  value={dayjs(row.pickup_date).locale("th").format(dateFormat)}
+                  sx={{
+                    width: "100%",
+                    borderRadius: "8px",
+                    mt: index == 0 ? 0 : 1,
+                  }}
+                >
+                  {dayjs(row.pickup_date).locale("th").format(dateFormat)}
+                </MenuItem>
+              ))}
           </Select>
         </FormControl>
       </Grid>
     );
   };
-
+  console.log(valueDay, valueMonth, valueSubMonth, valueYear, company, search);
   return (
-    <Container maxWidth="md">
-      <Grid
-        container
-        rowSpacing={2}
-        sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}
-      >
-        <Grid item xs={12} lg={9} sx={{ flexGrow: 1 }}>
-          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
-            {selectedCustomer?.cus_name}
-          </Typography>
-        </Grid>
-        <Grid item xs={12} lg={3}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "end",
-            }}
-          >
-            <Button
-              variant="contained"
-              onClick={handleClickOpen}
-              sx={{
-                backgroundColor: "rgb(32, 101, 209)",
-                boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
-                borderRadius: 2,
-                "&:hover": {
-                  boxShadow: "none",
-                },
-              }}
-            >
-              เปลี่ยนบริษัท
-            </Button>
-          </Box>
-        </Grid>
-      </Grid>
-      <SelectedCustomer
-        listCustomer={customerList}
-        selectedValue={selectedCustomer}
-        open={openDialog}
-        onClose={handleClose}
-      />
+    <Container>
+      <Box sx={{ flexGrow: 1, mb: 5 }}>
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          การเงินบริษัท
+        </Typography>
+      </Box>
       <Paper elevation={3} sx={{ p: 0, overflow: "hidden" }}>
         <Grid container spacing={2} sx={{ p: 3 }}>
+          <Grid item xs={6} sm={12} md={4}>
+            <FormControl sx={{ width: "100%" }}>
+              <InputLabel id="demo-multiple-name-label">{"บริษัท"}</InputLabel>
+              <Select
+                labelId="demo-multiple-name-label"
+                id="demo-multiple-name"
+                value={company}
+                onChange={(e) => {
+                  setValueDay("ทั้งหมด");
+                  setValueMonth("ทั้งหมด");
+                  setValueYear("ทั้งหมด");
+                  setValueSubMonth("ทั้งเดือน");
+                  setCompany(e.target.value);
+                }}
+                input={
+                  <OutlinedInput
+                    sx={{
+                      width: "100%",
+                      borderRadius: 2,
+                      "& fieldset": {
+                        borderRadius: 2,
+                      },
+                    }}
+                    label={"บริษัท"}
+                  />
+                }
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 200,
+                    },
+                  },
+                }}
+              >
+                <MenuItem
+                  value={"ทั้งหมด"}
+                  sx={{
+                    width: "100%",
+                    borderRadius: "8px",
+                    mb: 1,
+                  }}
+                >
+                  ทั้งหมด
+                </MenuItem>
+                {customer?.map((row, index) => (
+                  <MenuItem
+                    key={row._id}
+                    value={row._id}
+                    sx={{
+                      width: "100%",
+                      borderRadius: "8px",
+                      mb: 1,
+                    }}
+                  >
+                    {row.cus_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={6} sm={4} md={2}>
+            <FormControl sx={{ width: "100%" }}>
+              <InputLabel id="demo-multiple-name-label">
+                {"ช่วงเดือน"}
+              </InputLabel>
+              <Select
+                labelId="demo-multiple-name-label"
+                id="demo-multiple-name"
+                value={valueSubMonth}
+                onChange={(e) => {
+                  setValueDay("ทั้งหมด");
+                  setValueSubMonth(e.target.value);
+                }}
+                input={
+                  <OutlinedInput
+                    sx={{
+                      width: "100%",
+                      borderRadius: 2,
+                      "& fieldset": {
+                        borderRadius: 2,
+                      },
+                    }}
+                    label={"ช่วงเดือน"}
+                  />
+                }
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 200,
+                    },
+                  },
+                }}
+              >
+                {["ทั้งเดือน", "ต้นเดือน", "ปลายเดือน"].map((row, index) => (
+                  <MenuItem
+                    key={index}
+                    value={row}
+                    sx={{
+                      width: "100%",
+                      borderRadius: "8px",
+                      mt: index == 0 ? 0 : 1,
+                    }}
+                  >
+                    {row}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
           <FormSelected
             text="วัน"
             dateFormat="DD"
             xs={6}
             sm={4}
-            queryDate={["ทั้งเดือน", "ต้นเดือน", "ปลายเดือน"]}
             md={2}
             value={valueDay}
-            changeValue={(e) => setValueDay(e.target.value)}
+            changeValue={(e) => {
+              setValueSubMonth("ทั้งเดือน");
+              setValueDay(e.target.value);
+            }}
           />
           <FormSelected
             text="เดือน"
             dateFormat="MMMM"
             xs={6}
-            queryDate={Month}
             sm={4}
             md={2}
             value={valueMonth}
@@ -438,12 +412,11 @@ const ReportEmployeeAll = () => {
             dateFormat="YYYY"
             xs={12}
             sm={4}
-            queryDate={yearQuery}
             md={2}
             value={valueYear}
             changeValue={(e) => setValueYear(e.target.value)}
           />
-          <Grid item xs={12} sm={12} md={6}>
+          <Grid item xs={12}>
             <FormControl
               sx={{
                 width: "100%",
@@ -466,83 +439,86 @@ const ReportEmployeeAll = () => {
                   ),
                 }}
               />
-            </FormControl>{" "}
+            </FormControl>
           </Grid>
         </Grid>
-        <TableContainer>
+        <TableContainer
+          sx={{
+            position: "relative",
+            minWidth: "800px",
+          }}
+        >
           <Table
-            size={dense ? "small" : "medium"}
             sx={{
-              minWidth: 700,
-              "& td": {
-                borderBlockWidth: 1,
-                fontSize: "1.1rem",
+              "& td,&th": {
+                borderBottomWidth: 1,
               },
             }}
-            aria-label="spanning table"
+            size={dense ? "small" : "normall"}
           >
-            <TableHeader isOpenFirstCell {...tableHeaderProps} />
+            <TableHeader {...tableHeaderProps} />
             <TableBody>
-              {report
-                ?.slice()
+              {orderList
                 ?.sort(getComparator(sortType, sortByName))
-                .map((item, index) => {
-                  return (
-                    <TableRow
-                      hover
-                      key={index}
-                      sx={{
-                        "& td, & th": {
-                          borderBlockWidth: index === report.length - 1 ? 0 : 1,
-                        },
-                      }}
-                    >
-                      <TableCell>{item.cus_name}</TableCell>
-                      <TableCell align="right">{item.price_order}</TableCell>
-                      <TableCell align="right">{item.wage}</TableCell>
-                      <TableCell align="right">{item.profit}</TableCell>
-                      <TableCell align="right">{item.withdraw}</TableCell>
-                      <TableCell align="right">{item.cost}</TableCell>
-                      <TableCell align="right">{item.balance}</TableCell>
-                      {/* <TableCell align="right">
-                        <IconButton
-                          sx={{ p: 0.5, color: "#4287f5" }}
-                          onClick={() =>
-                            navigate("/reportemp", {
-                              state: { _id: item._id },
-                            })
-                          }
-                        >
-                          <RemoveRedEyeRounded />
-                        </IconButton>
-                      </TableCell> */}
-                    </TableRow>
-                  );
-                })}
-              {/* <TableRow
-                sx={{
-                  bgcolor: "#00f4b1",
-                  "& td": {
-                    color: "#555",
-                    fontWeight: 700,
-                  },
-                }}
-              >
-                <TableCell>{total.full_name}</TableCell>
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((Cell) => (
+                  <TableRow key={Cell._id} hover sx={{ cursor: "pointer" }}>
+                    <TableCell align="center">{Cell.row_number}</TableCell>
+                    <TableCell align="center">
+                      {dayjs(Cell.pickup_date)
+                        .locale("th")
+                        .format("DD MMMM YYYY")}
+                    </TableCell>
+                    <TableCell align="center">{Cell._oid}</TableCell>
+                    <TableCell align="center">
+                      {Cell.customer.cus_name}
+                    </TableCell>
+                    <TableCell align="right">{Cell.price_order}</TableCell>
+                    <TableCell align="right">{Cell.wage}</TableCell>
+                    <TableCell align="right">{Cell.profit}</TableCell>
+                  </TableRow>
+                ))}
+              <TableRow>
+                <TableCell colSpan={2} rowSpan={3} align="center" />
+                <TableCell colSpan={2}>{"รวม"}</TableCell>
                 <TableCell align="right">{total.price_order}</TableCell>
                 <TableCell align="right">{total.wage}</TableCell>
                 <TableCell align="right">{total.profit}</TableCell>
-                <TableCell align="right">{total.withdraw}</TableCell>
-                <TableCell align="right">{total.cost}</TableCell>
-                <TableCell align="right">{total.balance}</TableCell>
-                <TableCell align="right"></TableCell>
-              </TableRow> */}
+              </TableRow>
+              <TableRow>
+                <TableCell>{"หัก ภาษีหัก ณ ที่จ่าย"}</TableCell>
+                <TableCell align="center">{"1%"}</TableCell>
+                <TableCell align="right">
+                  {(total.price_order * 0.01).toFixed(2)}
+                </TableCell>
+                <TableCell align="right">
+                  {(total.wage * 0.01).toFixed(2)}
+                </TableCell>
+                <TableCell align="right">
+                  {(total.profit * 0.01).toFixed(2)}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell colSpan={2}>{"จำนวนเงินสุทธิ"}</TableCell>
+                <TableCell align="right">
+                  {total.price_order +
+                    parseFloat((total.price_order * 0.01).toFixed(2))}
+                </TableCell>
+                <TableCell align="right">
+                  {total.wage + parseFloat((total.wage * 0.01).toFixed(2))}
+                </TableCell>
+                <TableCell align="right">
+                  {total.profit + parseFloat((total.profit * 0.01).toFixed(2))}
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </TableContainer>
         <Box
           sx={{
-            py: 2,
+            display: "flex",
+            flexDirection: "row",
+            overflowX: "hidden",
           }}
         >
           <FormControlLabel
@@ -564,10 +540,26 @@ const ReportEmployeeAll = () => {
               mb: 1,
             }}
           />
+          <TablePagination
+            rowsPerPageOptions={[10, 20, 25, 30, 35, 40, 45]}
+            component="div"
+            count={orderList?.length || 0}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage={"จำนวนแถว"}
+            sx={{
+              "& .MuiToolbar-root": {
+                p: 0,
+                pr: 2,
+              },
+            }}
+          />
         </Box>
       </Paper>
     </Container>
   );
 };
 
-export default ReportEmployeeAll;
+export default Report;

@@ -407,7 +407,7 @@ const Register = () => {
         values.reference_id = values.reference_id.replace(/-/g, "");
         let res = await HttpClient.post("/personnel/register", values);
         dispatch(addEmployee(res.data));
-        navigate("/");
+        navigate(-1);
         Toast.fire({
           icon: "success",
           title: "Signed in successfully",
