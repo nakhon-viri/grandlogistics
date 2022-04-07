@@ -359,7 +359,7 @@ const AddCustomer = () => {
       try {
         setLoading(true);
         let res = await HttpClient.post(
-          "http://localhost:5000/customer",
+          "/customer",
           values
         );
         dispatch(addCustomer(res.data));
