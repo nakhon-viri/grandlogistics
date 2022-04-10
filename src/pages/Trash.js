@@ -17,9 +17,11 @@ import { useHorizontalScroll } from "../hooks/useSideScroll";
 import { HttpClient } from "../utils/HttpClient";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { useOutletContext } from "react-router-dom";
 
 const Trash = () => {
   let dispatch = useDispatch();
+  const [title, setTitle] = useOutletContext();
   let { orderDeleted } = useSelector(orderStore);
   let { deletedEmployee } = useSelector(employeeStore);
   let { deletedCustomer } = useSelector(customerStore);
@@ -67,6 +69,8 @@ const Trash = () => {
     setEmployee(delEmp);
     setCustomer(delCus);
   }, [orderDeleted, deletedEmployee, deletedCustomer]);
+
+  useEffect(() => setTitle("เอกสารที่ถูกลบ"), []);
 
   const RowGrid = ({ label, value }) => {
     return (
@@ -214,7 +218,7 @@ const Trash = () => {
                     label="อายุ"
                     value={
                       new Date().getFullYear() -
-                      dayjs(item.birthday).format("YYYY")
+                      dayjs(item.birthday).format("BBBB")
                     }
                   />
                   <RowGrid label="รหัสพนักงาน" value={item._uid} />
@@ -235,7 +239,7 @@ const Trash = () => {
                     <Button
                       disableRipple
                       disableFocusRipple
-                      onClick={() => handleRecoverCustomer(item._id)}
+                      onClick={() => handleRecoverEmployee(item._id)}
                       sx={{
                         "&.MuiButtonBase-root:hover": {
                           bgcolor: "transparent",

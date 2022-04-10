@@ -20,12 +20,13 @@ import {
   Close,
   Add,
 } from "@mui/icons-material";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useSelector } from "react-redux";
 import cloneDeep from "lodash.clonedeep";
 import { useTheme } from "@mui/material/styles";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { useOutletContext } from "react-router-dom";
 
 import { invoiceStore } from "../store/InvoiceStore";
 import { orderStore } from "../store/OrderStore";
@@ -117,6 +118,7 @@ const DialogInvoice = ({
 const Invoices = () => {
   const { invoice } = useSelector(invoiceStore);
   const { order } = useSelector(orderStore);
+  const [title, setTitle] = useOutletContext();
   //Sort by Header
   const [sortType, setSortType] = useState("desc");
   const [sortByName, setSortByName] = useState("wage");
@@ -167,7 +169,7 @@ const Invoices = () => {
         "รถกะบะ 4 ล้อ ตู้ทึบ จำนวน " +
         curr.id_order.length +
         " คัน วิ่งงานวันที่ " +
-        dayjs(curr.dateWork).format("DD/MM/YYYY") +
+        dayjs(curr.dateWork).format("DD/MM/BBBB") +
         "@" +
         total +
         "@" +
@@ -196,6 +198,8 @@ const Invoices = () => {
     });
     return newInvoice;
   }, [invoice]);
+
+  useEffect(() => setTitle("ใบแจ้งหนี้"), []);
 
   const tableHeaderProps = {
     sortType,
@@ -256,13 +260,13 @@ const Invoices = () => {
                       <TableCell align="center">
                         {dayjs(item.docDate)
                           .locale("th")
-                          .format("DD MMMM YYYY")}
+                          .format("DD MMMM BBBB")}
                       </TableCell>
                       <TableCell align="center">
                         {" "}
                         {dayjs(item.dueDate)
                           .locale("th")
-                          .format("DD MMMM YYYY")}
+                          .format("DD MMMM BBBB")}
                       </TableCell>
                       <TableCell align="center">{item.countBill}</TableCell>
                       <TableCell align="center" sx={{ textAlign: "left" }}>

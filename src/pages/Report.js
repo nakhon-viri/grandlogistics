@@ -32,6 +32,7 @@ import { useSelector } from "react-redux";
 import cloneDeep from "lodash.clonedeep";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { useOutletContext } from "react-router-dom";
 
 import { orderStore } from "../store/OrderStore";
 import { customerStore } from "../store/CustomerStore";
@@ -55,6 +56,7 @@ function getComparator(sortType, sortByName) {
 }
 
 const Report = () => {
+  const [title, setTitle] = useOutletContext();
   const { order } = useSelector(orderStore);
   const { customer } = useSelector(customerStore);
   //TablePagination
@@ -68,11 +70,14 @@ const Report = () => {
   const [valueDay, setValueDay] = useState("ทั้งหมด");
   const [valueSubMonth, setValueSubMonth] = useState("ทั้งเดือน");
   const [valueMonth, setValueMonth] = useState("ทั้งหมด");
-  const [valueYear, setValueYear] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState(
+    dayjs(new Date()).locale("th").format("BBBB")
+  );
   const [company, setCompany] = useState("ทั้งหมด");
   //Search
   const [search, setSearch] = useState("");
-
+  //percentage
+  const [percentage, setPercentage] = useState(1);
   //TablePagination
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -110,7 +115,7 @@ const Report = () => {
 
     if (valueYear !== "ทั้งหมด") {
       newOrder = newOrder.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("YYYY") === valueYear
+        (a) => dayjs(a.pickup_date).locale("th").format("BBBB") === valueYear
       );
     }
 
@@ -147,6 +152,29 @@ const Report = () => {
     return newOrder;
   }, [order, company, valueSubMonth, valueYear, valueMonth, valueDay, search]);
 
+  let yearQuery = useMemo(() => {
+    let newYear = [
+      ...new Map(
+        order?.map((item) => [
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+        ])
+      ).values(),
+    ];
+
+    let now = newYear.find(
+      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
+    );
+
+    if (!now) {
+      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
+    }
+
+    return newYear.sort(function (a, b) {
+      return a - b;
+    });
+  }, [order]);
+
   const total = useMemo(() => {
     let total = orderList.reduce(
       (sum, number) => {
@@ -170,6 +198,8 @@ const Report = () => {
     return total;
   }, [orderList]);
 
+  useEffect(() => setTitle("การเงินบริษัท"), []);
+
   const tableHeaderProps = {
     isOpenFirstCell: true,
     sortType,
@@ -180,13 +210,44 @@ const Report = () => {
       { id: "pickup_date", label: "วันที่" },
       { id: "_oid", label: "รหัสงาน" },
       { id: "cus_name", label: "ชื่อบริษัทลูกค้า" },
-      { id: "price_order", label: "ค่างาน" },
-      { id: "wage", label: "ค่างานเที่ยวพนักงาน" },
-      { id: "profit", label: "กำไร" },
+      { id: "price_order", label: "ค่างาน(บาท)" },
+      { id: "wage", label: "ค่าเที่ยววื่งพนักงาน(บาท)" },
+      { id: "profit", label: "กำไร(บาท)" },
     ],
   };
 
+  const calPercentage = () => percentage / 100;
+
   const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
+    let dateQuery =
+      dateFormat === "BBBB"
+        ? yearQuery
+        : [
+            ...new Map(
+              cloneDeep(order)
+                ?.filter((item) => {
+                  if (company === "ทั้งหมด") {
+                    return item;
+                    // item.customer._id === company
+                  }
+                  return item.customer._id === company;
+                })
+                .map((item) => [
+                  dayjs(item.pickup_date).locale("th").format(dateFormat),
+                  item,
+                ])
+            ).values(),
+          ]
+            .sort(function (a, b) {
+              return (
+                dayjs(b.pickup_date).format(dateFormat) -
+                dayjs(a.pickup_date).format(dateFormat)
+              );
+            })
+            .map((item) =>
+              dayjs(item.pickup_date).locale("th").format(dateFormat)
+            );
+
     return (
       <Grid item {...rest}>
         <FormControl sx={{ width: "100%" }}>
@@ -216,57 +277,37 @@ const Report = () => {
               },
             }}
           >
-            <MenuItem
-              value="ทั้งหมด"
-              sx={{
-                width: "100%",
-                borderRadius: "8px",
-                mb: 1,
-              }}
-            >
-              {text}ทั้งหมด
-            </MenuItem>
-            {[
-              ...new Map(
-                cloneDeep(order)
-                  ?.filter((item) => {
-                    if (company === "ทั้งหมด") {
-                      return item;
-                      // item.customer._id === company
-                    }
-                    return item.customer._id === company;
-                  })
-                  .map((item) => [
-                    dayjs(item.pickup_date).locale("th").format(dateFormat),
-                    item,
-                  ])
-              ).values(),
-            ]
-              .sort(function (a, b) {
-                return (
-                  dayjs(b.pickup_date).format(dateFormat) -
-                  dayjs(a.pickup_date).format(dateFormat)
-                );
-              })
-              .map((row, index) => (
-                <MenuItem
-                  key={index}
-                  value={dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                  sx={{
-                    width: "100%",
-                    borderRadius: "8px",
-                    mt: index == 0 ? 0 : 1,
-                  }}
-                >
-                  {dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                </MenuItem>
-              ))}
+            {dateFormat !== "BBBB" ? (
+              <MenuItem
+                value="ทั้งหมด"
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mb: 1,
+                }}
+              >
+                {text}ทั้งหมด
+              </MenuItem>
+            ) : null}
+            {dateQuery.map((row, index) => (
+              <MenuItem
+                key={index}
+                value={row}
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mt: index == 0 ? 0 : 1,
+                }}
+              >
+                {row}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Grid>
     );
   };
-  console.log(valueDay, valueMonth, valueSubMonth, valueYear, company, search);
+
   return (
     <Container>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
@@ -276,7 +317,7 @@ const Report = () => {
       </Box>
       <Paper elevation={3} sx={{ p: 0, overflow: "hidden" }}>
         <Grid container spacing={2} sx={{ p: 3 }}>
-          <Grid item xs={6} sm={12} md={4}>
+          <Grid item xs={12} md={4}>
             <FormControl sx={{ width: "100%" }}>
               <InputLabel id="demo-multiple-name-label">{"บริษัท"}</InputLabel>
               <Select
@@ -336,8 +377,7 @@ const Report = () => {
               </Select>
             </FormControl>
           </Grid>
-
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid item xs={12} md={2}>
             <FormControl sx={{ width: "100%" }}>
               <InputLabel id="demo-multiple-name-label">
                 {"ช่วงเดือน"}
@@ -389,8 +429,8 @@ const Report = () => {
           <FormSelected
             text="วัน"
             dateFormat="DD"
-            xs={6}
-            sm={4}
+            xs={12}
+            sm={6}
             md={2}
             value={valueDay}
             changeValue={(e) => {
@@ -401,22 +441,42 @@ const Report = () => {
           <FormSelected
             text="เดือน"
             dateFormat="MMMM"
-            xs={6}
-            sm={4}
+            xs={12}
+            sm={6}
             md={2}
             value={valueMonth}
             changeValue={(e) => setValueMonth(e.target.value)}
           />
           <FormSelected
             text="ปี"
-            dateFormat="YYYY"
+            dateFormat="BBBB"
             xs={12}
-            sm={4}
+            sm={6}
             md={2}
             value={valueYear}
             changeValue={(e) => setValueYear(e.target.value)}
           />
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              variant="outlined"
+              fullWidth
+              type={"number"}
+              autoComplete="off"
+              label="ภาษี"
+              size="medium"
+              value={percentage}
+              onChange={(e) => setPercentage(e.target.value)}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+              }}
+              sx={{
+                width: "100%",
+                "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                "& .MuiInputLabel-root": { fontSize: "1.1rem" },
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={10}>
             <FormControl
               sx={{
                 width: "100%",
@@ -462,53 +522,100 @@ const Report = () => {
                 ?.sort(getComparator(sortType, sortByName))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((Cell) => (
-                  <TableRow key={Cell._id} hover sx={{ cursor: "pointer" }}>
+                  <TableRow key={Cell._id} hover>
                     <TableCell align="center">{Cell.row_number}</TableCell>
                     <TableCell align="center">
                       {dayjs(Cell.pickup_date)
                         .locale("th")
-                        .format("DD MMMM YYYY")}
+                        .format("DD MMMM BBBB")}
                     </TableCell>
                     <TableCell align="center">{Cell._oid}</TableCell>
                     <TableCell align="center">
                       {Cell.customer.cus_name}
                     </TableCell>
-                    <TableCell align="right">{Cell.price_order}</TableCell>
-                    <TableCell align="right">{Cell.wage}</TableCell>
-                    <TableCell align="right">{Cell.profit}</TableCell>
+                    <TableCell align="right">
+                      {Cell.price_order.toLocaleString("en")}
+                    </TableCell>
+                    <TableCell align="right">
+                      {Cell.wage.toLocaleString("en")}
+                    </TableCell>
+                    <TableCell align="right">
+                      {Cell.profit.toLocaleString("en")}
+                    </TableCell>
                   </TableRow>
                 ))}
-              <TableRow>
+              <TableRow
+                sx={{
+                  "& > td": {
+                    fontWeight: 500,
+                    fontSize: "1rem",
+                  },
+                }}
+              >
                 <TableCell colSpan={2} rowSpan={3} align="center" />
                 <TableCell colSpan={2}>{"รวม"}</TableCell>
-                <TableCell align="right">{total.price_order}</TableCell>
-                <TableCell align="right">{total.wage}</TableCell>
-                <TableCell align="right">{total.profit}</TableCell>
+                <TableCell align="right">
+                  {total.price_order.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.wage.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.profit.toLocaleString("en")}
+                </TableCell>
               </TableRow>
-              <TableRow>
+              <TableRow
+                sx={{
+                  "& > td": {
+                    fontWeight: 500,
+                    fontSize: "1rem",
+                  },
+                }}
+              >
                 <TableCell>{"หัก ภาษีหัก ณ ที่จ่าย"}</TableCell>
-                <TableCell align="center">{"1%"}</TableCell>
+                <TableCell align="center">{`${percentage}%`}</TableCell>
                 <TableCell align="right">
-                  {(total.price_order * 0.01).toFixed(2)}
+                  {parseFloat(
+                    (total.price_order * calPercentage()).toFixed(2)
+                  ).toLocaleString("en")}
                 </TableCell>
                 <TableCell align="right">
-                  {(total.wage * 0.01).toFixed(2)}
+                  {parseFloat(
+                    (total.wage * calPercentage()).toFixed(2)
+                  ).toLocaleString("en")}
                 </TableCell>
                 <TableCell align="right">
-                  {(total.profit * 0.01).toFixed(2)}
+                  {parseFloat(
+                    (total.profit * calPercentage()).toFixed(2)
+                  ).toLocaleString("en")}
                 </TableCell>
               </TableRow>
-              <TableRow>
+              <TableRow
+                sx={{
+                  "& > td": {
+                    fontWeight: 600,
+                    fontSize: "1.3rem",
+                  },
+                }}
+              >
                 <TableCell colSpan={2}>{"จำนวนเงินสุทธิ"}</TableCell>
                 <TableCell align="right">
-                  {total.price_order +
-                    parseFloat((total.price_order * 0.01).toFixed(2))}
+                  {(
+                    total.price_order +
+                    parseFloat((total.price_order * calPercentage()).toFixed(2))
+                  ).toLocaleString("en")}
                 </TableCell>
                 <TableCell align="right">
-                  {total.wage + parseFloat((total.wage * 0.01).toFixed(2))}
+                  {(
+                    total.wage +
+                    parseFloat((total.wage * calPercentage()).toFixed(2))
+                  ).toLocaleString("en")}
                 </TableCell>
                 <TableCell align="right">
-                  {total.profit + parseFloat((total.profit * 0.01).toFixed(2))}
+                  {(
+                    total.profit +
+                    parseFloat((total.profit * calPercentage()).toFixed(2))
+                  ).toLocaleString("en")}
                 </TableCell>
               </TableRow>
             </TableBody>

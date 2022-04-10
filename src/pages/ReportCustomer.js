@@ -54,6 +54,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import cloneDeep from "lodash.clonedeep";
 import { useNavigate } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 
 import { customerStore } from "../store/CustomerStore";
 import { orderStore } from "../store/OrderStore";
@@ -168,12 +169,14 @@ const Row = ({ Cell, isItemSelected, labelId, handleClick }) => {
   return (
     <TableRow hover>
       <TableCell align="center">
-        {dayjs(Cell.pickup_date).locale("th").format("DD MMMM YYYY")}
+        {dayjs(Cell.pickup_date).locale("th").format("DD MMMM BBBB")}
       </TableCell>
       <TableCell align="center">{Cell._oid}</TableCell>
       <TableCell align="center">{Cell.pickup_location}</TableCell>
       <TableCell align="center">{Cell.delivery_location}</TableCell>
-      <TableCell align="center">{Cell.price_order}</TableCell>
+      <TableCell align="right" sx={{ pr: 5 }}>
+        {Cell.price_order.toLocaleString("en")}
+      </TableCell>
     </TableRow>
   );
 };
@@ -201,6 +204,7 @@ const EnhancedTableToolbar = ({ title, print }) => {
 
 export default function SimpleDialogDemo() {
   const { customer } = useSelector(customerStore);
+  const [title, setTitle] = useOutletContext();
   const { order } = useSelector(orderStore);
   //Dialog
   const [openDialog, setOpenDialog] = useState(false);
@@ -212,13 +216,17 @@ export default function SimpleDialogDemo() {
   const [sortByName, setSortByName] = useState("pickup_date");
   //TablePagination
   const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [page, setPage] = React.useState(0);
   //Filter by Date
   const [valueDay, setValueDay] = useState("ทั้งหมด");
   const [valueSubMonth, setValueSubMonth] = useState("ทั้งเดือน");
   const [valueMonth, setValueMonth] = useState("ทั้งหมด");
-  const [valueYear, setValueYear] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState(
+    dayjs(new Date()).locale("th").format("BBBB")
+  );
+  //percentage
+  const [percentage, setPercentage] = useState(1);
   //Search
   const [search, setSearch] = useState("");
   //CheckBox
@@ -245,6 +253,9 @@ export default function SimpleDialogDemo() {
     setSortType(isAsc ? "desc" : "asc");
     setSortByName(property);
   };
+
+  const calPercentage = () => percentage / 100;
+
   useEffect(() => {
     if (customer) {
       let newList = customer?.slice(0, 1);
@@ -272,7 +283,7 @@ export default function SimpleDialogDemo() {
 
     if (valueYear !== "ทั้งหมด") {
       newOrders = newOrders.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("YYYY") === valueYear
+        (a) => dayjs(a.pickup_date).locale("th").format("BBBB") === valueYear
       );
     }
 
@@ -356,6 +367,77 @@ export default function SimpleDialogDemo() {
     return DR;
   }, [selected]);
 
+  let dayQuery = useMemo(() => {
+    let newDay = [
+      ...new Map(
+        order
+          ?.filter((item) => item.customer._id === selectedCustomer._id)
+          .map((item) => [
+            dayjs(item.pickup_date).locale("th").format("DD"),
+            item,
+          ])
+      ).values(),
+    ].sort(function (a, b) {
+      return (
+        dayjs(b.pickup_date).format("DD") - dayjs(a.pickup_date).format("DD")
+      );
+    });
+
+    return newDay.map((item) =>
+      dayjs(item.pickup_date).locale("th").format("DD")
+    );
+  }, [selectedCustomer]);
+
+  let monthQuery = useMemo(() => {
+    let newMonth = [
+      ...new Map(
+        order
+          ?.filter((item) => item.customer._id === selectedCustomer._id)
+          .map((item) => [
+            dayjs(item.pickup_date).locale("th").format("MMMM"),
+            item,
+          ])
+      ).values(),
+    ].sort(function (a, b) {
+      return (
+        dayjs(b.pickup_date).format("MMMM") -
+        dayjs(a.pickup_date).format("MMMM")
+      );
+    });
+
+    return newMonth.map((item) =>
+      dayjs(item.pickup_date).locale("th").format("MMMM")
+    );
+  }, [selectedCustomer, order]);
+
+  let yearQuery = useMemo(() => {
+    let newOrders = order?.filter(
+      (item) => item.customer._id === selectedCustomer._id
+    );
+    let newYear = [
+      ...new Map(
+        newOrders?.map((item) => [
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+        ])
+      ).values(),
+    ];
+
+    let now = newYear.find(
+      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
+    );
+
+    if (!now) {
+      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
+    }
+
+    return newYear.sort(function (a, b) {
+      return a - b;
+    });
+  }, [selectedCustomer, order]);
+
+  useEffect(() => setTitle("การเงินบริษัทคู่ค้า"), []);
+
   const tableHeaderProps = {
     sortType,
     sortByName,
@@ -365,12 +447,19 @@ export default function SimpleDialogDemo() {
       { id: "_oid", label: "รหัสงาน" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
-      { id: "profit", label: "ค่าเที่ยว" },
+      { id: "profit", label: "ค่าเที่ยว(บาท)" },
     ],
   };
 
-  const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
-    let dateQuery = dateFormat === "DD" ? orders : selectedCustomer.orders;
+  const FormSelected = ({
+    text,
+    changeValue,
+    value,
+    dateQuery,
+    dateFormat,
+    ...rest
+  }) => {
+    // let dateQuery = dateFormat === "DD" ? orders : selectedCustomer.orders;
     return (
       <Grid item {...rest}>
         <FormControl sx={{ width: "100%" }}>
@@ -400,45 +489,31 @@ export default function SimpleDialogDemo() {
               },
             }}
           >
-            <MenuItem
-              value="ทั้งหมด"
-              sx={{
-                width: "100%",
-                borderRadius: "8px",
-                mb: 1,
-              }}
-            >
-              {text}ทั้งหมด
-            </MenuItem>
-            {[
-              ...new Map(
-                dateQuery
-                  ?.slice()
-                  .map((item) => [
-                    dayjs(item.pickup_date).locale("th").format(dateFormat),
-                    item,
-                  ])
-              ).values(),
-            ]
-              .sort(function (a, b) {
-                return (
-                  dayjs(b.pickup_date).format(dateFormat) -
-                  dayjs(a.pickup_date).format(dateFormat)
-                );
-              })
-              .map((row, index) => (
-                <MenuItem
-                  key={index}
-                  value={dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                  sx={{
-                    width: "100%",
-                    borderRadius: "8px",
-                    mb: 1,
-                  }}
-                >
-                  {dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                </MenuItem>
-              ))}
+            {dateFormat !== "BBBB" ? (
+              <MenuItem
+                value="ทั้งหมด"
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mb: 1,
+                }}
+              >
+                {text}ทั้งหมด
+              </MenuItem>
+            ) : null}
+            {dateQuery.map((row, index) => (
+              <MenuItem
+                key={index}
+                value={row}
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mt: index == 0 ? 0 : 1,
+                }}
+              >
+                {row}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Grid>
@@ -499,32 +574,7 @@ export default function SimpleDialogDemo() {
       >
         <EnhancedTableToolbar title={selectedCustomer.cus_name} />
         <Grid container spacing={2} sx={{ p: 3 }}>
-          <Grid item xs={12} sm={12} md={4}>
-            <FormControl
-              sx={{
-                width: "100%",
-                "& .MuiOutlinedInput-root": { borderRadius: 2 },
-              }}
-            >
-              <TextField
-                placeholder="Search"
-                type="search"
-                variant="outlined"
-                fullWidth
-                autoComplete="off"
-                size="medium"
-                onChange={(e) => setSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </FormControl>
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid item xs={12} sm={6} md={3}>
             <FormControl sx={{ width: "100%" }}>
               <InputLabel id="demo-multiple-name-label">
                 {"ช่วงเดือน"}
@@ -576,30 +626,78 @@ export default function SimpleDialogDemo() {
           <FormSelected
             text="วัน"
             dateFormat="DD"
-            xs={6}
-            sm={4}
-            md={2}
+            xs={12}
+            sm={6}
+            md={3}
+            dateQuery={dayQuery}
             value={valueDay}
             changeValue={(e) => setValueDay(e.target.value)}
           />
           <FormSelected
             text="เดือน"
             dateFormat="MMMM"
-            xs={6}
-            sm={4}
-            md={2}
+            xs={12}
+            sm={6}
+            md={3}
+            dateQuery={monthQuery}
             value={valueMonth}
             changeValue={(e) => setValueMonth(e.target.value)}
           />
           <FormSelected
             text="ปี"
-            dateFormat="YYYY"
+            dateFormat="BBBB"
             xs={12}
-            sm={4}
-            md={2}
+            sm={6}
+            md={3}
+            dateQuery={yearQuery}
             value={valueYear}
             changeValue={(e) => setValueYear(e.target.value)}
           />
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              variant="outlined"
+              fullWidth
+              type={"number"}
+              autoComplete="off"
+              label="ภาษี"
+              size="medium"
+              value={percentage}
+              onChange={(e) => setPercentage(e.target.value)}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+              }}
+              sx={{
+                width: "100%",
+                "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                "& .MuiInputLabel-root": { fontSize: "1.1rem" },
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={10}>
+            <FormControl
+              sx={{
+                width: "100%",
+                "& .MuiOutlinedInput-root": { borderRadius: 2 },
+              }}
+            >
+              <TextField
+                placeholder="Search"
+                type="search"
+                variant="outlined"
+                fullWidth
+                autoComplete="off"
+                size="medium"
+                onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </FormControl>
+          </Grid>
         </Grid>
         <Box sx={{ flexGrow: 1, overflow: "auto" }}>
           <TableContainer
@@ -624,20 +722,47 @@ export default function SimpleDialogDemo() {
                   .map((Cell) => {
                     return <Row key={Cell._id} Cell={Cell} />;
                   })}
-                <TableRow>
+                <TableRow
+                  sx={{
+                    "& > td": {
+                      fontWeight: 500,
+                      fontSize: "1rem",
+                    },
+                  }}
+                >
                   <TableCell rowSpan={3} colSpan={2} />
                   <TableCell colSpan={2}>รวม</TableCell>
-                  <TableCell align="center">{sumTotal}</TableCell>
+                  <TableCell align="right" sx={{ pr: 5 }}>
+                    {sumTotal.toLocaleString("en")}
+                  </TableCell>
                 </TableRow>
-                <TableRow>
+                <TableRow
+                  sx={{
+                    "& > td": {
+                      fontWeight: 500,
+                      fontSize: "1rem",
+                    },
+                  }}
+                >
                   <TableCell>หัก ภาษีหัก ณ ที่จ่าย</TableCell>
-                  <TableCell align="center">{"1 %"}</TableCell>
-                  <TableCell align="center">{sumTotal * 0.01}</TableCell>
+                  <TableCell align="center">{`${percentage}%`}</TableCell>
+                  <TableCell align="right" sx={{ pr: 5 }}>
+                    {(sumTotal * calPercentage()).toLocaleString("en")}
+                  </TableCell>
                 </TableRow>
-                <TableRow>
+                <TableRow
+                  sx={{
+                    "& > td": {
+                      fontWeight: 600,
+                      fontSize: "1.3rem",
+                    },
+                  }}
+                >
                   <TableCell colSpan={2}>จำนวนเงินสุทธิ</TableCell>
-                  <TableCell align="center">
-                    {sumTotal - sumTotal * 0.01}
+                  <TableCell align="right" sx={{ pr: 5 }}>
+                    {(sumTotal - sumTotal * calPercentage()).toLocaleString(
+                      "en"
+                    )}
                   </TableCell>
                 </TableRow>
               </TableBody>

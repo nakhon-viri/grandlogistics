@@ -3,11 +3,12 @@ import MuiAppBar from "@mui/material/AppBar";
 import { Avatar } from "@mui/material";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
+import Box from "@mui/material/Box";
 import MenuIcon from "@mui/icons-material/Menu";
 import { styled, useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
-
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
@@ -17,6 +18,8 @@ import Tooltip from "@mui/material/Tooltip";
 import PersonAdd from "@mui/icons-material/PersonAdd";
 import Settings from "@mui/icons-material/Settings";
 import Logout from "@mui/icons-material/Logout";
+
+import { useNavigate } from "react-router-dom";
 
 import { themeStore, upDateTheme } from "../../../store/ThemeStore";
 import { authStore } from "../../../store/AuthStore";
@@ -38,6 +41,7 @@ const AppBar = styled(MuiAppBar, {
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
+      // duration: "100ms",
     }),
     [theme.breakpoints.up("lg")]: {
       width: `calc(100% - ${drawerWidth}px - 0px)`,
@@ -48,6 +52,7 @@ const AppBar = styled(MuiAppBar, {
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
+      // duration: "100ms",
     }),
     [theme.breakpoints.up("lg")]: {
       width: `calc(100% - ${theme.spacing(11)} + 1px)`,
@@ -61,9 +66,10 @@ const AppBar = styled(MuiAppBar, {
       : "rgba(255, 255, 255, 0.8)",
 }));
 
-const Header = ({ handleDrawer, open }) => {
+const Header = ({ handleDrawer, open, title }) => {
   let dispatch = useDispatch();
   const theme = useTheme();
+  const navigate = useNavigate();
   let { profile } = useSelector(authStore);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const openMenu = Boolean(anchorEl);
@@ -84,7 +90,11 @@ const Header = ({ handleDrawer, open }) => {
   };
   return (
     <>
-      <AppBar position="fixed" open={open} sx={{ zIndex: 10 }}>
+      <AppBar
+        position="fixed"
+        open={open}
+        sx={{ zIndex: 10, color: theme.palette.text.primary }}
+      >
         <Toolbar>
           <IconButton
             onClick={() => handleDrawer()}
@@ -96,6 +106,19 @@ const Header = ({ handleDrawer, open }) => {
           >
             <MenuIcon />
           </IconButton>
+
+          <Typography
+            variant="h5"
+            component="div"
+            sx={{
+              flexGrow: 1,
+              fontFamily: "Itim",
+              fontWeight: 600,
+              fontSize: "1.8rem",
+            }}
+          >
+            {title}
+          </Typography>
           <div style={{ flex: 1 }} />
           <IconButton
             color="secondary"
@@ -134,10 +157,14 @@ const Header = ({ handleDrawer, open }) => {
         open={openMenu}
         onClose={handleClose}
         onClick={handleClose}
+        MenuListProps={{
+          sx: { p: 0 },
+        }}
         PaperProps={{
           elevation: 0,
           sx: {
             overflow: "visible",
+            p: 0,
             filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
             mt: 1.5,
             "& .MuiAvatar-root": {
@@ -163,18 +190,35 @@ const Header = ({ handleDrawer, open }) => {
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <MenuItem
-          sx={{
-            width: "100%",
-            borderRadius: "8px",
-          }}
-          onClick={() => logOut()}
-        >
-          <ListItemIcon>
-            <Logout fontSize="small" />
-          </ListItemIcon>
-          Logout
-        </MenuItem>
+        <Box p={1}>
+          <MenuItem
+            sx={{
+              width: "100%",
+              borderRadius: "8px",
+            }}
+            onClick={() => navigate("/profile")}
+          >
+            <ListItemIcon>
+              <ManageAccountsIcon fontSize="small" />
+            </ListItemIcon>
+            โปรไฟล์
+          </MenuItem>
+        </Box>
+        <Divider sx={{ borderStyle: "dashed" }} />
+        <Box p={1}>
+          <MenuItem
+            sx={{
+              width: "100%",
+              borderRadius: "8px",
+            }}
+            onClick={() => logOut()}
+          >
+            <ListItemIcon>
+              <Logout fontSize="small" />
+            </ListItemIcon>
+            Logout
+          </MenuItem>
+        </Box>
       </Menu>
     </>
   );

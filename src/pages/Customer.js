@@ -52,6 +52,7 @@ import { useSelector, useDispatch } from "react-redux";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import cloneDeep from "lodash.clonedeep";
+import { useOutletContext } from "react-router-dom";
 
 import { customerStore } from "../store/CustomerStore";
 import { orderStore, deleteOrder } from "../store/OrderStore";
@@ -177,17 +178,21 @@ const Row = ({ Cell, handleDelete }) => {
         </TableCell>
         <TableCell align="center">{Cell._oid}</TableCell>
         <TableCell component="th" scope="row">
-          {dayjs(Cell.pickup_date).locale("th").format("DD MMMM YYYY")}
+          {dayjs(Cell.pickup_date).locale("th").format("DD MMMM BBBB")}
         </TableCell>
         <TableCell align="right">{Cell.pickup_location}</TableCell>
         <TableCell align="right">{Cell.delivery_location}</TableCell>
-        <TableCell align="right">{Cell.price_order}</TableCell>
-        <TableCell align="right">{Cell.cost}</TableCell>
-        <TableCell align="right">{Cell.withdraw}</TableCell>
         <TableCell align="right">
-          {Cell.wage - Cell.cost - Cell.withdraw}
+          {Cell.price_order.toLocaleString("en")}
         </TableCell>
-        <TableCell align="right" sx={{ p: 1.2 }}>
+        <TableCell align="right">{Cell.cost.toLocaleString("en")}</TableCell>
+        <TableCell align="right">
+          {Cell.withdraw.toLocaleString("en")}
+        </TableCell>
+        <TableCell align="right">
+          {(Cell.wage - Cell.cost - Cell.withdraw).toLocaleString("en")}
+        </TableCell>
+        <TableCell align="center" sx={{ p: 1.2 }}>
           <Typography
             variant="p"
             sx={{
@@ -253,9 +258,9 @@ const Row = ({ Cell, handleDelete }) => {
                         );
                       }
                     })}
-                    <TableCell>จ่ายค่างาน</TableCell>
-                    <TableCell>กำไร</TableCell>
-                    <TableCell align="right">น้ำมัน</TableCell>
+                    <TableCell>ค่าเที่ยววิ่งพนักงาน(บาท)</TableCell>
+                    <TableCell>กำไร(บาท)</TableCell>
+                    <TableCell align="right">น้ำมัน(บาท)</TableCell>
                     <TableCell align="right">ตจว./กทม.</TableCell>
                     <TableCell
                       align="center"
@@ -272,9 +277,11 @@ const Row = ({ Cell, handleDelete }) => {
                         return <TableCell key={i}>{p[1]}</TableCell>;
                       }
                     })}
-                    <TableCell>{Cell.wage}</TableCell>
-                    <TableCell>{Cell.profit}</TableCell>
-                    <TableCell align="right">{Cell.cost}</TableCell>
+                    <TableCell>{Cell.wage.toLocaleString("en")}</TableCell>
+                    <TableCell>{Cell.profit.toLocaleString("en")}</TableCell>
+                    <TableCell align="right">
+                      {Cell.cost.toLocaleString("en")}
+                    </TableCell>
                     <TableCell align="right">{Cell.area}</TableCell>
                     <TableCell align="center">
                       <IconButton
@@ -308,6 +315,7 @@ export default function SimpleDialogDemo() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { customer } = useSelector(customerStore);
+  const [title, setTitle] = useOutletContext();
   const { order } = useSelector(orderStore);
   const [loadingData, setLoadingData] = useState(false);
   //Dialog
@@ -320,14 +328,16 @@ export default function SimpleDialogDemo() {
   const [sortByName, setSortByName] = useState("pickup_date");
   //TablePagination
   const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [page, setPage] = React.useState(0);
   //Tabs
   const [valueTabs, setValueTabs] = useState("ทั้งหมด");
   //Filter by Date
   const [valueDay, setValueDay] = useState("ทั้งหมด");
   const [valueMonth, setValueMonth] = useState("ทั้งหมด");
-  const [valueYear, setValueYear] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState(
+    dayjs(new Date()).locale("th").format("BBBB")
+  );
   //Search
   const [search, setSearch] = useState("");
   //Dialog
@@ -392,7 +402,7 @@ export default function SimpleDialogDemo() {
       setSelectedCustomer(newList[0]);
     }
   }, [customer]);
-
+  useEffect(() => setTitle("บริษัทคู่ค้า"), []);
   let orders = useMemo(() => {
     if (!order) return [];
 
@@ -406,7 +416,7 @@ export default function SimpleDialogDemo() {
 
     if (valueYear !== "ทั้งหมด") {
       newOrders = newOrders.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("YYYY") === valueYear
+        (a) => dayjs(a.pickup_date).locale("th").format("BBBB") === valueYear
       );
     }
 
@@ -454,20 +464,74 @@ export default function SimpleDialogDemo() {
     valueTabs,
   ]);
 
-  let dateQuery = (dateFormat) =>
-    useMemo(
-      (dateFormat) => [
-        ...new Map(
-          selectedCustomer.orders
-            ?.slice()
-            .map((item) => [
-              dayjs(item.pickup_date).locale("th").format(dateFormat),
-              item,
-            ])
-        ).values(),
-      ],
-      [selectedCustomer]
+  let dayQuery = useMemo(() => {
+    let newDay = [
+      ...new Map(
+        order
+          ?.filter((item) => item.customer._id === selectedCustomer._id)
+          .map((item) => [
+            dayjs(item.pickup_date).locale("th").format("DD"),
+            item,
+          ])
+      ).values(),
+    ].sort(function (a, b) {
+      return (
+        dayjs(b.pickup_date).format("DD") - dayjs(a.pickup_date).format("DD")
+      );
+    });
+
+    return newDay.map((item) =>
+      dayjs(item.pickup_date).locale("th").format("DD")
     );
+  }, [selectedCustomer]);
+
+  let monthQuery = useMemo(() => {
+    let newMonth = [
+      ...new Map(
+        order
+          ?.filter((item) => item.customer._id === selectedCustomer._id)
+          .map((item) => [
+            dayjs(item.pickup_date).locale("th").format("MMMM"),
+            item,
+          ])
+      ).values(),
+    ].sort(function (a, b) {
+      return (
+        dayjs(b.pickup_date).format("MMMM") -
+        dayjs(a.pickup_date).format("MMMM")
+      );
+    });
+
+    return newMonth.map((item) =>
+      dayjs(item.pickup_date).locale("th").format("MMMM")
+    );
+  }, [selectedCustomer, order]);
+
+  let yearQuery = useMemo(() => {
+    let newOrders = order?.filter(
+      (item) => item.customer._id === selectedCustomer._id
+    );
+    let newYear = [
+      ...new Map(
+        newOrders?.map((item) => [
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+        ])
+      ).values(),
+    ];
+
+    let now = newYear.find(
+      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
+    );
+
+    if (!now) {
+      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
+    }
+
+    return newYear.sort(function (a, b) {
+      return a - b;
+    });
+  }, [selectedCustomer, order]);
 
   const tableHeaderProps = {
     sortType,
@@ -478,15 +542,22 @@ export default function SimpleDialogDemo() {
       { id: "pickup_date", label: "วันที่" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
-      { id: "wage", label: "ค่างาน" },
-      { id: "cost", label: "ค่าน้ำมัน" },
-      { id: "withdraw", label: "เบิก" },
-      { id: "balance", label: "ยอดคงเหลือ" },
+      { id: "wage", label: "ค่างาน(บาท)" },
+      { id: "cost", label: "ค่าน้ำมัน(บาท)" },
+      { id: "withdraw", label: "เบิก(บาท)" },
+      { id: "balance", label: "ยอดคงเหลือ(บาท)" },
       { id: "status", label: "สถานะ" },
     ],
   };
 
-  const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
+  const FormSelected = ({
+    text,
+    changeValue,
+    value,
+    dateQuery,
+    dateFormat,
+    ...rest
+  }) => {
     return (
       <Grid item {...rest}>
         <FormControl sx={{ width: "100%" }}>
@@ -516,36 +587,31 @@ export default function SimpleDialogDemo() {
               },
             }}
           >
-            <MenuItem
-              value="ทั้งหมด"
-              sx={{
-                width: "100%",
-                borderRadius: "8px",
-                mb: 1,
-              }}
-            >
-              {text}ทั้งหมด
-            </MenuItem>
-            {dateQuery(dateFormat)
-              .sort(function (a, b) {
-                return (
-                  dayjs(b.pickup_date).format(dateFormat) -
-                  dayjs(a.pickup_date).format(dateFormat)
-                );
-              })
-              .map((row, index) => (
-                <MenuItem
-                  key={index}
-                  value={dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                  sx={{
-                    width: "100%",
-                    borderRadius: "8px",
-                    mb: 1,
-                  }}
-                >
-                  {dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                </MenuItem>
-              ))}
+            {dateFormat !== "BBBB" ? (
+              <MenuItem
+                value="ทั้งหมด"
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mb: 1,
+                }}
+              >
+                {text}ทั้งหมด
+              </MenuItem>
+            ) : null}
+            {dateQuery.map((row, index) => (
+              <MenuItem
+                key={index}
+                value={row}
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mb: 1,
+                }}
+              >
+                {row}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Grid>
@@ -671,6 +737,7 @@ export default function SimpleDialogDemo() {
             xs={6}
             sm={4}
             md={2}
+            dateQuery={dayQuery}
             value={valueDay}
             changeValue={(e) => setValueDay(e.target.value)}
           />
@@ -680,15 +747,17 @@ export default function SimpleDialogDemo() {
             xs={6}
             sm={4}
             md={2}
+            dateQuery={monthQuery}
             value={valueMonth}
             changeValue={(e) => setValueMonth(e.target.value)}
           />
           <FormSelected
             text="ปี"
-            dateFormat="YYYY"
+            dateFormat="BBBB"
             xs={12}
             sm={4}
             md={2}
+            dateQuery={yearQuery}
             value={valueYear}
             changeValue={(e) => setValueYear(e.target.value)}
           />

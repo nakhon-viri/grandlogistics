@@ -51,6 +51,7 @@ import "dayjs/locale/th";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import cloneDeep from "lodash.clonedeep";
+import { useOutletContext } from "react-router-dom";
 
 import { orderStore } from "../store/OrderStore";
 import { billStore } from "../store/BillStore";
@@ -334,6 +335,7 @@ const EnhancedTableToolbar = ({ numSelected, handleSavePDF }) => {
 const Bills = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [title, setTitle] = useOutletContext();
   const { order } = useSelector(orderStore);
   const { bill } = useSelector(billStore);
   const { customer } = useSelector(customerStore);
@@ -532,6 +534,8 @@ const Bills = () => {
     }
   }, [customer]);
 
+  useEffect(() => setTitle("ใบวางบิลทั้งหมด"), []);
+
   let billQuery = useMemo(() => {
     if (!selectedCustomer) return;
     let newBill = cloneDeep(bill);
@@ -553,7 +557,7 @@ const Bills = () => {
 
     if (valueYear !== "ทั้งหมด") {
       newBill = newBill.filter(
-        (a) => dayjs(a.docDate).locale("th").format("YYYY") === valueYear
+        (a) => dayjs(a.docDate).locale("th").format("BBBB") === valueYear
       );
     }
 
@@ -609,7 +613,7 @@ const Bills = () => {
         "รถกะบะ 4 ล้อ ตู้ทึบ จำนวน " +
         curr.id_order.length +
         " คัน วิ่งงานวันที่ " +
-        dayjs(curr.dateWork).format("DD/MM/YYYY") +
+        dayjs(curr.dateWork).format("DD/MM/BBBB") +
         "@" +
         total +
         "@" +
@@ -905,7 +909,7 @@ const Bills = () => {
           />
           <FormSelected
             text="ปี"
-            dateFormat="YYYY"
+            dateFormat="BBBB"
             xs={12}
             sm={4}
             md={2}
@@ -1017,17 +1021,17 @@ const Bills = () => {
                       <TableCell align="center">
                         {dayjs(item.docDate)
                           .locale("th")
-                          .format("DD MMMM YYYY")}
+                          .format("DD MMMM BBBB")}
                       </TableCell>
                       <TableCell align="center">
                         {dayjs(item.dueDate)
                           .locale("th")
-                          .format("DD MMMM YYYY")}
+                          .format("DD MMMM BBBB")}
                       </TableCell>
                       <TableCell align="center">
                         {dayjs(item.dateWork)
                           .locale("th")
-                          .format("DD MMMM YYYY")}
+                          .format("DD MMMM BBBB")}
                       </TableCell>
                       <TableCell align="center">{item.countOrder}</TableCell>
                       <TableCell align="right" sx={{ textAlign: "left" }}>

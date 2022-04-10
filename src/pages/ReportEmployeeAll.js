@@ -26,10 +26,11 @@ import {
   PersonAddAlt1Rounded,
 } from "@mui/icons-material";
 import { useSelector } from "react-redux";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { useOutletContext } from "react-router-dom";
 
 import { employeeStore } from "../store/EmployeeStore";
 import { orderStore } from "../store/OrderStore";
@@ -69,6 +70,7 @@ const Month = [
 
 const ReportEmployeeAll = () => {
   const navigate = useNavigate();
+  const [title, setTitle] = useOutletContext();
   const { employee } = useSelector(employeeStore);
   const { order } = useSelector(orderStore);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
@@ -97,9 +99,7 @@ const ReportEmployeeAll = () => {
     if (!order) return [];
     let res = [];
     employeeList?.forEach((item) => {
-      // let resOrders = item.orders.slice();
       let resOrders = order?.filter((cuur) => cuur.personnel._id === item._id);
-      // console.log(item._id);
       if (valueDay !== "ทั้งเดือน") {
         resOrders = resOrders.filter((order) => {
           let day = dayjs(order.pickup_date).format("D");
@@ -118,7 +118,7 @@ const ReportEmployeeAll = () => {
       });
 
       resOrders = resOrders.filter((order) => {
-        return dayjs(order.pickup_date).format("YYYY") === valueYear;
+        return dayjs(order.pickup_date).format("BBBB") === valueYear;
       });
 
       let total = resOrders.reduce(
@@ -190,7 +190,7 @@ const ReportEmployeeAll = () => {
 
     res = [
       ...new Map(
-        res?.map((item) => [dayjs(item.pickup_date).format("YYYY"), item])
+        res?.map((item) => [dayjs(item.pickup_date).format("BBBB"), item])
       ).values(),
     ].sort(function (a, b) {
       return new Date(b.pickup_date) - new Date(a.pickup_date);
@@ -198,12 +198,12 @@ const ReportEmployeeAll = () => {
     let yearList = [];
     let thisYear = null;
     res.map((item) => {
-      yearList.push(dayjs(item.pickup_date).format("YYYY"));
+      yearList.push(dayjs(item.pickup_date).format("BBBB"));
       if (
-        dayjs(item.pickup_date).format("YYYY") ==
-        dayjs(new Date()).format("YYYY")
+        dayjs(item.pickup_date).format("BBBB") ==
+        dayjs(new Date()).format("BBBB")
       ) {
-        setValueYear(dayjs(item.pickup_date).format("YYYY"));
+        setValueYear(dayjs(item.pickup_date).format("BBBB"));
       }
     });
     if (thisYear !== null) {
@@ -211,6 +211,8 @@ const ReportEmployeeAll = () => {
     }
     return yearList;
   }, []);
+
+  useEffect(() => setTitle("การเงินพนักงาน(พนักงานทุกคน)"), []);
 
   const tableHeaderProps = {
     sortType,
@@ -222,12 +224,12 @@ const ReportEmployeeAll = () => {
     headCell: [
       { id: "full_name", label: "ชื่อ" },
       { id: "count", label: "จำนวนงาน" },
-      { id: "price_order", label: "ค่าเที่ยว" },
-      { id: "wage", label: "ค่าเที่ยวพนักงาน" },
-      { id: "profit", label: "กำไร" },
-      { id: "withdraw", label: "เบิก" },
-      { id: "cost", label: "น้ำมัน" },
-      { id: "balance", label: "ยอดคงเหลือ" },
+      { id: "price_order", label: "ค่าเที่ยว(บาท)" },
+      { id: "wage", label: "ค่าเที่ยววิ่งพนักงาน(บาท)" },
+      { id: "profit", label: "กำไร(บาท)" },
+      { id: "withdraw", label: "เบิก(บาท)" },
+      { id: "cost", label: "น้ำมัน(บาท)" },
+      { id: "balance", label: "ยอดคงเหลือ(บาท)" },
       { id: "", label: "" },
     ],
   };
@@ -351,7 +353,7 @@ const ReportEmployeeAll = () => {
           />
           <FormSelected
             text="ปี"
-            dateFormat="YYYY"
+            dateFormat="BBBB"
             xs={12}
             sm={4}
             queryDate={yearQuery}
@@ -414,13 +416,27 @@ const ReportEmployeeAll = () => {
                       }}
                     >
                       <TableCell>{item.full_name}</TableCell>
-                      <TableCell align="center">{item.count}</TableCell>
-                      <TableCell align="right">{item.price_order}</TableCell>
-                      <TableCell align="right">{item.wage}</TableCell>
-                      <TableCell align="right">{item.profit}</TableCell>
-                      <TableCell align="right">{item.withdraw}</TableCell>
-                      <TableCell align="right">{item.cost}</TableCell>
-                      <TableCell align="right">{item.balance}</TableCell>
+                      <TableCell align="center">
+                        {item.count.toLocaleString("en")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {item.price_order.toLocaleString("en")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {item.wage.toLocaleString("en")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {item.profit.toLocaleString("en")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {item.withdraw.toLocaleString("en")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {item.cost.toLocaleString("en")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {item.balance.toLocaleString("en")}
+                      </TableCell>
                       <TableCell align="right">
                         <IconButton
                           sx={{ p: 0.5, color: "#4287f5" }}
@@ -446,13 +462,27 @@ const ReportEmployeeAll = () => {
                 }}
               >
                 <TableCell>{total.full_name}</TableCell>
-                <TableCell align="center">{total.count}</TableCell>
-                <TableCell align="right">{total.price_order}</TableCell>
-                <TableCell align="right">{total.wage}</TableCell>
-                <TableCell align="right">{total.profit}</TableCell>
-                <TableCell align="right">{total.withdraw}</TableCell>
-                <TableCell align="right">{total.cost}</TableCell>
-                <TableCell align="right">{total.balance}</TableCell>
+                <TableCell align="center">
+                  {total.count.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.price_order.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.wage.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.profit.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.withdraw.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.cost.toLocaleString("en")}
+                </TableCell>
+                <TableCell align="right">
+                  {total.balance.toLocaleString("en")}
+                </TableCell>
                 <TableCell align="right"></TableCell>
               </TableRow>
             </TableBody>

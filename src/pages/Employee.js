@@ -59,6 +59,7 @@ import TableHeader from "../components/TableHeader";
 import StatusColor from "../components/StatusColor";
 import { HttpClient } from "../utils/HttpClient";
 import Loading from "../components/Loading";
+import { useOutletContext } from "react-router-dom";
 
 const AntSwitch = styled(Switch)(({ theme }) => ({
   width: 28,
@@ -224,17 +225,19 @@ const Row = ({ Cell, handleDelete }) => {
           {Cell._oid}
         </TableCell>
         <TableCell component="th" scope="row">
-          {dayjs(Cell.pickup_date).locale("th").format("DD MMMM YYYY")}
+          {dayjs(Cell.pickup_date).locale("th").format("DD MMMM BBBB")}
         </TableCell>
         <TableCell align="right">{Cell.pickup_location}</TableCell>
         <TableCell align="right">{Cell.delivery_location}</TableCell>
-        <TableCell align="right">{Cell.wage}</TableCell>
-        <TableCell align="right">{Cell.cost}</TableCell>
-        <TableCell align="right">{Cell.withdraw}</TableCell>
+        <TableCell align="right">{Cell.wage.toLocaleString("en")}</TableCell>
+        <TableCell align="right">{Cell.cost.toLocaleString("en")}</TableCell>
         <TableCell align="right">
-          {Cell.wage - Cell.cost - Cell.withdraw}
+          {Cell.withdraw.toLocaleString("en")}
         </TableCell>
-        <TableCell align="right" sx={{ p: 1.2 }}>
+        <TableCell align="right">
+          {(Cell.wage - Cell.cost - Cell.withdraw).toLocaleString("en")}
+        </TableCell>
+        <TableCell align="center" sx={{ p: 1.2 }}>
           <Typography
             variant="p"
             sx={{
@@ -300,9 +303,9 @@ const Row = ({ Cell, handleDelete }) => {
                         );
                       }
                     })}
-                    <TableCell>ค่างาน</TableCell>
-                    <TableCell>กำไร</TableCell>
-                    <TableCell align="right">น้ำมัน</TableCell>
+                    <TableCell>ค่างาน(บาท)</TableCell>
+                    <TableCell>กำไร(บาท)</TableCell>
+                    <TableCell align="right">น้ำมัน(บาท)</TableCell>
                     <TableCell align="right">ตจว./กทม.</TableCell>
                     <TableCell
                       align="right"
@@ -319,9 +322,13 @@ const Row = ({ Cell, handleDelete }) => {
                         return <TableCell key={i}>{p[1]}</TableCell>;
                       }
                     })}
-                    <TableCell>{Cell.price_order}</TableCell>
-                    <TableCell>{Cell.profit}</TableCell>
-                    <TableCell align="right">{Cell.cost}</TableCell>
+                    <TableCell>
+                      {Cell.price_order.toLocaleString("en")}
+                    </TableCell>
+                    <TableCell>{Cell.profit.toLocaleString("en")}</TableCell>
+                    <TableCell align="right">
+                      {Cell.cost.toLocaleString("en")}
+                    </TableCell>
                     <TableCell align="right">{Cell.area}</TableCell>
                     <TableCell align="center">
                       <IconButton
@@ -356,6 +363,7 @@ const Employee = () => {
   const dispatch = useDispatch();
   const { employee } = useSelector(employeeStore);
   const { order } = useSelector(orderStore);
+  const [title, setTitle] = useOutletContext();
   const [loadingData, setLoadingData] = useState(false);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
   const [userSelected, setUserSelected] = useState({ orders: [] });
@@ -367,9 +375,9 @@ const Employee = () => {
   //Filter by Date
   const [valueDay, setValueDay] = useState("ทั้งหมด");
   const [valueMonth, setValueMonth] = useState("ทั้งหมด");
-  const [valueYear, setValueYear] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState(dayjs(new Date()).format("BBBB"));
   //Pagination
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(0);
   //Dense Table
   const [dense, setDense] = useState(false);
@@ -377,6 +385,7 @@ const Employee = () => {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    setTitle("พนักงานทั้งหมด");
     if (employee) {
       setUserSelected(...employee.slice(0, 1));
     }
@@ -397,7 +406,7 @@ const Employee = () => {
 
     if (valueYear !== "ทั้งหมด") {
       newOrders = newOrders.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("YYYY") === valueYear
+        (a) => dayjs(a.pickup_date).locale("th").format("BBBB") === valueYear
       );
     }
 
@@ -493,7 +502,7 @@ const Employee = () => {
   const userListProps = {
     employee: employeeList,
     handleSelectedUser: (user) => {
-      setValueYear("ทั้งหมด");
+      setValueYear(dayjs(new Date()).format("BBBB"));
       setValueMonth("ทั้งหมด");
       setValueDay("ทั้งหมด");
       setPage(0);
@@ -511,15 +520,51 @@ const Employee = () => {
       { id: "pickup_date", label: "วันที่" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
-      { id: "wage", label: "ค่าเที่ยววิ่งพนักงาน" },
-      { id: "cost", label: "ค่าน้ำมัน" },
-      { id: "withdraw", label: "เบิก" },
-      { id: "balance", label: "ยอดคงเหลือ" },
+      { id: "wage", label: "ค่าเที่ยววิ่งพนักงาน(บาท)" },
+      { id: "cost", label: "ค่าน้ำมัน(บาท)" },
+      { id: "withdraw", label: "เบิก(บาท)" },
+      { id: "balance", label: "ยอดคงเหลือ(บาท)" },
       { id: "status", label: "สถานะ" },
     ],
   };
 
+  let yearQuery = useMemo(() => {
+    let newOrders = order?.filter(
+      (item) => item.personnel._id === userSelected._id
+    );
+    let newYear = [
+      ...new Map(
+        newOrders?.map((item) => [
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+        ])
+      ).values(),
+    ];
+
+    let now = newYear.find(
+      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
+    );
+   
+    if (!now) {
+      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
+    }
+ 
+    return newYear;
+  }, [userSelected, order]);
+
   const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
+    let dateQuery =
+      dateFormat == "BBBB"
+        ? yearQuery
+        : [
+            ...new Map(
+              [...userSelected.orders].map((item) => [
+                dayjs(item.pickup_date).locale("th").format(dateFormat),
+                dayjs(item.pickup_date).locale("th").format(dateFormat),
+              ])
+            ).values(),
+          ];
+
     return (
       <Grid item {...rest}>
         <FormControl sx={{ width: "100%" }}>
@@ -543,43 +588,38 @@ const Employee = () => {
             }
             MenuProps={MenuProps}
           >
-            <MenuItem
-              value="ทั้งหมด"
-              sx={{
-                width: "100%",
-                borderRadius: "8px",
-                mb: 1,
-              }}
-            >
-              {text}ทั้งหมด
-            </MenuItem>
-            {[
-              ...new Map(
-                [...userSelected.orders].map((item) => [
-                  dayjs(item.pickup_date).locale("th").format(dateFormat),
-                  item,
-                ])
-              ).values(),
-            ]
-              .sort(function (a, b) {
+            {dateFormat != "BBBB" ? (
+              <MenuItem
+                value={"ทั้งหมด"}
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                }}
+              >
+                {`${text}ทั้งหมด`}
+              </MenuItem>
+            ) : null}
+            {dateQuery
+              // .sort(function (a, b) {
+              //   return (
+              //     dayjs(b).format(dateFormat) - dayjs(a).format(dateFormat)
+              //   );
+              // })
+              .map((row, index) => {
                 return (
-                  dayjs(b.pickup_date).format(dateFormat) -
-                  dayjs(a.pickup_date).format(dateFormat)
+                  <MenuItem
+                    key={index}
+                    value={row}
+                    sx={{
+                      width: "100%",
+                      borderRadius: "8px",
+                      mt: 1,
+                    }}
+                  >
+                    {row}
+                  </MenuItem>
                 );
-              })
-              .map((row, index) => (
-                <MenuItem
-                  key={index}
-                  value={dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                  sx={{
-                    width: "100%",
-                    borderRadius: "8px",
-                    mb: 1,
-                  }}
-                >
-                  {dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                </MenuItem>
-              ))}
+              })}
           </Select>
         </FormControl>
       </Grid>
@@ -589,7 +629,7 @@ const Employee = () => {
   if (loadingData) return <Loading />;
 
   return (
-    <Container maxWidth={"xl"}>
+    <Box>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
         <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
           พนักงานทั้งหมด
@@ -661,7 +701,7 @@ const Employee = () => {
               <Button
                 startIcon={<ManageAccounts />}
                 onClick={() =>
-                  navigate("/profile", { state: { user: userSelected } })
+                  navigate("/profileemployee", { state: { user: userSelected } })
                 }
                 sx={{
                   position: "absolute",
@@ -727,7 +767,7 @@ const Employee = () => {
                 />
                 <FormSelected
                   text="ปี"
-                  dateFormat="YYYY"
+                  dateFormat="BBBB"
                   xs={12}
                   sm={4}
                   md={2}
@@ -836,7 +876,7 @@ const Employee = () => {
           </Box>
         </Grid>
       </Grid>
-    </Container>
+    </Box>
   );
 };
 

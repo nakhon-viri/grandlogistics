@@ -52,6 +52,7 @@ import Grid from "@mui/material/Grid";
 import StatusColor from "../components/StatusColor";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useOutletContext } from "react-router-dom";
 
 import { HttpClient } from "../utils/HttpClient";
 import Loading from "../components/Loading";
@@ -118,7 +119,7 @@ const headCells = [
     id: "price_order",
     numeric: true,
     disablePadding: false,
-    label: "ค่าเที่ยว",
+    label: "ค่าเที่ยว(บาท)",
   },
   {
     id: "status",
@@ -296,18 +297,20 @@ const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
           />
         </TableCell>
         <TableCell align="left" sx={{ paddingRight: 6 }}>
-          {row.row_number}
+          {row.row_number.toLocaleString("en")}
         </TableCell>
         <TableCell align="left">{row._oid}</TableCell>
         <TableCell align="left" id={labelId}>
-          {dayjs(row.pickup_date).locale("th").format("DD MMMM YYYY")}
+          {dayjs(row.pickup_date).locale("th").format("DD MMMM BBBB")}
         </TableCell>
         <TableCell align="left">{row.pickup_location}</TableCell>
         <TableCell align="left">{row.delivery_location}</TableCell>
         <TableCell align="left">{row.driver}</TableCell>
         <TableCell align="left">{row.per_time}</TableCell>
-        <TableCell align="left">{row.price_order}</TableCell>
-        <TableCell align="left">
+        <TableCell align="right">
+          {row.price_order.toLocaleString("en")}
+        </TableCell>
+        <TableCell align="center">
           <Typography
             variant="p"
             sx={{
@@ -373,9 +376,9 @@ const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
                         );
                       }
                     })}
-                    <TableCell>จ่ายค่างาน</TableCell>
-                    <TableCell>กำไร</TableCell>
-                    <TableCell align="right">น้ำมัน</TableCell>
+                    <TableCell>ค่าเที่ยววิ่งพนักงาน(บาท)</TableCell>
+                    <TableCell>กำไร(บาท)</TableCell>
+                    <TableCell align="right">น้ำมัน(บาท)</TableCell>
                     <TableCell align="right">ตจว./กทม.</TableCell>
                     <TableCell
                       align="center"
@@ -392,9 +395,11 @@ const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
                         return <TableCell key={i}>{p[1]}</TableCell>;
                       }
                     })}
-                    <TableCell>{row.wage}</TableCell>
-                    <TableCell>{row.profit}</TableCell>
-                    <TableCell align="right">{row.cost}</TableCell>
+                    <TableCell>{row.wage.toLocaleString("en")}</TableCell>
+                    <TableCell>{row.profit.toLocaleString("en")}</TableCell>
+                    <TableCell align="right">
+                      {row.cost.toLocaleString("en")}
+                    </TableCell>
                     <TableCell align="right">{row.area}</TableCell>
                     <TableCell align="center">
                       <IconButton
@@ -458,14 +463,17 @@ const EnhancedTableToolbar = ({ numSelected }) => {
 export default function EnhancedTable() {
   let dispatch = useDispatch();
   let navigate = useNavigate();
+  const [title, setTitle] = useOutletContext();
   const [orderSort, setOrderSort] = React.useState("desc");
   const [orderBy, setOrderBy] = React.useState("pickup_date");
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [valueTabs, setValueTabs] = React.useState("ทั้งหมด");
-  const [filterYear, setFilterYear] = React.useState("ทั้งหมด");
+  const [filterYear, setFilterYear] = React.useState(
+    dayjs(new Date()).format("BBBB")
+  );
   const { order } = useSelector(orderStore);
   const [loadingData, setLoadingData] = React.useState(false);
 
@@ -603,10 +611,10 @@ export default function EnhancedTable() {
       if (valueTabs !== "ทั้งหมด") {
         queryOrder = queryOrder.filter((a) => a.status === valueTabs);
       }
-      
+
       queryOrder = queryOrder.filter((a) => {
         if (filterYear !== "ทั้งหมด") {
-          return dayjs(a.pickup_date).format("YYYY") === filterYear;
+          return dayjs(a.pickup_date).format("BBBB") === filterYear;
         }
         return a;
       });
@@ -654,9 +662,30 @@ export default function EnhancedTable() {
 
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - newOrder.length) : 0;
-
+  React.useEffect(() => setTitle("เที่ยววิ่งทั้งหมด"), []);
   if (loadingData) return <Loading />;
 
+  let yearQuery = React.useMemo(() => {
+    let newYear = [
+      ...new Map(
+        order?.map((item) => [
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+        ])
+      ).values(),
+    ];
+
+    let now = newYear.find(
+      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
+    );
+ 
+    if (!now) {
+      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
+    }
+    
+    return newYear;
+  }, [order]);
+ 
   return (
     <Box>
       <CssBaseline />
@@ -868,38 +897,21 @@ export default function EnhancedTable() {
                   }
                   MenuProps={MenuProps}
                 >
-                  <MenuItem
-                    value="ทั้งหมด"
-                    sx={{
-                      width: "100%",
-                      borderRadius: "8px",
-                      mb: 1,
-                    }}
-                  >
-                    ปีทั้งหมด
-                  </MenuItem>
-                  {[
-                    ...new Map(
-                      order?.map((item) => [
-                        dayjs(item.pickup_date).format("YYYY"),
-                        item,
-                      ])
-                    ).values(),
-                  ]
+                  {yearQuery
                     .sort(function (a, b) {
-                      return new Date(b.pickup_date) - new Date(a.pickup_date);
+                      return a - b;
                     })
                     .map((row, index) => (
                       <MenuItem
                         key={index}
-                        value={dayjs(row.pickup_date).format("YYYY")}
+                        value={row}
                         sx={{
                           width: "100%",
                           borderRadius: "8px",
                           mb: 1,
                         }}
                       >
-                        {dayjs(row.pickup_date).format("YYYY")}
+                        {row}
                       </MenuItem>
                     ))}
                 </Select>

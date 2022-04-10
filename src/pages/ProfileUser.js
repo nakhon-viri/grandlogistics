@@ -16,6 +16,8 @@ import {
   Stack,
   OutlinedInput,
   FormHelperText,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
@@ -24,6 +26,10 @@ import {
   DateRange,
   InsertDriveFile,
   SaveRounded,
+  DeleteRounded,
+  ArrowBackRounded,
+  VpnKey,
+  AssignmentInd,
 } from "@mui/icons-material";
 import {
   searchAddressByProvince,
@@ -32,61 +38,19 @@ import {
 } from "thai-address-database";
 import { useState, useRef, useMemo, useEffect } from "react";
 import "dayjs/locale/th";
-import { addEmployee } from "../store/EmployeeStore";
-import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useOutletContext } from "react-router-dom";
 
 import { useForm, Form } from "../components/useForm";
+import { authStore } from "../store/AuthStore";
 import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
 import { HttpClient } from "../utils/HttpClient";
+import Loading from "../components/Loading";
 import Controls from "../components/controls";
-
-const AntSwitch = styled(Switch)(({ theme }) => ({
-  width: 35,
-  height: 20,
-  padding: 0,
-  display: "flex",
-  "&:active": {
-    "& .MuiSwitch-thumb": {
-      width: 15,
-    },
-    "& .MuiSwitch-switchBase.Mui-checked": {
-      transform: "translateX(9px)",
-    },
-  },
-  "& .MuiSwitch-switchBase": {
-    padding: 2,
-    "&.Mui-checked": {
-      transform: "translateX(15px)",
-      color: "#fff",
-      "& + .MuiSwitch-track": {
-        opacity: 1,
-        backgroundColor: theme.palette.mode === "dark" ? "#177ddc" : "#1890ff",
-      },
-    },
-  },
-  "& .MuiSwitch-thumb": {
-    boxShadow: "0 2px 4px 0 rgb(0 35 11 / 20%)",
-    width: 15,
-    height: 15,
-    borderRadius: "50%",
-    transition: theme.transitions.create(["width"], {
-      duration: 200,
-    }),
-  },
-  "& .MuiSwitch-track": {
-    borderRadius: 20 / 2,
-    opacity: 1,
-    backgroundColor:
-      theme.palette.mode === "dark"
-        ? "rgba(255,255,255,.35)"
-        : "rgba(0,0,0,.25)",
-    boxSizing: "border-box",
-  },
-}));
 
 const MenuProps = {
   PaperProps: {
@@ -309,19 +273,28 @@ const convertToDefEventPara = (name, value) => ({
   },
 });
 
-const Register = () => {
+const Profile = () => {
   let navigate = useNavigate();
   let dispatch = useDispatch();
   const [title, setTitle] = useOutletContext();
+  let { profile } = useSelector(authStore);
   const [loading, setLoading] = useState(false);
+  const [loadingChangePassword, setLoadingChangePassword] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
+  const [IDUser, setIDUser] = useState(null);
   //Img
   const [editor, setEditor] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [scaleValue, setScaleValue] = useState(1);
   const [openDialog, setopenDialog] = useState(false);
   const removeValue = useRef();
+  //Tab Menu
+  const [tabMenu, setTabMenu] = useState(1);
   //CheckID Card
   const [validationID, setValidationID] = useState(false);
+  //err change password
+  const [errChangePassword, setErrChangePassword] = useState({});
+  // const [initialValues, setInitialValues] = useState(null);
   //Hooks
   let [hover, eventHover] = useHover();
   //Form
@@ -380,40 +353,71 @@ const Register = () => {
     });
     if (fieldValues == values) return Object.values(temp).every((x) => x == "");
   };
-  const { values, errors, setErrors, handleInputChange } = useForm(
+  const { values, setValues, errors, setErrors, handleInputChange } = useForm(
     initialValues,
     false,
     validate
   );
+  const validateChangePassword = ({ password, newPassword1, newPassword2 }) => {
+    let err = { oldPass: "", pass1: "", pass2: "" };
+    if (password.length == 0) err.oldPass = "กรุณาป้อนรหัสผ่าน";
+    if (newPassword1.length == 0) err.pass1 = "กรุณาป้อนรหัสผ่าน";
+    if (newPassword2.length == 0) err.pass2 = "กรุณาป้อนยืนยันรหัสผ่าน";
+    if (newPassword1 !== newPassword2) {
+      err.pass1 = "รหัสผ่านไม่ตรงกัน";
+      err.pass2 = "รหัสผ่านไม่ตรงกัน";
+    }
+    if (!(newPassword1.length > 7 && newPassword1.length < 17))
+      err.pass1 = "ใช้อักขระ 8-16 ตัว";
+    if (!(newPassword2.length > 7 && newPassword2.length < 17))
+      err.pass2 = "ใช้อักขระ 8-16 ตัว";
 
-  const Toast = Swal.mixin({
-    toast: true,
-    position: "top-end",
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-      toast.addEventListener("mouseenter", Swal.stopTimer);
-      toast.addEventListener("mouseleave", Swal.resumeTimer);
-    },
-  });
+    setErrChangePassword({
+      ...err,
+    });
 
+    return Object.values(err).every((x) => x == "");
+  };
+  //Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
+      console.log(values);
+    }
+  };
+  const handleSubmitChangePassword = async (e) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const account = {
+      password: data.get("password"),
+      newPassword1: data.get("newPassword1"),
+      newPassword2: data.get("newPassword2"),
+    };
+    if (validateChangePassword({ ...account })) {
       try {
-        setLoading(true);
-        values.birthday = JSON.stringify(values.birthday).replace(/"/g, "");
-        values.reference_id = values.reference_id.replace(/-/g, "");
-        let res = await HttpClient.post("/personnel/register", values);
-        dispatch(addEmployee(res.data));
-        navigate(-1);
-        Toast.fire({
-          icon: "success",
-          title: "Signed in successfully",
-        });
+        setLoadingChangePassword(true);
+        let { data } = await HttpClient.put(
+          "/personnel/changepassword/" + IDUser,
+          account
+        );
+        if (data) {
+          Swal.fire("อัปเดตรหัสผ่านเสร็จสิ้น", "", "success").then((res) =>
+            setTabMenu(1)
+          );
+        } else {
+          const error = new Error("เกิดข้อผิดพลาดกรุณาลองใหม่อีกครั้ง");
+          throw error;
+        }
       } catch (error) {
+        if (error.response.data.error.message === "รหัสผ่านไม่ถูกต้อง") {
+          setErrChangePassword({
+            ...errChangePassword,
+            oldPass: error.response.data.error.message,
+          });
+        }
         console.log(error.response.data.error.message);
+      } finally {
+        setLoadingChangePassword(false);
       }
     }
   };
@@ -490,6 +494,47 @@ const Register = () => {
     if (number.length > 7) number = formatID(number, 7);
     handleInputChange(convertToDefEventPara("phone_no", number));
   }
+
+  const FromUser = () => {
+    if (tabMenu == 1) {
+      return FromProfile();
+    } else if (tabMenu == 2) {
+      return FromChangePassword();
+    }
+  };
+
+  const handleDel = () => {};
+
+  useEffect(() => {
+    if (profile) {
+      let newProfile = cloneDeep(profile);
+      setIDUser(newProfile._id);
+      setValues({
+        full_name: {
+          first_name: newProfile.full_name.first_name,
+          last_name: newProfile.full_name.last_name,
+        },
+        department: newProfile.department,
+        reference_id: newProfile.reference_id,
+        address: {
+          house_no: newProfile.address.house_no,
+          street: newProfile.address.street,
+          subdistrict: newProfile.address.subdistrict,
+          district: newProfile.address.district,
+          province: newProfile.address.province,
+          zip_code: newProfile.address.zip_code,
+        },
+        bank_no: newProfile.bank_no,
+        bank_name: newProfile.bank_name,
+        photo: newProfile.photo,
+        car_no: newProfile.car_no,
+        phone_no: newProfile.phone_no,
+        birthday: newProfile.birthday,
+        gender: newProfile.gender,
+      });
+    }
+  }, [profile]);
+
   //QueryAddress
   let queryProvinces = useMemo(
     () => [
@@ -523,16 +568,79 @@ const Register = () => {
     ],
     [values.address.subdistrict]
   );
+  useEffect(() => setTitle("แก้ไขโปรไฟล์"), []);
 
-  useEffect(() => setTitle("ลงทะเบียนพนักงาน"), []);
-
-  return (
-    <Container>
-      <Box sx={{ flexGrow: 1, mb: 5 }}>
-        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
-          ลงทะเบียนพนักงาน
-        </Typography>
+  const FromChangePassword = () => {
+    return (
+      <Box
+        component="form"
+        onSubmit={handleSubmitChangePassword}
+        sx={styles.form}
+      >
+        <Paper sx={{ width: "100%", p: 3 }}>
+          <TextField
+            fullWidth
+            autoComplete="off"
+            label="รหัสผ่านปัจจุบัน"
+            name="password"
+            type="password"
+            InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
+            sx={styles.inputFieldPassword}
+            error={!!errChangePassword.oldPass}
+            helperText={
+              errChangePassword.oldPass ? errChangePassword.oldPass : null
+            }
+          />
+          <TextField
+            fullWidth
+            autoComplete="off"
+            label="รหัสผ่านใหม่"
+            name="newPassword1"
+            type="password"
+            InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
+            sx={styles.inputFieldPassword}
+            error={!!errChangePassword.pass1}
+            helperText={
+              errChangePassword.pass1 ? errChangePassword.pass1 : null
+            }
+          />
+          <TextField
+            fullWidth
+            autoComplete="off"
+            label="ยืนยันรหัสผ่านใหม่"
+            name="newPassword2"
+            type="password"
+            InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
+            sx={styles.inputFieldPassword}
+            error={!!errChangePassword.pass2}
+            helperText={
+              errChangePassword.pass2 ? errChangePassword.pass2 : null
+            }
+          />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <LoadingButton
+              type="submit"
+              startIcon={<SaveRounded />}
+              fullWidth
+              loading={loadingChangePassword}
+              variant="contained"
+              sx={styles.btnSubmit}
+            >
+              บันทึก
+            </LoadingButton>
+          </Box>
+        </Paper>
       </Box>
+    );
+  };
+
+  const FromProfile = () => {
+    return (
       <Form onSubmit={handleSubmit} sx={styles.form}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}>
@@ -692,15 +800,6 @@ const Register = () => {
                   error={errors.last_name}
                 />
                 <InputGrid
-                  sm
-                  name="password"
-                  label="รหัสผ่าน"
-                  type="password"
-                  value={values.password}
-                  onChange={handleInputChange}
-                  error={errors.password}
-                />
-                <InputGrid
                   name="phone_no"
                   label="เบอร์ติดต่อ"
                   placeholder="__-____-____"
@@ -840,6 +939,13 @@ const Register = () => {
                   addressQuery={queryAmphoe}
                   error={errors.subdistrict}
                 />
+                <InputGrid
+                  label="ถนน"
+                  type="text"
+                  name="address.street"
+                  onChange={handleInputChange}
+                  value={values.address.street}
+                />
                 <InputGridAddress
                   title="รหัสไปรษณีย์"
                   forEmpty="ตำบล/แขวง"
@@ -854,11 +960,22 @@ const Register = () => {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: "column",
+                  flexDirection: "row",
                   alignItems: "flex-end",
+                  justifyContent: "space-between",
                   marginTop: "24px",
                 }}
               >
+                <Button
+                  color="error"
+                  fullWidth
+                  startIcon={<DeleteRounded />}
+                  variant="contained"
+                  onClick={handleDel}
+                  sx={styles.btnDel}
+                >
+                  ลบพนักงาน
+                </Button>
                 <LoadingButton
                   type="submit"
                   startIcon={<SaveRounded />}
@@ -874,6 +991,96 @@ const Register = () => {
           </Grid>
         </Grid>
       </Form>
+    );
+  };
+
+  if (loadingData || !initialValues) return <Loading />;
+
+  return (
+    <Container>
+      <Box
+        sx={{
+          flexGrow: 1,
+          mb: 1,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          แก้ไขโปรไฟล์
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<ArrowBackRounded />}
+          onClick={() => navigate(-1)}
+          sx={{
+            backgroundColor: "rgb(32, 101, 209)",
+            boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+            borderRadius: 2,
+            "&:hover": {
+              boxShadow: "none",
+            },
+            mr: 2,
+          }}
+        >
+          กลับ
+        </Button>
+      </Box>
+      <Box sx={{ width: "100%", my: 3 }}>
+        <Tabs
+          value={tabMenu}
+          onChange={(e, v) => {
+            setErrChangePassword({});
+            setTabMenu(v);
+          }}
+          indicatorColor="primary"
+          textColor="inherit"
+          sx={{
+            color: "text.secondary",
+            "&  .MuiTabs-indicator": {
+              bottom: "initial",
+              mt: 1,
+            },
+            "&  .Mui-selected": {
+              color: "text.primary",
+            },
+            "&  .MuiButtonBase-root": {
+              opacity: 1,
+            },
+          }}
+        >
+          <Tab
+            value={1}
+            icon={<AssignmentInd />}
+            iconPosition="start"
+            sx={{
+              fontSize: "1.2rem",
+              fontWeight: 500,
+              fontFamily: "Itim",
+              p: 0,
+              minHeight: "initial",
+              mr: 5,
+            }}
+            label="โปรไฟล์"
+            disableRipple
+          />
+          <Tab
+            icon={<VpnKey />}
+            iconPosition="start"
+            sx={{
+              fontSize: "1.2rem",
+              fontWeight: 500,
+              fontFamily: "Itim",
+              p: 0,
+              minHeight: "initial",
+            }}
+            value={2}
+            label="เปลี่ยนรหัสผ่าน"
+            disableRipple
+          />
+        </Tabs>
+      </Box>
+      {FromUser()}
     </Container>
   );
 };
@@ -948,6 +1155,19 @@ const styles = {
       opacity: 1,
     },
   },
+  inputFieldPassword: {
+    borderRadius: 2,
+    "& fieldset": {
+      borderRadius: 2,
+    },
+    "& input::placeholder": {
+      textOverflow: "ellipsis !important",
+      fontWeight: 800,
+      color: "text",
+      opacity: 1,
+    },
+    mb: 3,
+  },
   btnSubmit: {
     backgroundColor: "rgb(32, 101, 209)",
     boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
@@ -959,5 +1179,15 @@ const styles = {
       boxShadow: "none",
     },
   },
+  btnDel: {
+    boxShadow: "rgb(211 47 47 / 24%) 0px 8px 16px 0px",
+    borderRadius: 2,
+    minWidth: 16,
+    height: 40,
+    width: "auto",
+    "&:hover": {
+      boxShadow: "none",
+    },
+  },
 };
-export default Register;
+export default Profile;

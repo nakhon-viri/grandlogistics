@@ -22,7 +22,9 @@ import Trash from "./pages/Trash";
 import Bills from "./pages/Bills";
 import CreateBill from "./pages/CreateBill";
 import Invoices from "./pages/Invoices";
+import ProfileUser from "./pages/ProfileUser";
 import Loading from "./components/Loading";
+import Swal from "sweetalert2";
 
 import { authStore, getProfileReq } from "./store/AuthStore";
 import { orderReq, orderStore } from "./store/OrderStore";
@@ -36,7 +38,7 @@ import { useSelector, useDispatch } from "react-redux";
 
 const RequireAuth = () => {
   const [socket, setSocket] = useState(null);
-  const { isLogin, loadingAuth } = useSelector(authStore);
+  const { isLogin, loadingAuth, profile } = useSelector(authStore);
   const { loadingEmployee } = useSelector(employeeStore);
   const { loadingCustomer } = useSelector(customerStore);
   const { loadingOrder } = useSelector(orderStore);
@@ -81,12 +83,11 @@ const RequireAuth = () => {
     loadingEmployee ||
     loadingCustomer ||
     loadingOrder ||
-    loadingBill 
-    ||
+    loadingBill ||
     loadingInvoice
   ) {
     return <Loading />;
-  }
+  } 
 
   return <Outlet />;
 };
@@ -126,7 +127,8 @@ const App = () => {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayOut />}>
           <Route path="/" element={<Employee />} />
-          <Route path="/profile" element={<ProfileEmployee />} />
+          <Route path="/profileemployee" element={<ProfileEmployee />} />
+          <Route path="/profile" element={<ProfileUser />} />
           <Route path="/register" element={<Register />} />
           <Route path="/order" element={<Order />} />
           <Route path="/addorder" element={<AddOrder />} />

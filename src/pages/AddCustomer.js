@@ -17,9 +17,6 @@ import {
   OutlinedInput,
   FormHelperText,
 } from "@mui/material";
-import MobileDatePicker from "@mui/lab/MobileDatePicker";
-import AdapterDayjs from "@mui/lab/AdapterDayjs";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
 import {
@@ -33,7 +30,7 @@ import {
   searchAddressByDistrict,
   searchAddressByAmphoe,
 } from "thai-address-database";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import "dayjs/locale/th";
 import { addCustomer } from "../store/CustomerStore";
 import { useDispatch } from "react-redux";
@@ -43,8 +40,9 @@ import Swal from "sweetalert2";
 import { useForm, Form } from "../components/useForm";
 import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
-import Controls from "../components/controls";
 import { HttpClient } from "../utils/HttpClient";
+import { useOutletContext } from "react-router-dom";
+
 const Provinces = [
   "กระบี่",
   "กรุงเทพมหานคร",
@@ -244,6 +242,7 @@ const InputGridAddress = ({
 const AddCustomer = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [title, setTitle] = useOutletContext();
   const [loading, setLoading] = useState(false);
   //Img
   const [editor, setEditor] = useState(null);
@@ -358,10 +357,7 @@ const AddCustomer = () => {
     if (validate()) {
       try {
         setLoading(true);
-        let res = await HttpClient.post(
-          "/customer",
-          values
-        );
+        let res = await HttpClient.post("/customer", values);
         dispatch(addCustomer(res.data));
         navigate(-1);
         Toast.fire({
@@ -373,6 +369,9 @@ const AddCustomer = () => {
       }
     }
   };
+
+  useEffect(() => setTitle("เพิ่มบริษัทคู่ค้า"), []);
+
   //QueryAddress
   let queryProvinces = useMemo(
     () => [

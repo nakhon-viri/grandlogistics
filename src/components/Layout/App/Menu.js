@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { styled } from "@mui/material/styles";
 import MuiDrawer from "@mui/material/Drawer";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -31,27 +31,30 @@ import { authStore } from "../../../store/AuthStore";
 import { useSelector } from "react-redux";
 
 const drawerWidth = 280;
-let opendrawer;
 
 const openedMixin = (theme) => ({
   width: drawerWidth,
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
+    // duration: "100ms",
   }),
   overflowX: "hidden",
+  // backgroundColor: theme.palette.mode === "dark" && "rgb(22, 28, 36)",
 });
 
 const closedMixin = (theme) => ({
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
+    // duration: "100ms",
   }),
   overflowX: "hidden",
   width: 0,
   [theme.breakpoints.up("sm")]: {
     width: `calc(${theme.spacing(10)} + 7px)`,
   },
+  // backgroundColor: theme.palette.mode === "dark" && "rgb(22, 28, 36)",
 });
 
 const DrawerFull = styled(MuiDrawer, {
@@ -60,61 +63,97 @@ const DrawerFull = styled(MuiDrawer, {
   width: drawerWidth,
   flexShrink: 0,
   whiteSpace: "nowrap",
+  backgroundImage: "none",
   boxSizing: "border-box",
+  "& .MuiPaper-root": {
+    backgroundColor: theme.palette.mode === "dark" && "rgb(22, 28, 36)",
+  },
   ...(open && {
     ...openedMixin(theme),
     "& .MuiDrawer-paper": openedMixin(theme),
+    "& .MuiDrawer-paper .drawerHover": { opacity: 1 },
+    "& .MuiDrawer-paper .containerCardHover": {
+      backgroundColor: "rgba(145, 158, 171, 0.12)",
+      padding: "16px 20px",
+    },
+    "& .MuiDrawer-paper .titleName ": { opacity: 1 },
+    "& .MuiDrawer-paper .listItemText ": { opacity: 1 },
+    "& .MuiDrawer-paper .listsubheader ": { opacity: 1 },
   }),
   ...(!open && {
     ...closedMixin(theme),
     "& .MuiDrawer-paper": closedMixin(theme),
+    "&:hover  .MuiDrawer-paper": {
+      width: drawerWidth,
+      transition: theme.transitions.create("width", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      overflowX: "hidden",
+      backdropFilter: " blur(2px)",
+      backgroundColor:
+        theme.palette.mode === "dark"
+          ? "rgb(22, 28, 36,0.85)"
+          : "rgb(255, 255, 255,0.85)",
+      boxShadow: "rgb(0 0 0 / 15%) 0px 24px 48px 0px",
+    },
+    "& .MuiDrawer-paper .drawerHover": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .drawerHover ": { opacity: 1 },
+    "& .MuiDrawer-paper .listItemText": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .listItemText ": { opacity: 1 },
+    "& .MuiDrawer-paper .listsubheader": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .listsubheader ": { opacity: 1 },
+    "& .MuiDrawer-paper .titleName": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .titleName ": { opacity: 1 },
+    "& .MuiDrawer-paper .containerCardHover": {
+      backgroundColor: "none",
+      padding: "16px 0px",
+    },
+    "&:hover  .MuiDrawer-paper .containerCardHover ": {
+      backgroundColor: "rgba(145, 158, 171, 0.12)",
+      padding: "16px 20px",
+    },
   }),
 }));
 
-const ListGroup = ({ title, children }) => {
-  let mode = useSelector(themeStore);
-  return (
-    <List
-      subheader={
-        <ListSubheader
-          component="li"
-          sx={styles.listsubheader(opendrawer, mode)}
-          id="nested-list-subheader"
-        >
-          {title}
-        </ListSubheader>
-      }
-      sx={styles.list}
-    >
-      {children}
-    </List>
-  );
-};
-
 const Menu = ({ handleDrawer2, open }) => {
-  opendrawer = open;
   const matches = useMediaQuery("(max-width:1200px)");
-  let mode = useSelector(themeStore);
   let { profile } = useSelector(authStore);
-  const [user, setUser] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
+  const [user, setUser] = useState(null);
+  useEffect(() => {
     if (profile) {
       const user = cloneDeep(profile);
-      // console.log(profile?.user);
       setUser(user);
-      setLoading(false);
     }
   }, [profile]);
-
-  if (loading) return <div>someting</div>;
 
   const Brand = ({ text, ...rest }) => (
     <Typography {...rest} variant="h5" sx={styles.nameBrand}>
       {text}
     </Typography>
   );
+
+  const ListGroup = ({ title, children }) => {
+    let mode = useSelector(themeStore);
+    return (
+      <List
+        subheader={
+          <ListSubheader
+            disableSticky
+            component="li"
+            className="listsubheader"
+            sx={styles.listsubheader(mode)}
+            id="nested-list-subheader"
+          >
+            {title}
+          </ListSubheader>
+        }
+        sx={styles.list}
+      >
+        {children}
+      </List>
+    );
+  };
 
   const ListLink = ({ to, text, icon }) => {
     let navigate = useNavigate();
@@ -139,9 +178,9 @@ const Menu = ({ handleDrawer2, open }) => {
           {icon}
         </ListItemIcon>
         <ListItemText
+          className="listItemText"
           sx={{
             color: pathname === to ? "primary.main" : "text.secondary",
-            opacity: opendrawer ? 1 : 0,
           }}
           primary={text}
         />
@@ -154,17 +193,18 @@ const Menu = ({ handleDrawer2, open }) => {
       <Box sx={styles.container}>
         <Box sx={styles.headerBrand}>
           <img src="/img/loggrand.png" style={styles.logo} />
-          <Box sx={styles.containerNameBrand(open)}>
+          <Box className="drawerHover" pt={0.5} sx={styles.containerNameBrand}>
             <Brand text="Grand" color="primary" />
             <Brand text="Logistics" />
-            <Hidden mdUp>
-              <CloseIcon onClick={handleDrawer2} sx={styles.closeBtn} />
-            </Hidden>
           </Box>
         </Box>
-        <Typography component="div" sx={styles.containerCard(open)}>
+        <Typography
+          className="containerCardHover"
+          component="div"
+          sx={styles.containerCard}
+        >
           <Avatar src={user?.photo || null} />
-          <Box sx={{ ...styles.cardDetail, opacity: open ? 1 : 0 }}>
+          <Box className="titleName" sx={styles.cardDetail}>
             <Typography variant="h6" sx={styles.nameUser}>
               {user?.full_name.first_name + " " + user?.full_name?.last_name}
             </Typography>
@@ -234,21 +274,24 @@ const Menu = ({ handleDrawer2, open }) => {
         <ListLink to="/invoices" text="ใบแจ้งหนี้" icon={<DescriptionIcon />} />
       </ListGroup>
       <ListGroup title="ถังขยะ">
-        <ListLink to="/trash" text="ถังขยะ" icon={<DeleteRoundedIcon />} />
+        <ListLink
+          to="/trash"
+          text="เอกสารที่ถูกลบ"
+          icon={<DeleteRoundedIcon />}
+        />
       </ListGroup>
     </>
   );
-
   return (
     <>
       <Hidden lgDown>
-        <DrawerFull variant="permanent" sx={styles.drawer(mode)} open={open}>
+        <DrawerFull variant="permanent" sx={styles.drawer} open={open}>
           {ListMenu()}
         </DrawerFull>
       </Hidden>
       <Hidden lgUp>
         <MuiDrawer
-          sx={styles.drawer(mode)}
+          sx={styles.drawer}
           anchor={"left"}
           open={open}
           onClose={handleDrawer2}
@@ -261,39 +304,35 @@ const Menu = ({ handleDrawer2, open }) => {
 };
 
 const styles = {
-  drawer: (mode) => {
-    return {
-      "& .MuiPaper-root": {
-        border: "1px dashed rgba(145, 158, 171, 0.24)",
-        borderBlock: 0,
-        borderLeft: 0,
-        overflowY: "overlay",
-        borderRadius: 0,
-        paddingInline: 0,
-        backgroundColor: mode === "dark" && "rgb(22, 28, 36)",
-      },
-      "& .MuiDrawer-paper": {
-        backgroundImage: "none",
-      },
-      "& .MuiPaper-root::-webkit-scrollbar": {
-        width: 10,
-        background: "transparent",
-        position: "absolute",
-      },
+  drawer: {
+    "& .MuiPaper-root": {
+      border: "1px dashed rgba(145, 158, 171, 0.24)",
+      borderBlock: 0,
+      borderLeft: 0,
+      overflowY: "overlay",
+      borderRadius: 0,
+      paddingInline: 0,
+      pb: 10,
+      zIndex: 1050,
+    },
+    "& .MuiPaper-root::-webkit-scrollbar": {
+      width: 10,
+      background: "transparent",
+      position: "absolute",
+    },
 
-      "& .MuiPaper-root::-webkit-scrollbar-track": {
-        background: "transparent",
-      },
-      "& .MuiPaper-root::-webkit-scrollbar-thumb": {
-        background: "transparent",
-      },
-      "&:hover .MuiPaper-root::-webkit-scrollbar-thumb": {
-        background: "#ddd",
-        borderRadius: 2,
-        border: "2px solid transparent",
-        backgroundClip: "content-box",
-      },
-    };
+    "& .MuiPaper-root::-webkit-scrollbar-track": {
+      background: "transparent",
+    },
+    "& .MuiPaper-root::-webkit-scrollbar-thumb": {
+      background: "transparent",
+    },
+    "&:hover .MuiPaper-root::-webkit-scrollbar-thumb": {
+      background: "#ddd",
+      borderRadius: 2,
+      border: "2px solid transparent",
+      backgroundClip: "content-box",
+    },
   },
   container: {
     padding: "24px 20px 16px",
@@ -308,27 +347,20 @@ const styles = {
     width: 40,
     height: 40,
   },
-  containerNameBrand: (open) => {
-    return {
-      display: "flex",
-      marginLeft: 1,
-      opacity: open ? 1 : 0,
-    };
+  containerNameBrand: {
+    display: "flex",
+    marginLeft: 1,
   },
   nameBrand: {
     fontFamily: "Prompt",
     fontWeight: "700",
   },
-  containerCard: (open) => {
-    return {
-      padding: open ? "16px 20px" : "16px 0px",
-      display: "flex",
-      alignItems: "center",
-      mt: 3,
-      backgroundColor: open ? "rgba(145, 158, 171, 0.12)" : "none",
-      borderRadius: 3,
-      transition: "200ms  ",
-    };
+  containerCard: {
+    display: "flex",
+    alignItems: "center",
+    mt: 3,
+    borderRadius: 3,
+    transition: "200ms  ",
   },
   cardDetail: {
     ml: 2,
@@ -351,15 +383,16 @@ const styles = {
     fontWeight: "600",
   },
   list: { padding: "0px 16px", maxWidth: 360, width: "100%" },
-  listsubheader: (open, mode) => {
+  listsubheader: (mode) => {
     return {
       pt: 3,
       pb: 1,
       pl: 2,
       lineHeight: 1.5,
       color: "text.primary",
-      opacity: open ? 1 : 0,
-      backgroundColor: mode === "dark" && "rgb(22, 28, 36)",
+      backgroundImage: "none",
+      backgroundColor:
+        mode === "dark" ? "rgb(22, 28, 36,0)" : "rgb(255, 255, 255, 0)",
     };
   },
   listButton: {

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@craco/craco": "^6.4.3",
+    "@date-io/dayjs": "^2.13.1",
     "@emotion/react": "^11.8.2",
     "@emotion/styled": "^11.8.1",
     "@mui/icons-material": "^5.5.0",

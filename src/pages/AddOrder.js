@@ -22,10 +22,10 @@ import {
   ListItemAvatar,
   ListItemText,
   Zoom,
+  FormLabel,
+  RadioGroup,
+  Radio,
 } from "@mui/material";
-import MobileDatePicker from "@mui/lab/MobileDatePicker";
-import AdapterDayjs from "@mui/lab/AdapterDayjs";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
 import {
@@ -41,11 +41,12 @@ import {
   searchAddressByDistrict,
   searchAddressByAmphoe,
 } from "thai-address-database";
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import "dayjs/locale/th";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
+import cloneDeep from "lodash.clonedeep";
 
 import { employeeStore } from "../store/EmployeeStore";
 import { customerStore } from "../store/CustomerStore";
@@ -55,6 +56,8 @@ import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
 import Controls from "../components/controls";
 import { HttpClient } from "../utils/HttpClient";
+import { useOutletContext } from "react-router-dom";
+import dayjs from "dayjs";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Zoom ref={ref} {...props} />;
@@ -183,6 +186,7 @@ const AddOrder = () => {
   const { state } = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [title, setTitle] = useOutletContext();
   const { customer } = useSelector(customerStore);
   const { employee } = useSelector(employeeStore);
   //Loading
@@ -191,6 +195,8 @@ const AddOrder = () => {
   const [customerList] = useState(customer?.slice());
   //Employee
   const [employeeList, setEmployeeList] = useState(employee?.slice());
+  //sort Employee
+  const [sortEmp, setSortEmp] = useState(3);
   //Dialog
   const [openDialog, setOpenDialog] = useState(state ? false : true);
   const [selectedCustomer, setSelectedCustomer] = useState(
@@ -282,6 +288,54 @@ const AddOrder = () => {
     setOpenDialog(false);
     setSelectedCustomer(value);
   };
+
+  useEffect(() => setTitle("เพิ่มงาน"), []);
+
+  let employeeQuery = useMemo(() => {
+    if (!employee) return [];
+    let empList = cloneDeep(employee);
+
+    empList = empList.map((item) => {
+      item.orders = item.orders.filter((curr) => {
+        return (
+          dayjs(curr.pickup_date).format("MMMM BBBB") ==
+          dayjs(new Date()).format("MMMM BBBB")
+        );
+      });
+      let result = item.orders.reduce(
+        (sum, curr) => {
+          sum.count += 1;
+          sum.total += curr.wage;
+          return sum;
+        },
+        {
+          count: 0,
+          total: 0,
+        }
+      );
+
+      item.countOrder = result.count;
+      item.sumWage = result.total;
+      return item;
+    });
+
+    if (sortEmp == 1) {
+      empList.sort((a, b) => {
+        if (b.full_name.first_name > a.full_name.first_name) {
+          return -1;
+        }
+        if (b.full_name.first_name < a.full_name.first_name) {
+          return 1;
+        }
+        return 0;
+      });
+    }
+    if (sortEmp == 2) empList.sort((a, b) => a.countOrder - b.countOrder);
+
+    if (sortEmp == 3) empList.sort((a, b) => a.sumWage - b.sumWage);
+    return empList;
+  }, [employee, sortEmp]);
+
   if (openDialog) {
     return (
       <Box>
@@ -427,7 +481,33 @@ const AddOrder = () => {
               onChange={handleInputChange}
               error={errors.car_type}
             />
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
+              <FormControl sx={{ mb: 1 }}>
+                <FormLabel id="sort-employee">เรียงลำดับ</FormLabel>
+                <RadioGroup
+                  row
+                  value={sortEmp}
+                  onChange={(e) => setSortEmp(e.target.value)}
+                  aria-labelledby="sort-employee"
+                  name="row-radio-buttons-group"
+                >
+                  <FormControlLabel
+                    value={1}
+                    control={<Radio />}
+                    label="ชื่อพนักงาน"
+                  />
+                  <FormControlLabel
+                    value={2}
+                    control={<Radio />}
+                    label="จำนวนงานในเดือนนี้"
+                  />
+                  <FormControlLabel
+                    value={3}
+                    control={<Radio />}
+                    label="รายได้ทั้งหมดในเดือนนี้"
+                  />
+                </RadioGroup>
+              </FormControl>
               <FormControl fullWidth {...(errors.personnel && { error: true })}>
                 <InputLabel id="search-select-label">พนักงาน*</InputLabel>
                 <Select
@@ -466,7 +546,7 @@ const AddOrder = () => {
                     />
                   }
                 >
-                  {employeeList?.map((item, i) => {
+                  {employeeQuery?.map((item, i) => {
                     return (
                       <MenuItem
                         key={item._id}
@@ -482,15 +562,26 @@ const AddOrder = () => {
                       >
                         <Box sx={{ display: "flex", alignItems: "center" }}>
                           <Avatar
-                            sx={{ height: "40px", width: "40px", fontSize: 50 }}
+                            sx={{ height: "50px", width: "50px", fontSize: 50 }}
                             alt={item.full_name.first_name}
                             src={item.photo}
                           />
-                          <Typography sx={{ ml: 2 }}>
-                            {item.full_name.first_name +
-                              " " +
-                              item.full_name.last_name}
-                          </Typography>
+                          <Box>
+                            <Typography variant="h6" sx={{ ml: 2 }}>
+                              {item.full_name.first_name +
+                                " " +
+                                item.full_name.last_name}
+                            </Typography>
+                            <Typography
+                              variant="p"
+                              sx={{ ml: 2 }}
+                            >
+                              {item.countOrder +
+                                " งาน, " +
+                                item.sumWage +
+                                " บาท"}
+                            </Typography>
+                          </Box>
                         </Box>
                       </MenuItem>
                     );
@@ -502,7 +593,7 @@ const AddOrder = () => {
               </FormControl>
             </Grid>
             <InputGrid
-              label="ค่างาน*"
+              label="ค่างาน(บาท)*"
               name="price_order"
               type="number"
               value={values.price_order}
@@ -510,7 +601,7 @@ const AddOrder = () => {
               error={errors.price_order}
             />
             <InputGrid
-              label="ค่าเที่ยวพนักงาน*"
+              label="ค่าเที่ยวพนักงาน(บาท)*"
               name="wage"
               type="number"
               value={values.wage}

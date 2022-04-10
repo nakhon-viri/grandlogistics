@@ -1,109 +1,398 @@
-import { createSlice } from "@reduxjs/toolkit";
-import { HttpClient } from "../utils/HttpClient";
+import React, { useState, useEffect } from "react";
+import { styled } from "@mui/material/styles";
+import MuiDrawer from "@mui/material/Drawer";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import ListSubheader from "@mui/material/ListSubheader";
+import List from "@mui/material/List";
+import MailIcon from "@mui/icons-material/Mail";
+import Box from "@mui/material/Box";
+import Avatar from "@mui/material/Avatar";
+import Typography from "@mui/material/Typography";
+import Hidden from "@mui/material/Hidden";
+import CloseIcon from "@mui/icons-material/Close";
+import FolderSharedTwoToneIcon from "@mui/icons-material/FolderSharedTwoTone";
+import GroupAddTwoToneIcon from "@mui/icons-material/GroupAddTwoTone";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import StoreRoundedIcon from "@mui/icons-material/StoreRounded";
+import WorkRoundedIcon from "@mui/icons-material/WorkRounded";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded";
+import AddBusinessRoundedIcon from "@mui/icons-material/AddBusinessRounded";
+import DescriptionIcon from "@mui/icons-material/Description";
+import FileCopyIcon from "@mui/icons-material/FileCopy";
+import { useLocation, useNavigate } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
-const stateDefault = {
-  employee: null,
-  deletedEmployee: null,
-  loadingEmployee: false,
-  error: null,
-};
+import { themeStore } from "../../../store/ThemeStore";
+import { authStore } from "../../../store/AuthStore";
+import { useSelector } from "react-redux";
 
-export const employeeReducer = createSlice({
-  name: "employee",
-  initialState: { value: stateDefault },
-  reducers: {
-    upDateEmployee: (state, action) => {
-      state.value = {
-        ...stateDefault,
-        employee: action.payload.filter((item) => item.onDuty === true),
-        deletedEmployee: action.payload.filter((item) => item.onDuty === false),
-      };
-    },
-    upDateLoadingEmp: (state, action) => {
-      state.value = { ...stateDefault, loadingEmployee: true };
-    },
-    upDateError: (state, action) => {
-      state.value = { ...stateDefault, error: action.payload };
-    },
-    addEmployee: (state, action) => {
-      state.value.employee.push(action.payload);
-    },
-    editEmployee: (state, action) => {
-      state.value.employee = state.value.employee.map((item) => {
-        if (action.payload._id === item._id) {
-          return action.payload;
-        } else {
-          return item;
-        }
-      });
-    },
-    deletedEmployee: (state, action) => {
-      let empDeleted = [];
-      state.value.employee = state.value.employee.filter((item) => {
-        if (item._id === action.payload) {
-          item.onDuty = false;
-          empDeleted.push(item);
-          return;
-        }
-        return item;
-      });
+const drawerWidth = 280;
 
-      state.value.deletedEmployee.push(...empDeleted);
-    },
-    recoverEmployee: (state, action) => {
-      let employee = [];
-      let deletedEmployee = [];
-      employee = state.value.deletedEmployee.filter((item) => {
-        if (item._id === action.payload) {
-          item.onDuty = true;
-          return item;
-        } else {
-          deletedEmployee.push(item);
-        }
-      });
-      state.value.employee.push(...employee);
-      state.value.deletedEmployee = deletedEmployee;
-    },
-  },
+const openedMixin = (theme) => ({
+  width: drawerWidth,
+  transition: theme.transitions.create("width", {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.enteringScreen,
+    // duration: "100ms",
+  }),
+  overflowX: "hidden",
+  // backgroundColor: theme.palette.mode === "dark" && "rgb(22, 28, 36)",
 });
 
-export const {
-  upDateEmployee,
-  editEmployee,
-  addEmployee,
-  upDateLoadingEmp,
-  upDateError,
-  recoverEmployee,
-  deletedEmployee,
-} = employeeReducer.actions;
+const closedMixin = (theme) => ({
+  transition: theme.transitions.create("width", {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.leavingScreen,
+    // duration: "100ms",
+  }),
+  overflowX: "hidden",
+  width: 0,
+  [theme.breakpoints.up("sm")]: {
+    width: `calc(${theme.spacing(10)} + 7px)`,
+  },
+  // backgroundColor: theme.palette.mode === "dark" && "rgb(22, 28, 36)",
+});
 
-export const employeeStore = (state) => state.employee.value;
+const DrawerFull = styled(MuiDrawer, {
+  shouldForwardProp: (prop) => prop !== "open",
+})(({ theme, open }) => ({
+  width: drawerWidth,
+  flexShrink: 0,
+  whiteSpace: "nowrap",
+  backgroundImage: "none",
+  boxSizing: "border-box",
+  ...(open && {
+    ...openedMixin(theme),
+    "& .MuiDrawer-paper": openedMixin(theme),
+    "& .MuiDrawer-paper .drawerHover": { opacity: 1 },
+    "& .MuiDrawer-paper .containerCardHover": {
+      backgroundColor: "rgba(145, 158, 171, 0.12)",
+      padding: "16px 20px",
+    },
+    "& .MuiDrawer-paper .titleName ": { opacity: 1 },
+    "& .MuiDrawer-paper .listItemText ": { opacity: 1 },
+    "& .MuiDrawer-paper .listsubheader ": { opacity: 1 },
+  }),
+  ...(!open && {
+    ...closedMixin(theme),
+    "& .MuiDrawer-paper": closedMixin(theme),
+    "&:hover  .MuiDrawer-paper": {
+      width: drawerWidth,
+      transition: theme.transitions.create("width", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      overflowX: "hidden",
+      backdropFilter: " blur(2px)",
+      backgroundColor:
+        theme.palette.mode === "dark"
+          ? "rgb(22, 28, 36,0.85)"
+          : "rgb(255, 255, 255,0.85)",
+      boxShadow: "rgb(0 0 0 / 15%) 0px 24px 48px 0px",
+    },
+    "& .MuiDrawer-paper .drawerHover": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .drawerHover ": { opacity: 1 },
+    "& .MuiDrawer-paper .listItemText": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .listItemText ": { opacity: 1 },
+    "& .MuiDrawer-paper .listsubheader": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .listsubheader ": { opacity: 1 },
+    "& .MuiDrawer-paper .titleName": { opacity: 0 },
+    "&:hover  .MuiDrawer-paper .titleName ": { opacity: 1 },
+    "& .MuiDrawer-paper .containerCardHover": {
+      backgroundColor: "none",
+      padding: "16px 0px",
+    },
+    "&:hover  .MuiDrawer-paper .containerCardHover ": {
+      backgroundColor: "rgba(145, 158, 171, 0.12)",
+      padding: "16px 20px",
+    },
+  }),
+}));
 
-// export const employeeStore = (state) => {
-//   let { employee, loadingEmployee, error } = state.employee.value;
-//   if (!employee) return state.employee.value;
-//   let deletedEmployee = [];
-//   let newEmp = employee?.filter((item) => {
-//     if (item.onDuty) {
-//       return item;
-//     } else {
-//       deletedEmployee.push(item);
-//     }
-//   });
-//   employee = newEmp;
-//   return { employee, deletedEmployee, loadingEmployee, error };
-// };
+const Menu = ({ handleDrawer2, open }) => {
+  const matches = useMediaQuery("(max-width:1200px)");
+  let { profile } = useSelector(authStore);
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    if (profile) {
+      const user = cloneDeep(profile);
+      setUser(user);
+    }
+  }, [profile]);
 
-export const employeeReq = () => async (dispatch) => {
-  try {
-    dispatch(upDateLoadingEmp());
+  const Brand = ({ text, ...rest }) => (
+    <Typography {...rest} variant="h5" sx={styles.nameBrand}>
+      {text}
+    </Typography>
+  );
 
-    let resEmployee = await HttpClient.get("/personnel");
+  const ListGroup = ({ title, children }) => {
+    let mode = useSelector(themeStore);
+    return (
+      <List
+        subheader={
+          <ListSubheader
+            disableSticky
+            component="li"
+            className="listsubheader"
+            sx={styles.listsubheader(mode)}
+            id="nested-list-subheader"
+          >
+            {title}
+          </ListSubheader>
+        }
+        sx={styles.list}
+      >
+        {children}
+      </List>
+    );
+  };
 
-    dispatch(upDateEmployee(resEmployee.data.data));
-  } catch (error) {
-    dispatch(upDateError(error.response.data.error.message));
-  }
+  const ListLink = ({ to, text, icon }) => {
+    let navigate = useNavigate();
+    let { pathname } = useLocation();
+    return (
+      <ListItemButton
+        sx={pathname === to ? styles.listButton : null}
+        className={pathname === to ? " Mui-selected" : null}
+        onClick={() => {
+          if (matches) handleDrawer2();
+          navigate(to);
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            ".Mui-selected > &": {
+              color: (theme) => theme.palette.primary.main,
+            },
+            color: "text.secondary",
+          }}
+        >
+          {icon}
+        </ListItemIcon>
+        <ListItemText
+          className="listItemText"
+          sx={{
+            color: pathname === to ? "primary.main" : "text.secondary",
+          }}
+          primary={text}
+        />
+      </ListItemButton>
+    );
+  };
+
+  const ListMenu = () => (
+    <>
+      <Box sx={styles.container}>
+        <Box sx={styles.headerBrand}>
+          <img src="/img/loggrand.png" style={styles.logo} />
+          <Box className="drawerHover" pt={0.5} sx={styles.containerNameBrand}>
+            <Brand text="Grand" color="primary" />
+            <Brand text="Logistics" />
+          </Box>
+        </Box>
+        <Typography
+          className="containerCardHover"
+          component="div"
+          sx={styles.containerCard}
+        >
+          <Avatar src={user?.photo || null} />
+          <Box className="titleName" sx={styles.cardDetail}>
+            <Typography variant="h6" sx={styles.nameUser}>
+              {user?.full_name.first_name + " " + user?.full_name?.last_name}
+            </Typography>
+            <Typography
+              variant="p"
+              color="text.secondary"
+              sx={styles.department}
+            >
+              {user?.role}
+            </Typography>
+          </Box>
+        </Typography>
+      </Box>
+      <ListGroup title="พนักงาน">
+        <ListLink to="/" text="พนักงานทั้งหมด" icon={<PersonRoundedIcon />} />
+        <ListLink
+          to="/register"
+          text="ลงทะเบียนพนักงาน"
+          icon={<GroupAddTwoToneIcon />}
+        />
+      </ListGroup>
+      <ListGroup title="งาน">
+        <ListLink
+          to="/order"
+          text="เที่ยววิ่งทั้งหมด"
+          icon={<WorkRoundedIcon />}
+        />
+        <ListLink to="/addorder" text="เพิ่มงาน" icon={<AddBoxRoundedIcon />} />
+      </ListGroup>
+      <ListGroup title="ลูกค้า">
+        <ListLink
+          to="/customer"
+          text="บริษัทคู่ค้า"
+          icon={<StoreRoundedIcon />}
+        />
+        <ListLink
+          to="/addcustomer"
+          text="เพิ่มบริษัทคู่ค้า"
+          icon={<AddBusinessRoundedIcon />}
+        />
+      </ListGroup>
+      <ListGroup title="รายงาน">
+        <ListLink to="/report" text="รายงาน" icon={<MailIcon />} />
+        <ListLink
+          to="/reportcustomer"
+          text="รายงานบริษัทคู่ค้า"
+          icon={<MailIcon />}
+        />
+        <ListLink
+          to="/reportallemp"
+          text="รายงานพนักงานทั้งหมด"
+          icon={<MailIcon />}
+        />
+        <ListLink
+          to="/reportemp"
+          text="รายงานพนักงานรายบุคคล"
+          icon={<MailIcon />}
+        />
+      </ListGroup>
+      <ListGroup title="ใบแจ้งหนี้">
+        <ListLink to="/bills" text="ใบวางบิล" icon={<FileCopyIcon />} />
+        <ListLink
+          to="/createbill"
+          text="สร้างใบวางบิล"
+          icon={<FileCopyIcon />}
+        />
+        <ListLink to="/invoices" text="ใบแจ้งหนี้" icon={<DescriptionIcon />} />
+      </ListGroup>
+      <ListGroup title="ถังขยะ">
+        <ListLink to="/trash" text="ถังขยะ" icon={<DeleteRoundedIcon />} />
+      </ListGroup>
+    </>
+  );
+  return (
+    <>
+      <Hidden lgDown>
+        <DrawerFull variant="permanent" sx={styles.drawer} open={open}>
+          {ListMenu()}
+        </DrawerFull>
+      </Hidden>
+      <Hidden lgUp>
+        <MuiDrawer
+          sx={styles.drawer}
+          anchor={"left"}
+          open={open}
+          onClose={handleDrawer2}
+        >
+          {ListMenu()}
+        </MuiDrawer>
+      </Hidden>
+    </>
+  );
 };
 
-export default employeeReducer.reducer;
+const styles = {
+  drawer: {
+    "& .MuiPaper-root": {
+      border: "1px dashed rgba(145, 158, 171, 0.24)",
+      borderBlock: 0,
+      borderLeft: 0,
+      overflowY: "overlay",
+      borderRadius: 0,
+      paddingInline: 0,
+    },
+    "& .MuiPaper-root::-webkit-scrollbar": {
+      width: 10,
+      background: "transparent",
+      position: "absolute",
+    },
+
+    "& .MuiPaper-root::-webkit-scrollbar-track": {
+      background: "transparent",
+    },
+    "& .MuiPaper-root::-webkit-scrollbar-thumb": {
+      background: "transparent",
+    },
+    "&:hover .MuiPaper-root::-webkit-scrollbar-thumb": {
+      background: "#ddd",
+      borderRadius: 2,
+      border: "2px solid transparent",
+      backgroundClip: "content-box",
+    },
+  },
+  container: {
+    padding: "24px 20px 16px",
+    width: "100%",
+    maxWidth: 360,
+  },
+  headerBrand: {
+    display: "flex",
+    animationDuration: "400ms",
+  },
+  logo: {
+    width: 40,
+    height: 40,
+  },
+  containerNameBrand: {
+    display: "flex",
+    marginLeft: 1,
+  },
+  nameBrand: {
+    fontFamily: "Prompt",
+    fontWeight: "700",
+  },
+  containerCard: {
+    display: "flex",
+    alignItems: "center",
+    mt: 3,
+    borderRadius: 3,
+    transition: "200ms  ",
+  },
+  cardDetail: {
+    ml: 2,
+    maxHeight: "44px",
+  },
+  nameUser: {
+    fontWeight: 600,
+    fontSize: "0.875rem",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    width: "150px",
+  },
+  department: {
+    fontSize: "0.9rem",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    width: "150px",
+    fontWeight: "600",
+  },
+  list: { padding: "0px 16px", maxWidth: 360, width: "100%" },
+  listsubheader: (mode) => {
+    return {
+      pt: 3,
+      pb: 1,
+      pl: 2,
+      lineHeight: 1.5,
+      color: "text.primary",
+      backgroundImage: "none",
+      backgroundColor:
+        mode === "dark" ? "rgb(22, 28, 36,0)" : "rgb(255, 255, 255, 0)",
+    };
+  },
+  listButton: {
+    "&& .MuiTouchRipple-child": {
+      backgroundColor: "#007bff",
+    },
+    backgroundColor: "#007bff14",
+  },
+  closeBtn: { position: "absolute", top: 10, right: 10 },
+};
+
+export default Menu;

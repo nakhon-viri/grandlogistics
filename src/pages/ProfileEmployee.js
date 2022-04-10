@@ -16,10 +16,9 @@ import {
   Stack,
   OutlinedInput,
   FormHelperText,
+  Tabs,
+  Tab,
 } from "@mui/material";
-import MobileDatePicker from "@mui/lab/MobileDatePicker";
-import AdapterDayjs from "@mui/lab/AdapterDayjs";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
 import {
@@ -29,6 +28,8 @@ import {
   SaveRounded,
   DeleteRounded,
   ArrowBackRounded,
+  AssignmentInd,
+  VpnKey,
 } from "@mui/icons-material";
 import {
   searchAddressByProvince,
@@ -41,6 +42,7 @@ import { addEmployee } from "../store/EmployeeStore";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useOutletContext } from "react-router-dom";
 
 import { useForm, Form } from "../components/useForm";
 import {
@@ -52,50 +54,7 @@ import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
 import { HttpClient } from "../utils/HttpClient";
 import Loading from "../components/Loading";
-
-const AntSwitch = styled(Switch)(({ theme }) => ({
-  width: 35,
-  height: 20,
-  padding: 0,
-  display: "flex",
-  "&:active": {
-    "& .MuiSwitch-thumb": {
-      width: 15,
-    },
-    "& .MuiSwitch-switchBase.Mui-checked": {
-      transform: "translateX(9px)",
-    },
-  },
-  "& .MuiSwitch-switchBase": {
-    padding: 2,
-    "&.Mui-checked": {
-      transform: "translateX(15px)",
-      color: "#fff",
-      "& + .MuiSwitch-track": {
-        opacity: 1,
-        backgroundColor: theme.palette.mode === "dark" ? "#177ddc" : "#1890ff",
-      },
-    },
-  },
-  "& .MuiSwitch-thumb": {
-    boxShadow: "0 2px 4px 0 rgb(0 35 11 / 20%)",
-    width: 15,
-    height: 15,
-    borderRadius: "50%",
-    transition: theme.transitions.create(["width"], {
-      duration: 200,
-    }),
-  },
-  "& .MuiSwitch-track": {
-    borderRadius: 20 / 2,
-    opacity: 1,
-    backgroundColor:
-      theme.palette.mode === "dark"
-        ? "rgba(255,255,255,.35)"
-        : "rgba(0,0,0,.25)",
-    boxSizing: "border-box",
-  },
-}));
+import Controls from "../components/controls";
 
 const MenuProps = {
   PaperProps: {
@@ -322,10 +281,14 @@ const ProfileEmployee = () => {
   let navigate = useNavigate();
   let dispatch = useDispatch();
   let { state } = useLocation();
+  const [title, setTitle] = useOutletContext();
   let { employee } = useSelector(employeeStore);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [loadingChangePassword, setLoadingChangePassword] = useState(false);
   const [IDUser, setIDUser] = useState(null);
+  //Tab Menu
+  const [tabMenu, setTabMenu] = useState(2);
   //Img
   const [editor, setEditor] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -334,7 +297,8 @@ const ProfileEmployee = () => {
   const removeValue = useRef();
   //CheckID Card
   const [validationID, setValidationID] = useState(false);
-  // const [initialValues, setInitialValues] = useState(null);
+  //err change password
+  const [errChangePassword, setErrChangePassword] = useState({});
   //Hooks
   let [hover, eventHover] = useHover();
   //Form
@@ -393,6 +357,26 @@ const ProfileEmployee = () => {
     });
     if (fieldValues == values) return Object.values(temp).every((x) => x == "");
   };
+  const validateChangePassword = ({ password, newPassword1, newPassword2 }) => {
+    let err = { oldPass: "", pass1: "", pass2: "" };
+    if (password.length == 0) err.oldPass = "กรุณาป้อนรหัสผ่าน";
+    if (newPassword1.length == 0) err.pass1 = "กรุณาป้อนรหัสผ่าน";
+    if (newPassword2.length == 0) err.pass2 = "กรุณาป้อนยืนยันรหัสผ่าน";
+    if (newPassword1 !== newPassword2) {
+      err.pass1 = "รหัสผ่านไม่ตรงกัน";
+      err.pass2 = "รหัสผ่านไม่ตรงกัน";
+    }
+    if (!(newPassword1.length > 7 && newPassword1.length < 17))
+      err.pass1 = "ใช้อักขระ 8-16 ตัว";
+    if (!(newPassword2.length > 7 && newPassword2.length < 17))
+      err.pass2 = "ใช้อักขระ 8-16 ตัว";
+
+    setErrChangePassword({
+      ...err,
+    });
+
+    return Object.values(err).every((x) => x == "");
+  };
   const { values, setValues, errors, setErrors, handleInputChange } = useForm(
     initialValues,
     false,
@@ -427,6 +411,52 @@ const ProfileEmployee = () => {
       } catch (error) {
         console.log(error.response.data.error.message);
       }
+    }
+  };
+  const handleSubmitChangePassword = (e) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const account = {
+      password: data.get("password"),
+      newPassword1: data.get("newPassword1"),
+      newPassword2: data.get("newPassword2"),
+    };
+    if (validateChangePassword({ ...account })) {
+      Swal.fire({
+        title: `คุณต้องการที่จะอัพเดตรหัสผ่านพนักงาน ${values.full_name.first_name} ${values.full_name.last_name} ใช่หรือไม่`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "ใช่",
+        cancelButtonText: "ใม่",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            setLoadingChangePassword(true);
+            let { data } = await HttpClient.put(
+              "/personnel/changepassword/" + IDUser,
+              account
+            );
+            if (data) {
+              Swal.fire("อัปเดตรหัสผ่านเสร็จสิ้น", "", "success").then((res) =>
+                setTabMenu(1)
+              );
+            } else {
+              const error = new Error("เกิดข้อผิดพลาดกรุณาลองใหม่อีกครั้ง");
+              throw error;
+            }
+          } catch (error) {
+            if (error.response.data.error.message === "รหัสผ่านไม่ถูกต้อง") {
+              setErrChangePassword({
+                ...errChangePassword,
+                oldPass: error.response.data.error.message,
+              });
+            }
+            console.log(error.response.data.error.message);
+          } finally {
+            setLoadingChangePassword(false);
+          }
+        }
+      });
     }
   };
   //Img
@@ -539,6 +569,14 @@ const ProfileEmployee = () => {
     });
   };
 
+  const FromUser = () => {
+    if (tabMenu == 1) {
+      return FromProfile();
+    } else if (tabMenu == 2) {
+      return FromChangePassword();
+    }
+  };
+
   useEffect(() => {
     if (!state) navigate("/");
     if (employee && state) {
@@ -603,472 +641,513 @@ const ProfileEmployee = () => {
     ],
     [values.address.subdistrict]
   );
+  useEffect(() => setTitle("แก้ไขข้อมูลส่วนบุคคล"), []);
 
-  if (!initialValues) return <div>Something</div>;
-  if (loadingData) return <Loading />;
-
-  return (
-    <LocalizationProvider locale={"th"} dateAdapter={AdapterDayjs}>
-      <Container>
-        <Box
-          sx={{
-            flexGrow: 1,
-            mb: 5,
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
-            แก้ไขโปรไฟล์
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<ArrowBackRounded />}
-            onClick={() => navigate(-1)}
+  const FromChangePassword = () => {
+    return (
+      <Box
+        component="form"
+        onSubmit={handleSubmitChangePassword}
+        sx={styles.form}
+      >
+        <Paper sx={{ width: "100%", p: 3 }}>
+          <TextField
+            fullWidth
+            autoComplete="off"
+            label="รหัสผ่านผู้ดูแลระบบ"
+            name="password"
+            type="password"
+            InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
+            sx={styles.inputFieldPassword}
+            error={!!errChangePassword.oldPass}
+            helperText={
+              errChangePassword.oldPass ? errChangePassword.oldPass : null
+            }
+          />
+          <TextField
+            fullWidth
+            autoComplete="off"
+            label="รหัสผ่านใหม่พนักงาน"
+            name="newPassword1"
+            type="password"
+            InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
+            sx={styles.inputFieldPassword}
+            error={!!errChangePassword.pass1}
+            helperText={
+              errChangePassword.pass1 ? errChangePassword.pass1 : null
+            }
+          />
+          <TextField
+            fullWidth
+            autoComplete="off"
+            label="ยืนยันรหัสผ่านใหม่พนักงาน"
+            name="newPassword2"
+            type="password"
+            InputLabelProps={{ style: { fontFamily: "Sarabun" } }}
+            sx={styles.inputFieldPassword}
+            error={!!errChangePassword.pass2}
+            helperText={
+              errChangePassword.pass2 ? errChangePassword.pass2 : null
+            }
+          />
+          <Box
             sx={{
-              backgroundColor: "rgb(32, 101, 209)",
-              boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
-              borderRadius: 2,
-              "&:hover": {
-                boxShadow: "none",
-              },
-              mr: 2,
+              display: "flex",
+              justifyContent: "flex-end",
             }}
           >
-            กลับ
-          </Button>
-        </Box>
-        <Form onSubmit={handleSubmit} sx={styles.form}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ py: 10, px: 3, position: "relative" }}>
+            <LoadingButton
+              type="submit"
+              startIcon={<SaveRounded />}
+              fullWidth
+              loading={loadingChangePassword}
+              variant="contained"
+              sx={styles.btnSubmit}
+            >
+              บันทึก
+            </LoadingButton>
+          </Box>
+        </Paper>
+      </Box>
+    );
+  };
+
+  const FromProfile = () => {
+    return (
+      <Form onSubmit={handleSubmit} sx={styles.form}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ py: 10, px: 3, position: "relative" }}>
+              <Box>
                 <Box
-                  component={"span"}
                   sx={{
-                    height: "22px",
-                    minWidth: "22px",
-                    lineHeight: 0,
-                    borderRadius: "6px",
-                    cursor: "default",
-                    alignItems: "center",
-                    whiteSpace: "nowrap",
-                    display: "inline-flex",
-                    justifyContent: "center",
-                    padding: "0px 8px",
-                    color: "rgb(255, 164, 141)",
-                    fontSize: "0.75rem",
-                    backgroundColor: "rgba(255, 72, 66, 0.16)",
-                    fontWeight: "700",
-                    textTransform: "uppercase",
-                    position: "absolute",
-                    top: "24px",
-                    right: "24px",
+                    margin: "auto",
+                    width: 144,
+                    height: 144,
+                    borderRadius: "50%",
+                    p: 1,
+                    border: "1px dashed rgba(145, 158, 171, 0.32)",
+                    ...(errors.photo && {
+                      borderColor: "#eb7878",
+                    }),
                   }}
                 >
-                  {"Active"}
-                </Box>
-                <Box sx={{ mb: "40px" }}>
                   <Box
+                    component={"div"}
+                    role="button"
                     sx={{
-                      margin: "auto",
-                      width: 144,
-                      height: 144,
                       borderRadius: "50%",
-                      p: 1,
-                      border: "1px dashed rgba(145, 158, 171, 0.32)",
-                      ...(errors.photo && {
-                        borderColor: "#eb7878",
-                      }),
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                      outline: "none",
+                      width: "100%",
+                      height: "100%",
+                      p: 0,
                     }}
                   >
-                    <Box
-                      component={"div"}
-                      role="button"
-                      sx={{
-                        borderRadius: "50%",
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                    <input
+                      {...eventHover}
+                      type="file"
+                      autoComplete="off"
+                      ref={removeValue}
+                      onChange={profileImageChange}
+                      style={{
+                        width: "100%",
+                        position: "absolute",
+                        height: "100%",
+                        appearance: "none",
+                        backgroundColor: "initial",
+                        cursor: "pointer",
+                        alignItems: "baseline",
+                        color: "inherit",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "pre",
+                        textAlign: "start",
+                        padding: "initial",
+                        border: "initial",
                         overflow: "hidden",
-                        outline: "none",
+                        zIndex: 2,
+                        opacity: 0,
+                      }}
+                    />
+
+                    <ImageCrop
+                      imageSrc={selectedImage}
+                      setEditorRef={setEditorRef}
+                      onCrop={onCrop}
+                      onClose={onClose}
+                      scaleValue={scaleValue}
+                      onScaleChange={onScaleChange}
+                      openDialog={openDialog}
+                    />
+                    {/* {selectedImage && ()} */}
+                    <Box
+                      component={"span"}
+                      sx={{
+                        overflow: "hidden",
+                        backgroundSize: "cover",
                         width: "100%",
                         height: "100%",
-                        p: 0,
                       }}
                     >
-                      <input
-                        {...eventHover}
-                        type="file"
-                        autoComplete="off"
-                        ref={removeValue}
-                        onChange={profileImageChange}
-                        style={{
+                      <Avatar
+                        sx={{
                           width: "100%",
-                          position: "absolute",
                           height: "100%",
-                          appearance: "none",
-                          backgroundColor: "initial",
-                          cursor: "pointer",
-                          alignItems: "baseline",
-                          color: "inherit",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "pre",
-                          textAlign: "start",
-                          padding: "initial",
-                          border: "initial",
-                          overflow: "hidden",
-                          zIndex: 2,
-                          opacity: 0,
+                          objectFit: "cover",
+                          ...(errors.photo && {
+                            backgroundColor: "rgb(255, 231, 217)",
+                          }),
                         }}
+                        alt={"Nake"}
+                        src={values.photo && values.photo}
                       />
-
-                      <ImageCrop
-                        imageSrc={selectedImage}
-                        setEditorRef={setEditorRef}
-                        onCrop={onCrop}
-                        onClose={onClose}
-                        scaleValue={scaleValue}
-                        onScaleChange={onScaleChange}
-                        openDialog={openDialog}
-                      />
-                      {/* {selectedImage && ()} */}
-                      <Box
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        position: "absolute",
+                        alignItems: "center",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        color: "#fff",
+                        width: "100%",
+                        height: "100%",
+                        backgroundColor: "rgb(22, 28, 36,0.5)",
+                        opacity: hover ? 1 : 0,
+                      }}
+                      component={"div"}
+                    >
+                      <AddAPhoto />
+                      <Typography
                         component={"span"}
-                        sx={{
-                          overflow: "hidden",
-                          backgroundSize: "cover",
-                          width: "100%",
-                          height: "100%",
-                        }}
+                        sx={{ textTransform: "none" }}
                       >
-                        <Avatar
-                          sx={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            ...(errors.photo && {
-                              backgroundColor: "rgb(255, 231, 217)",
-                            }),
-                          }}
-                          alt={"Nake"}
-                          src={values.photo && values.photo}
-                        />
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          position: "absolute",
-                          alignItems: "center",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          color: "#fff",
-                          width: "100%",
-                          height: "100%",
-                          backgroundColor: "rgb(22, 28, 36,0.5)",
-                          opacity: hover ? 1 : 0,
-                        }}
-                        component={"div"}
-                      >
-                        <AddAPhoto />
-                        <Typography
-                          component={"span"}
-                          sx={{ textTransform: "none" }}
-                        >
-                          Update Photo
-                        </Typography>
-                      </Box>
+                        Update Photo
+                      </Typography>
                     </Box>
                   </Box>
-                  <Typography
-                    sx={{
-                      m: "16px auto 0px",
-                      textAlign: "center",
-                      color: "text.secondary",
-                      fontSize: "0.75rem",
-                    }}
-                  >
-                    Allowed *.jpeg, *.jpg, *.png
-                  </Typography>
-                  <FormHelperText
-                    sx={{
-                      textAlign: "center",
-                      pt: 2,
-                      color: "red",
-                    }}
-                  >
-                    {errors.photo && errors.photo}
-                  </FormHelperText>
                 </Box>
-                <FormControlLabel
-                  control={
-                    <AntSwitch
-                      //   checked={dense}
-                      //   onChange={handleChangeDense}
-                      inputProps={{ "aria-label": "ant design" }}
-                    />
-                  }
-                  label={
-                    <Typography component={"span"}>
-                      <Typography
-                        component={"h6"}
-                        sx={{ fontWeight: 800, fontSize: "0.875rem", mb: 0.5 }}
-                      >
-                        แก้ไขรูป
-                      </Typography>
-                      <Typography
-                        component={"p"}
-                        sx={{
-                          color: "text.secondary",
-                          pr: 5,
-                          fontSize: "0.875rem",
-                        }}
-                      >
-                        อนุญาตให้พนักงานสามารถแก้ไขรูปภาพของตนเองได้
-                      </Typography>
-                    </Typography>
-                  }
+                <Typography
                   sx={{
-                    m: 0,
-                    width: "100%",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    flexDirection: "row-reverse",
-                  }}
-                />
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={8}>
-              <Paper sx={{ p: 3 }}>
-                <Grid container rowSpacing={3} columnSpacing={2}>
-                  <InputGrid
-                    label="ชื่อ"
-                    name="full_name.first_name"
-                    type="text"
-                    value={values.full_name.first_name}
-                    onChange={handleInputChange}
-                    error={errors.first_name}
-                  />
-                  <InputGrid
-                    name="full_name.last_name"
-                    label="นามสกุล"
-                    type="text"
-                    value={values.full_name.last_name}
-                    onChange={handleInputChange}
-                    error={errors.last_name}
-                  />
-                  <InputGrid
-                    name="phone_no"
-                    label="เบอร์ติดต่อ"
-                    placeholder="__-____-____"
-                    type="tel"
-                    value={values.phone_no}
-                    onChange={handleFormatPhoneNumber}
-                    error={errors.phone_no}
-                  />
-                  <InputGrid
-                    label="ทะเบียนรถ"
-                    type="text"
-                    name="car_no"
-                    onChange={handleInputChange}
-                    value={values.car_no}
-                    error={errors.car_no}
-                  />
-                  <Grid item xs={12} sm={6}>
-                    <FormControl
-                      fullWidth
-                      {...(errors.gender && { error: true })}
-                    >
-                      <InputLabel id="select-gender">เพศ</InputLabel>
-                      <Select
-                        labelId="select-gender"
-                        name="gender"
-                        value={values.gender}
-                        label="เพศ"
-                        sx={{
-                          width: "100%",
-                          borderRadius: 2,
-                          "& fieldset": {
-                            borderRadius: 2,
-                          },
-                        }}
-                        onChange={handleInputChange}
-                      >
-                        {["ชาย", "หญิง", "อื่น ๆ"].map((item) => (
-                          <MenuItem
-                            key={item}
-                            value={item}
-                            sx={{
-                              width: "100%",
-                              borderRadius: "8px",
-                              mb: 1,
-                            }}
-                          >
-                            {item}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      <FormHelperText>
-                        {errors.gender && errors.gender}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                  <InputGrid
-                    label="แพนก"
-                    type="text"
-                    name="department"
-                    onChange={handleInputChange}
-                    value={values.department}
-                    error={errors.department}
-                  />
-                  <InputGrid
-                    label="บัตรประชาชน"
-                    type="text"
-                    placeholder="_-____-_____-__-_"
-                    name="reference_id"
-                    helperText={
-                      validationID ? "เลขประจำตัวประชาชนไม่ถูกต้อง" : null
-                    }
-                    onChange={handleCheckID}
-                    value={values.reference_id}
-                    error={errors.reference_id}
-                  />
-                  <Grid item xs={12} sm={6}>
-                    <Stack>
-                      <MobileDatePicker
-                        label="วัน/เดือน/ปีเกิด"
-                        value={values.birthday}
-                        onChange={(v) =>
-                          handleInputChange(
-                            convertToDefEventPara("birthday", v)
-                          )
-                        }
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            {...(errors.birthday && {
-                              error: true,
-                              helperText: errors.birthday,
-                            })}
-                            {...(!errors.birthday && {
-                              error: false,
-                            })}
-                            InputProps={{
-                              endAdornment: (
-                                <DateRange sx={{ color: "text.secondary" }} />
-                              ),
-                            }}
-                            InputLabelProps={{
-                              style: { fontFamily: "Sarabun" },
-                            }}
-                            sx={styles.inputField}
-                          />
-                        )}
-                      />
-                    </Stack>
-                  </Grid>
-                  <InputGrid
-                    label="เลขบัญชีธนาคาร"
-                    type="text"
-                    placeholder="___-_-_____-_"
-                    name="bank_no"
-                    onChange={handleFormatBank}
-                    value={values.bank_no}
-                    error={errors.bank_no}
-                  />
-                  <InputGrid
-                    label="ชื่อบัญชีธนาคาร"
-                    type="text"
-                    name="bank_name"
-                    onChange={handleInputChange}
-                    value={values.bank_name}
-                    error={errors.bank_name}
-                  />
-                  <InputGrid
-                    sm
-                    label="บ้านเลขที่"
-                    type="text"
-                    name="address.house_no"
-                    onChange={handleInputChange}
-                    value={values.address.house_no}
-                    error={errors.house_no}
-                  />
-                  <InputGridAddress
-                    title="จังหวัด"
-                    name="address.province"
-                    value={values.address.province}
-                    onChange={handleInputChange}
-                    addressQuery={Provinces}
-                    error={errors.province}
-                  />
-                  <InputGridAddress
-                    title="อำเภอ/เขต"
-                    name="address.district"
-                    forEmpty="จังหวัด"
-                    value={values.address.district}
-                    fieldName="amphoe"
-                    onChange={handleInputChange}
-                    addressQuery={queryProvinces}
-                    error={errors.district}
-                  />
-                  <InputGridAddress
-                    title="ตำบล/แขวง"
-                    name="address.subdistrict"
-                    forEmpty="อำเภอ/เขต"
-                    value={values.address.subdistrict}
-                    fieldName="district"
-                    onChange={handleInputChange}
-                    addressQuery={queryAmphoe}
-                    error={errors.subdistrict}
-                  />
-                  <InputGridAddress
-                    title="รหัสไปรษณีย์"
-                    forEmpty="ตำบล/แขวง"
-                    name="address.zip_code"
-                    fieldName="zipcode"
-                    value={values.address.zip_code}
-                    onChange={handleInputChange}
-                    addressQuery={queryDistrict}
-                    error={errors.zip_code}
-                  />
-                </Grid>
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "flex-end",
-                    justifyContent: "space-between",
-                    marginTop: "24px",
+                    m: "16px auto 0px",
+                    textAlign: "center",
+                    color: "text.secondary",
+                    fontSize: "0.75rem",
                   }}
                 >
-                  <Button
-                    color="error"
-                    fullWidth
-                    startIcon={<DeleteRounded />}
-                    variant="contained"
-                    onClick={handleDel}
-                    sx={styles.btnDel}
-                  >
-                    ลบพนักงาน
-                  </Button>
-                  <LoadingButton
-                    type="submit"
-                    startIcon={<SaveRounded />}
-                    fullWidth
-                    loading={loading}
-                    variant="contained"
-                    sx={styles.btnSubmit}
-                  >
-                    บันทึก
-                  </LoadingButton>
-                </Box>
-              </Paper>
-            </Grid>
+                  Allowed *.jpeg, *.jpg, *.png
+                </Typography>
+                <FormHelperText
+                  sx={{
+                    textAlign: "center",
+                    pt: 2,
+                    color: "red",
+                  }}
+                >
+                  {errors.photo && errors.photo}
+                </FormHelperText>
+              </Box>
+            </Paper>
           </Grid>
-        </Form>
-      </Container>
-    </LocalizationProvider>
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 3 }}>
+              <Grid container rowSpacing={3} columnSpacing={2}>
+                <InputGrid
+                  label="ชื่อ"
+                  name="full_name.first_name"
+                  type="text"
+                  value={values.full_name.first_name}
+                  onChange={handleInputChange}
+                  error={errors.first_name}
+                />
+                <InputGrid
+                  name="full_name.last_name"
+                  label="นามสกุล"
+                  type="text"
+                  value={values.full_name.last_name}
+                  onChange={handleInputChange}
+                  error={errors.last_name}
+                />
+                <InputGrid
+                  name="phone_no"
+                  label="เบอร์ติดต่อ"
+                  placeholder="__-____-____"
+                  type="tel"
+                  value={values.phone_no}
+                  onChange={handleFormatPhoneNumber}
+                  error={errors.phone_no}
+                />
+                <InputGrid
+                  label="ทะเบียนรถ"
+                  type="text"
+                  name="car_no"
+                  onChange={handleInputChange}
+                  value={values.car_no}
+                  error={errors.car_no}
+                />
+                <Grid item xs={12} sm={6}>
+                  <FormControl
+                    fullWidth
+                    {...(errors.gender && { error: true })}
+                  >
+                    <InputLabel id="select-gender">เพศ</InputLabel>
+                    <Select
+                      labelId="select-gender"
+                      name="gender"
+                      value={values.gender}
+                      label="เพศ"
+                      sx={{
+                        width: "100%",
+                        borderRadius: 2,
+                        "& fieldset": {
+                          borderRadius: 2,
+                        },
+                      }}
+                      onChange={handleInputChange}
+                    >
+                      {["ชาย", "หญิง", "อื่น ๆ"].map((item) => (
+                        <MenuItem
+                          key={item}
+                          value={item}
+                          sx={{
+                            width: "100%",
+                            borderRadius: "8px",
+                            mb: 1,
+                          }}
+                        >
+                          {item}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <FormHelperText>
+                      {errors.gender && errors.gender}
+                    </FormHelperText>
+                  </FormControl>
+                </Grid>
+                <InputGrid
+                  label="แพนก"
+                  type="text"
+                  name="department"
+                  onChange={handleInputChange}
+                  value={values.department}
+                  error={errors.department}
+                />
+                <InputGrid
+                  label="บัตรประชาชน"
+                  type="text"
+                  placeholder="_-____-_____-__-_"
+                  name="reference_id"
+                  helperText={
+                    validationID ? "เลขประจำตัวประชาชนไม่ถูกต้อง" : null
+                  }
+                  onChange={handleCheckID}
+                  value={values.reference_id}
+                  error={errors.reference_id}
+                />
+                <Grid item xs={12} sm={6}>
+                  <Controls.DatePicker
+                    label="วัน/เดือน/ปีเกิด"
+                    errors={errors.birthday}
+                    value={values.birthday}
+                    onChange={(v) =>
+                      handleInputChange(convertToDefEventPara("birthday", v))
+                    }
+                  />
+                </Grid>
+                <InputGrid
+                  label="เลขบัญชีธนาคาร"
+                  type="text"
+                  placeholder="___-_-_____-_"
+                  name="bank_no"
+                  onChange={handleFormatBank}
+                  value={values.bank_no}
+                  error={errors.bank_no}
+                />
+                <InputGrid
+                  label="ชื่อบัญชีธนาคาร"
+                  type="text"
+                  name="bank_name"
+                  onChange={handleInputChange}
+                  value={values.bank_name}
+                  error={errors.bank_name}
+                />
+                <InputGrid
+                  sm
+                  label="บ้านเลขที่"
+                  type="text"
+                  name="address.house_no"
+                  onChange={handleInputChange}
+                  value={values.address.house_no}
+                  error={errors.house_no}
+                />
+                <InputGridAddress
+                  title="จังหวัด"
+                  name="address.province"
+                  value={values.address.province}
+                  onChange={handleInputChange}
+                  addressQuery={Provinces}
+                  error={errors.province}
+                />
+                <InputGridAddress
+                  title="อำเภอ/เขต"
+                  name="address.district"
+                  forEmpty="จังหวัด"
+                  value={values.address.district}
+                  fieldName="amphoe"
+                  onChange={handleInputChange}
+                  addressQuery={queryProvinces}
+                  error={errors.district}
+                />
+                <InputGridAddress
+                  title="ตำบล/แขวง"
+                  name="address.subdistrict"
+                  forEmpty="อำเภอ/เขต"
+                  value={values.address.subdistrict}
+                  fieldName="district"
+                  onChange={handleInputChange}
+                  addressQuery={queryAmphoe}
+                  error={errors.subdistrict}
+                />
+                <InputGridAddress
+                  title="รหัสไปรษณีย์"
+                  forEmpty="ตำบล/แขวง"
+                  name="address.zip_code"
+                  fieldName="zipcode"
+                  value={values.address.zip_code}
+                  onChange={handleInputChange}
+                  addressQuery={queryDistrict}
+                  error={errors.zip_code}
+                />
+              </Grid>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "flex-end",
+                  justifyContent: "space-between",
+                  marginTop: "24px",
+                }}
+              >
+                <Button
+                  color="error"
+                  fullWidth
+                  startIcon={<DeleteRounded />}
+                  variant="contained"
+                  onClick={handleDel}
+                  sx={styles.btnDel}
+                >
+                  ลบพนักงาน
+                </Button>
+                <LoadingButton
+                  type="submit"
+                  startIcon={<SaveRounded />}
+                  fullWidth
+                  loading={loading}
+                  variant="contained"
+                  sx={styles.btnSubmit}
+                >
+                  บันทึก
+                </LoadingButton>
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Form>
+    );
+  };
+
+  if (loadingData || !initialValues) return <Loading />;
+
+  return (
+    <Container>
+      <Box
+        sx={{
+          flexGrow: 1,
+          mb: 5,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+          แก้ไขข้อมูลส่วนบุคคล
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<ArrowBackRounded />}
+          onClick={() => navigate(-1)}
+          sx={{
+            backgroundColor: "rgb(32, 101, 209)",
+            boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+            borderRadius: 2,
+            "&:hover": {
+              boxShadow: "none",
+            },
+            mr: 2,
+          }}
+        >
+          กลับ
+        </Button>
+      </Box>
+      <Box sx={{ width: "100%", my: 3 }}>
+        <Tabs
+          value={tabMenu}
+          onChange={(e, v) => {
+            setErrChangePassword({});
+            setTabMenu(v);
+          }}
+          indicatorColor="primary"
+          textColor="inherit"
+          sx={{
+            color: "text.secondary",
+            "&  .MuiTabs-indicator": {
+              bottom: "initial",
+              mt: 1,
+            },
+            "&  .Mui-selected": {
+              color: "text.primary",
+            },
+            "&  .MuiButtonBase-root": {
+              opacity: 1,
+            },
+          }}
+        >
+          <Tab
+            value={1}
+            icon={<AssignmentInd />}
+            iconPosition="start"
+            sx={{
+              fontSize: "1.2rem",
+              fontWeight: 500,
+              fontFamily: "Itim",
+              p: 0,
+              minHeight: "initial",
+              mr: 5,
+            }}
+            label="โปรไฟล์"
+            disableRipple
+          />
+          <Tab
+            icon={<VpnKey />}
+            iconPosition="start"
+            sx={{
+              fontSize: "1.2rem",
+              fontWeight: 500,
+              fontFamily: "Itim",
+              p: 0,
+              minHeight: "initial",
+            }}
+            value={2}
+            label="เปลี่ยนรหัสผ่าน"
+            disableRipple
+          />
+        </Tabs>
+      </Box>
+      {FromUser()}
+    </Container>
   );
 };
 
@@ -1141,6 +1220,19 @@ const styles = {
       color: "text",
       opacity: 1,
     },
+  },
+  inputFieldPassword: {
+    borderRadius: 2,
+    "& fieldset": {
+      borderRadius: 2,
+    },
+    "& input::placeholder": {
+      textOverflow: "ellipsis !important",
+      fontWeight: 800,
+      color: "text",
+      opacity: 1,
+    },
+    mb: 3,
   },
   btnSubmit: {
     backgroundColor: "rgb(32, 101, 209)",

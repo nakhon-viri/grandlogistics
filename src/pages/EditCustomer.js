@@ -17,9 +17,6 @@ import {
   OutlinedInput,
   FormHelperText,
 } from "@mui/material";
-import MobileDatePicker from "@mui/lab/MobileDatePicker";
-import AdapterDayjs from "@mui/lab/AdapterDayjs";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
 import {
@@ -45,11 +42,11 @@ import {
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useOutletContext } from "react-router-dom";
 
 import { useForm, Form } from "../components/useForm";
 import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
-import Controls from "../components/controls";
 import { HttpClient } from "../utils/HttpClient";
 import Loading from "../components/Loading";
 
@@ -253,6 +250,7 @@ const EditCustomer = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { state } = useLocation();
+  const [title, setTitle] = useOutletContext();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [IDCustomer, setIDCustomer] = useState(null);
@@ -477,6 +475,11 @@ const EditCustomer = () => {
     }
   }, [state]);
 
+  useEffect(
+    () => setTitle("แก้ไขโปรไฟล์ บริษัท " + values.cus_name),
+    [values.cus_name]
+  );
+
   if (loadingData) return <Loading />;
 
   return (
@@ -512,32 +515,7 @@ const EditCustomer = () => {
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}>
             <Paper sx={{ py: 10, px: 3, position: "relative" }}>
-              <Box
-                component={"span"}
-                sx={{
-                  height: "22px",
-                  minWidth: "22px",
-                  lineHeight: 0,
-                  borderRadius: "6px",
-                  cursor: "default",
-                  alignItems: "center",
-                  whiteSpace: "nowrap",
-                  display: "inline-flex",
-                  justifyContent: "center",
-                  padding: "0px 8px",
-                  color: "rgb(255, 164, 141)",
-                  fontSize: "0.75rem",
-                  backgroundColor: "rgba(255, 72, 66, 0.16)",
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  position: "absolute",
-                  top: "24px",
-                  right: "24px",
-                }}
-              >
-                {"Active"}
-              </Box>
-              <Box sx={{ mb: "40px" }}>
+              <Box>
                 <Box
                   sx={{
                     margin: "auto",
@@ -670,43 +648,6 @@ const EditCustomer = () => {
                   {errors.photo && errors.photo}
                 </FormHelperText>
               </Box>
-              <FormControlLabel
-                control={
-                  <Controls.AntSwitch
-                    //   checked={dense}
-                    //   onChange={handleChangeDense}
-                    inputProps={{ "aria-label": "ant design" }}
-                  />
-                }
-                label={
-                  <Typography component={"span"}>
-                    <Typography
-                      component={"h6"}
-                      sx={{ fontWeight: 800, fontSize: "0.875rem", mb: 0.5 }}
-                    >
-                      แก้ไขรูป
-                    </Typography>
-                    <Typography
-                      component={"p"}
-                      sx={{
-                        color: "text.secondary",
-                        pr: 5,
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      อนุญาตให้พนักงานสามารถแก้ไขรูปภาพของตนเองได้
-                    </Typography>
-                  </Typography>
-                }
-                sx={{
-                  m: 0,
-                  width: "100%",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexDirection: "row-reverse",
-                }}
-              />
             </Paper>
           </Grid>
           <Grid item xs={12} md={8}>

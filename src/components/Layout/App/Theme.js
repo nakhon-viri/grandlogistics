@@ -15,6 +15,7 @@ export default function Theme({ children }) {
             main: "#007bff",
           },
           text: {
+            primary: mode === "dark" ? "#fff" : "#000",
             secondary: "#7c8d9c",
           },
           ...(mode === "dark" && {

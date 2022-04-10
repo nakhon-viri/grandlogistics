@@ -52,6 +52,7 @@ import { useSelector, useDispatch } from "react-redux";
 import cloneDeep from "lodash.clonedeep";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 
 import { orderStore } from "../store/OrderStore";
 import { customerStore } from "../store/CustomerStore";
@@ -61,6 +62,7 @@ import Controls from "../components/controls";
 import ReportBill from "../components/ReportBill";
 import { HttpClient } from "../utils/HttpClient";
 import StatusColor from "../components/StatusColor";
+import Loading from "../components/Loading";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Zoom ref={ref} {...props} />;
@@ -269,6 +271,7 @@ const EnhancedTableToolbar = ({ numSelected, handleSavePDF }) => {
 
 const CreateBill = () => {
   const { order } = useSelector(orderStore);
+  const [title, setTitle] = useOutletContext();
   const theme = useTheme();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -425,7 +428,7 @@ const CreateBill = () => {
       { id: "pickup_date", label: "วันที่" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
-      { id: "price_order", label: "ราคาต่อเที่ยว" },
+      { id: "price_order", label: "ค่างาน(บาท)" },
       { id: "car_type", label: "ประเภทรถ" },
       { id: "per_time", label: "รอบ" },
       { id: "status", label: "สถานะ" },
@@ -439,6 +442,8 @@ const CreateBill = () => {
       setLoading(false);
     }
   }, [customer]);
+
+  useEffect(() => setTitle("สร้างใบวางบิล"), []);
 
   let orderQuery = useMemo(() => {
     let newOrder =
@@ -464,7 +469,7 @@ const CreateBill = () => {
     if (valueYear !== "ทั้งหมด") {
       newOrder = newOrder.filter(
         (item) =>
-          dayjs(item.pickup_date).locale("th").format("YYYY") === valueYear
+          dayjs(item.pickup_date).locale("th").format("BBBB") === valueYear
       );
     }
 
@@ -598,7 +603,7 @@ const CreateBill = () => {
     );
   };
 
-  if (loading) return <div>something</div>;
+  if (loading) return <Loading />;
 
   return (
     <Container>
@@ -750,7 +755,7 @@ const CreateBill = () => {
           />
           <FormSelected
             text="ปี"
-            dateFormat="YYYY"
+            dateFormat="BBBB"
             xs={12}
             sm={4}
             md={2}
@@ -840,16 +845,20 @@ const CreateBill = () => {
                             }}
                           />
                         </TableCell>
-                        <TableCell>{Cell.row_number}</TableCell>
+                        <TableCell>
+                          {Cell.row_number.toLocaleString("en")}
+                        </TableCell>
                         <TableCell>{Cell._oid}</TableCell>
                         <TableCell>
                           {dayjs(Cell.pickup_date)
                             .locale("th")
-                            .format("DD MMMM YYYY")}
+                            .format("DD MMMM BBBB")}
                         </TableCell>
                         <TableCell>{Cell.pickup_location}</TableCell>
                         <TableCell>{Cell.delivery_location}</TableCell>
-                        <TableCell>{Cell.price_order}</TableCell>
+                        <TableCell>
+                          {Cell.price_order.toLocaleString("en")}
+                        </TableCell>
                         <TableCell>{Cell.car_type}</TableCell>
                         <TableCell>{Cell.per_time}</TableCell>
                         <TableCell>

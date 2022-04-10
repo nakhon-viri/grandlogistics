@@ -48,6 +48,7 @@ import { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { useSelector } from "react-redux";
+import { useOutletContext } from "react-router-dom";
 
 import { employeeStore } from "../store/EmployeeStore";
 import { orderStore } from "../store/OrderStore";
@@ -159,23 +160,26 @@ const MenuProps = {
 };
 
 const Row = ({ Cell }) => {
-  const theme = useTheme();
   return (
     <>
       <TableRow hover>
         <TableCell />
-        <TableCell align="center">{Cell.row_number}</TableCell>
+        <TableCell align="center">
+          {Cell.row_number.toLocaleString("en")}
+        </TableCell>
         <TableCell component="th" scope="row">
-          {dayjs(Cell.pickup_date).locale("th").format("DD MMMM YYYY")}
+          {dayjs(Cell.pickup_date).locale("th").format("DD MMMM BBBB")}
         </TableCell>
         <TableCell align="right">{Cell.pickup_location}</TableCell>
         <TableCell align="right">{Cell.delivery_location}</TableCell>
-        <TableCell align="right">{Cell.profit}</TableCell>
-        <TableCell align="right">{Cell.wage}</TableCell>
-        <TableCell align="right">{Cell.cost}</TableCell>
-        <TableCell align="right">{Cell.withdraw}</TableCell>
+        <TableCell align="right">{Cell.profit.toLocaleString("en")}</TableCell>
+        <TableCell align="right">{Cell.wage.toLocaleString("en")}</TableCell>
+        <TableCell align="right">{Cell.cost.toLocaleString("en")}</TableCell>
         <TableCell align="right">
-          {Cell.wage - Cell.cost - Cell.withdraw}
+          {Cell.withdraw.toLocaleString("en")}
+        </TableCell>
+        <TableCell align="right">
+          {(Cell.wage - Cell.cost - Cell.withdraw).toLocaleString("en")}
         </TableCell>
       </TableRow>
     </>
@@ -184,6 +188,7 @@ const Row = ({ Cell }) => {
 
 const ReportEmployee = () => {
   let { state } = useLocation();
+  const [title, setTitle] = useOutletContext();
   const { employee } = useSelector(employeeStore);
   const { order } = useSelector(orderStore);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
@@ -194,9 +199,11 @@ const ReportEmployee = () => {
   //Filter by Date
   const [valueDay, setValueDay] = useState("ทั้งหมด");
   const [valueMonth, setValueMonth] = useState("ทั้งหมด");
-  const [valueYear, setValueYear] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState(
+    dayjs(new Date()).locale("th").format("BBBB")
+  );
   //Pagination
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(0);
   //Dense Table
   const [dense, setDense] = useState(false);
@@ -223,7 +230,7 @@ const ReportEmployee = () => {
 
     if (valueYear !== "ทั้งหมด") {
       newOrders = newOrders.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("YYYY") === valueYear
+        (a) => dayjs(a.pickup_date).locale("th").format("BBBB") === valueYear
       );
     }
 
@@ -285,6 +292,33 @@ const ReportEmployee = () => {
     return total;
   }, [orders]);
 
+  let yearQuery = useMemo(() => {
+    if (!userSelected) return [];
+    let newOrders = order?.filter(
+      (item) => item.personnel._id === userSelected._id
+    );
+    let newYear = [
+      ...new Map(
+        newOrders?.map((item) => [
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+        ])
+      ).values(),
+    ];
+
+    let now = newYear.find(
+      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
+    );
+
+    if (!now) {
+      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
+    }
+ 
+    return newYear;
+  }, [userSelected, order]);
+
+  useEffect(() => setTitle("การเงินพนักงานรายบุลคล"), []);
+
   const handleRequestSort = (event, property) => {
     const isAsc = sortByName === property && sortType === "asc";
     setSortType(isAsc ? "desc" : "asc");
@@ -303,7 +337,7 @@ const ReportEmployee = () => {
   const userListProps = {
     employee: employeeList,
     handleSelectedUser: (user) => {
-      setValueYear("ทั้งหมด");
+      setValueYear(dayjs(new Date()).locale("th").format("BBBB"));
       setValueMonth("ทั้งหมด");
       setValueDay("ทั้งหมด");
       setPage(0);
@@ -316,20 +350,44 @@ const ReportEmployee = () => {
     sortType,
     sortByName,
     onRequestSort: handleRequestSort,
+    isOpenFirstCell: true,
     headCell: [
       { id: "row_number", label: "ลำดับ" },
       { id: "pickup_date", label: "วันที่" },
       { id: "pickup_location", label: "ที่รับสินค้า" },
       { id: "delivery_location", label: "ที่ส่งสินค้า" },
-      { id: "profit", label: "กำไร" },
-      { id: "wage", label: "ค่าเที่ยวพนักงาน" },
-      { id: "cost", label: "ค่าน้ำมัน" },
-      { id: "withdraw", label: "เบิก" },
-      { id: "balance", label: "ยอดคงเหลือ" },
+      { id: "profit", label: "กำไร(บาท)" },
+      { id: "wage", label: "ค่าเที่ยวพนักงาน(บาท)" },
+      { id: "cost", label: "ค่าน้ำมัน(บาท)" },
+      { id: "withdraw", label: "เบิก(บาท)" },
+      { id: "balance", label: "ยอดคงเหลือ(บาท)" },
     ],
   };
 
   const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
+    let dateQuery =
+      dateFormat === "BBBB"
+        ? yearQuery
+        : [
+            ...new Map(
+              userSelected?.orders
+                ?.slice()
+                .map((item) => [
+                  dayjs(item.pickup_date).locale("th").format(dateFormat),
+                  item,
+                ])
+            ).values(),
+          ]
+            .sort(function (a, b) {
+              return (
+                dayjs(b.pickup_date).format(dateFormat) -
+                dayjs(a.pickup_date).format(dateFormat)
+              );
+            })
+            .map((item) =>
+              dayjs(item.pickup_date).locale("th").format(dateFormat)
+            );
+
     return (
       <Grid item {...rest}>
         <FormControl sx={{ width: "100%" }}>
@@ -353,53 +411,48 @@ const ReportEmployee = () => {
             }
             MenuProps={MenuProps}
           >
-            <MenuItem
-              value="ทั้งหมด"
-              sx={{
-                width: "100%",
-                borderRadius: "8px",
-                mb: 1,
-              }}
-            >
-              {text}ทั้งหมด
-            </MenuItem>
-            {[
-              ...new Map(
-                userSelected?.orders
-                  ?.slice()
-                  .map((item) => [
-                    dayjs(item.pickup_date).locale("th").format(dateFormat),
-                    item,
-                  ])
-              ).values(),
-            ]
-              .sort(function (a, b) {
-                return (
-                  dayjs(b.pickup_date).format(dateFormat) -
-                  dayjs(a.pickup_date).format(dateFormat)
-                );
-              })
-              .map((row, index) => (
-                <MenuItem
-                  key={index}
-                  value={dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                  sx={{
-                    width: "100%",
-                    borderRadius: "8px",
-                    mb: 1,
-                  }}
-                >
-                  {dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                </MenuItem>
-              ))}
+            {dateFormat !== "BBBB" ? (
+              <MenuItem
+                value="ทั้งหมด"
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mb: 1,
+                }}
+              >
+                {text}ทั้งหมด
+              </MenuItem>
+            ) : null}
+            {dateQuery.map((row, index) => (
+              <MenuItem
+                key={index}
+                value={row}
+                sx={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  mb: 1,
+                }}
+              >
+                {row}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Grid>
     );
   };
 
+  const BoxReport = ({ title, sum }) => {
+    return (
+      <Box justifyContent="space-between" display="flex" mb={0.8}>
+        <Typography>{title}</Typography>
+        <Typography>{sum}</Typography>
+      </Box>
+    );
+  };
+
   return (
-    <Container maxWidth={"lg"}>
+    <Box>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
         <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
           การเงินพนักงานรายบุลคล
@@ -407,12 +460,57 @@ const ReportEmployee = () => {
       </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} lg={3}>
-          <Paper sx={styles.containerUserList} elevation={2}>
-            <UserList {...userListProps} />
-          </Paper>
+          <Box>
+            <Paper sx={styles.containerUserReport} elevation={2}>
+              <Typography
+                variant="h5"
+                align={"center"}
+                sx={{ fontFamily: "Itim", fontWeight: 500, fontSize: "2rem" }}
+              >
+                {userSelected?.full_name?.first_name +
+                  " " +
+                  userSelected?.full_name?.last_name}
+              </Typography>
+              <Typography
+                variant="h5"
+                align={"center"}
+                sx={{ fontFamily: "Itim", fontWeight: 500 }}
+                mb={2}
+              >
+                สรุปการเงิน
+              </Typography>
+              {total ? (
+                <>
+                  <BoxReport
+                    title="จำนวนงานทั้งหมด"
+                    sum={orders?.length.toLocaleString("en") + " งาน"}
+                  />
+                  <BoxReport
+                    title="กำไรรวม"
+                    sum={total.profit.toLocaleString("en") + " บาท"}
+                  />
+                  <BoxReport
+                    title="ค่าน้ำมันรวม"
+                    sum={total.cost.toLocaleString("en") + " บาท"}
+                  />
+                  <BoxReport
+                    title="เบิกรวม"
+                    sum={total.withdraw.toLocaleString("en") + " บาท"}
+                  />
+                  <BoxReport
+                    title="ยอดคงเหลือรวม"
+                    sum={total.balance.toLocaleString("en") + " บาท"}
+                  />
+                </>
+              ) : null}
+            </Paper>
+            <Paper sx={styles.containerUserList} elevation={2}>
+              <UserList {...userListProps} />
+            </Paper>
+          </Box>
         </Grid>
         <Grid item xs={12} lg={9}>
-          <Box>
+          <Box mb={10}>
             <Paper
               elevation={3}
               sx={{
@@ -423,6 +521,22 @@ const ReportEmployee = () => {
                 overflow: "hidden",
               }}
             >
+              <Box
+                sx={{
+                  backgroundColor: "rgba(145, 158, 171, 0.16)",
+                  px: 3,
+                  py: 2,
+                }}
+              >
+                <Typography
+                  variant="h5"
+                  sx={{ fontFamily: "Itim", fontWeight: 500 }}
+                >
+                  {userSelected?.full_name?.first_name +
+                    " " +
+                    userSelected?.full_name?.last_name}
+                </Typography>
+              </Box>
               <Grid container spacing={2} sx={{ p: 3 }}>
                 <Grid item xs={12} sm={12} md={6}>
                   <FormControl
@@ -469,7 +583,7 @@ const ReportEmployee = () => {
                 />
                 <FormSelected
                   text="ปี"
-                  dateFormat="YYYY"
+                  dateFormat="BBBB"
                   xs={12}
                   sm={4}
                   md={2}
@@ -486,7 +600,15 @@ const ReportEmployee = () => {
                   }}
                 >
                   <Table size={dense ? "small" : "normall"}>
-                    <TableHeader {...tableHeaderProps} />
+                    <TableHeader {...tableHeaderProps}>
+                      {/* { id: "row_number", label: "ลำดับ" }, */}
+                      <TableCell
+                        sx={{
+                          color: "text.secondary",
+                          width: "24px",
+                        }}
+                      />
+                    </TableHeader>
                     <TableBody>
                       {orders &&
                         orders
@@ -506,14 +628,26 @@ const ReportEmployee = () => {
                             },
                           }}
                         >
-                          <TableCell>{total.full_name}</TableCell>
-                          <TableCell>{orders?.length}</TableCell>
+                          <TableCell />
+                          <TableCell align="center">
+                            {orders?.length.toLocaleString("en")}
+                          </TableCell>
                           <TableCell colSpan={3}></TableCell>
-                          <TableCell align="right">{total.profit}</TableCell>
-                          <TableCell align="right">{total.wage}</TableCell>
-                          <TableCell align="right">{total.cost}</TableCell>
-                          <TableCell align="right">{total.withdraw}</TableCell>
-                          <TableCell align="right">{total.balance}</TableCell>
+                          <TableCell align="right">
+                            {total.profit.toLocaleString("en")}
+                          </TableCell>
+                          <TableCell align="right">
+                            {total.wage.toLocaleString("en")}
+                          </TableCell>
+                          <TableCell align="right">
+                            {total.cost.toLocaleString("en")}
+                          </TableCell>
+                          <TableCell align="right">
+                            {total.withdraw.toLocaleString("en")}
+                          </TableCell>
+                          <TableCell align="right">
+                            {total.balance.toLocaleString("en")}
+                          </TableCell>
                         </TableRow>
                       ) : null}
                     </TableBody>
@@ -567,7 +701,7 @@ const ReportEmployee = () => {
           </Box>
         </Grid>
       </Grid>
-    </Container>
+    </Box>
   );
 };
 
@@ -580,6 +714,11 @@ const styles = {
     backgroundColor: "#aff",
     width: "100%",
     height: "100%",
+  },
+  containerUserReport: {
+    px: 2,
+    py: 3,
+    mb: 2,
   },
 };
 

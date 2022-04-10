@@ -1,16 +1,14 @@
 import React from "react";
 import MobileDatePicker from "@mui/lab/MobileDatePicker";
-import AdapterDayjs from "@mui/lab/AdapterDayjs";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import "dayjs/locale/th";
 import { DateRangeRounded } from "@mui/icons-material";
 import { Stack, TextField } from "@mui/material";
 const DatePicker = ({ errors, ...rest }) => {
   return (
-    <LocalizationProvider locale={"th"} dateAdapter={AdapterDayjs}>
       <Stack>
         <MobileDatePicker
           {...rest}
+          inputFormat={"DD MMMM BBBB"}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -34,7 +32,6 @@ const DatePicker = ({ errors, ...rest }) => {
           )}
         />
       </Stack>
-    </LocalizationProvider>
   );
 };
 const styles = {

@@ -23,9 +23,6 @@ import {
   ListItemText,
   Zoom,
 } from "@mui/material";
-import MobileDatePicker from "@mui/lab/MobileDatePicker";
-import AdapterDayjs from "@mui/lab/AdapterDayjs";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { styled } from "@mui/material/styles";
 import {
@@ -44,6 +41,7 @@ import "dayjs/locale/th";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useOutletContext } from "react-router-dom";
 
 import { employeeStore } from "../store/EmployeeStore";
 import { customerStore } from "../store/CustomerStore";
@@ -107,6 +105,7 @@ const EditOrder = () => {
   const { state } = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [title, setTitle] = useOutletContext();
   const { employee } = useSelector(employeeStore);
   const [IDOrder, setIDOrder] = useState(null);
   //Loading
@@ -237,6 +236,8 @@ const EditOrder = () => {
       });
     }
   }, [employee, state]);
+
+  useEffect(() => setTitle("แก้ไขงาน"), []);
 
   return (
     <Container>

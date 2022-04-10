@@ -22,3 +22,11 @@ https://api-grandlogistics.herokuapp.com/
 /customer
     .post("/", addCustomer);
     .get("/", getCustomer);
+
+
+
+
+useEffect
+import { useOutletContext } from "react-router-dom";
+ const [title, setTitle] = useOutletContext();
+ useEffect(() => setTitle("เพิ่มงาน"), []);
