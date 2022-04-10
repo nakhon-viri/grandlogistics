@@ -53,6 +53,7 @@ import StatusColor from "../components/StatusColor";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useOutletContext } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
 
 import { HttpClient } from "../utils/HttpClient";
 import Loading from "../components/Loading";
@@ -254,10 +255,44 @@ const MenuProps = {
     },
   },
 };
-const Row = ({ row, isItemSelected, labelId, handleClick, handleDelete }) => {
+const Row = ({ row, isItemSelected, labelId, handleClick, setLoadingData }) => {
   const theme = useTheme();
   let navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
+
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "คุณต้องการที่จะลบเที่ยววิ่งนี้ใช่หรือไม่",
+      icon: "warning",
+      showCancelButton: true,
+      showConfirmButton: false,
+      showDenyButton: true,
+      denyButtonText: "ตกลง",
+      cancelButtonText: "ปิด",
+    }).then(async (result) => {
+      if (result.isDenied) {
+        try {
+          setLoadingData(true);
+          let res = await HttpClient.delete("/order/" + id);
+          if (res.data.sucess) {
+            dispatch(deleteOrder(id));
+            Swal.fire("ลบเสร็จสิ้น!", "", "success");
+          } else {
+            Swal.fire(
+              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
+              "",
+              "warning"
+            ).then(() => window.location.reload());
+          }
+        } catch (error) {
+          console.log(error.respose);
+        } finally {
+          setLoadingData(false);
+        }
+      }
+    });
+  };
+
   return (
     <>
       <TableRow
@@ -479,39 +514,6 @@ export default function EnhancedTable() {
 
   const tablePagination = useMediaQuery("(min-width:600px)");
 
-  const handleDelete = (id) => {
-    Swal.fire({
-      title: "คุณต้องการที่จะลบเที่ยววิ่งนี้ใช่หรือไม่",
-      icon: "warning",
-      showCancelButton: true,
-      showConfirmButton: false,
-      showDenyButton: true,
-      denyButtonText: "ตกลง",
-      cancelButtonText: "ปิด",
-    }).then(async (result) => {
-      if (result.isDenied) {
-        try {
-          setLoadingData(true);
-          let res = await HttpClient.delete("/order/" + id);
-          if (res.data.sucess) {
-            dispatch(deleteOrder(id));
-            Swal.fire("ลบเสร็จสิ้น!", "", "success");
-          } else {
-            Swal.fire(
-              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
-              "",
-              "warning"
-            ).then(() => window.location.reload());
-          }
-        } catch (error) {
-          console.log(error.respose);
-        } finally {
-          setLoadingData(false);
-        }
-      }
-    });
-  };
-
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -603,11 +605,8 @@ export default function EnhancedTable() {
   // console.log = console.warn = console.error = () => {};
   const newOrder =
     React.useMemo(() => {
-      let queryOrder =
-        order?.filter((a) => {
-          if (a.deleted) return;
-          return a;
-        }) || [];
+      if (!order) return [];
+      let queryOrder = cloneDeep(order);
       if (valueTabs !== "ทั้งหมด") {
         queryOrder = queryOrder.filter((a) => a.status === valueTabs);
       }
@@ -637,7 +636,7 @@ export default function EnhancedTable() {
       });
 
       for (var i = 0; i < queryOrder.length; i++) {
-        queryOrder[i] = { ...queryOrder[i], row_number: i };
+        queryOrder[i] = { ...queryOrder[i], row_number: i + 1 };
       }
 
       if (search) {
@@ -678,14 +677,14 @@ export default function EnhancedTable() {
     let now = newYear.find(
       (y) => y === dayjs(new Date()).locale("th").format("BBBB")
     );
- 
+
     if (!now) {
       newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
     }
-    
+
     return newYear;
   }, [order]);
- 
+
   return (
     <Box>
       <CssBaseline />
@@ -984,7 +983,7 @@ export default function EnhancedTable() {
                             labelId={labelId}
                             handleClick={handleClick}
                             newOrder={newOrder}
-                            handleDelete={handleDelete}
+                            setLoadingData={setLoadingData}
                           />
                         );
                       })

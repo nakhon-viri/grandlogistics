@@ -84,7 +84,7 @@ export const orderReq = () => async (dispatch) => {
 
     let resOrder = await HttpClient.get("/order");
 
-    dispatch(upDateOrder(resOrder.data.data));
+    dispatch(upDateOrder(resOrder.data));
   } catch (error) {
     dispatch(upDateError(error.response.data.error.message));
   }

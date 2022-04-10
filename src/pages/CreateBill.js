@@ -276,7 +276,6 @@ const CreateBill = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { customer } = useSelector(customerStore);
-  const [customerList, setCustomerList] = useState(customer?.orders?.slice());
   //Sort by Header
   const [sortType, setSortType] = useState("asc");
   const [sortByName, setSortByName] = useState("row_number");
@@ -412,7 +411,7 @@ const CreateBill = () => {
           }
         });
       } catch (error) {
-        console.log(error.response);
+        console.log(error.response.data.error.message);
       }
     }
   };
@@ -446,8 +445,8 @@ const CreateBill = () => {
   useEffect(() => setTitle("สร้างใบวางบิล"), []);
 
   let orderQuery = useMemo(() => {
-    let newOrder =
-      order?.slice().filter((item) => item.deleted === false) || [];
+    if (!order) return [];
+    let newOrder = cloneDeep(order);
 
     if (valueTabs !== "ทั้งหมด") {
       newOrder = newOrder.filter((item) => item.status === valueTabs);

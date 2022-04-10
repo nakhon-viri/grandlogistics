@@ -37,7 +37,7 @@ const Trash = () => {
         dispatch(recoverOrder(id));
       }
     } catch (error) {
-      console.log(error.response);
+      console.log(error.response.data.error.message);
     }
   };
   const handleRecoverEmployee = async (id) => {
@@ -47,7 +47,7 @@ const Trash = () => {
         dispatch(recoverEmployee(id));
       }
     } catch (error) {
-      console.log(error.response);
+      console.log(error.response.data.error.message);
     }
   };
   const handleRecoverCustomer = async (id) => {
@@ -57,7 +57,7 @@ const Trash = () => {
         dispatch(recoverCustomer(id));
       }
     } catch (error) {
-      console.log(error.response);
+      console.log(error.response.data.error.message);
     }
   };
 

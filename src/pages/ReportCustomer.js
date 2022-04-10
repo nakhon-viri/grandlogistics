@@ -267,7 +267,7 @@ export default function SimpleDialogDemo() {
     if (!order) return [];
 
     let newOrders = order?.filter(
-      (item) => item.customer._id === selectedCustomer._id
+      (item) => item.customer === selectedCustomer._id
     );
 
     if (valueSubMonth !== "ทั้งเดือน") {
@@ -371,7 +371,7 @@ export default function SimpleDialogDemo() {
     let newDay = [
       ...new Map(
         order
-          ?.filter((item) => item.customer._id === selectedCustomer._id)
+          ?.filter((item) => item.customer === selectedCustomer._id)
           .map((item) => [
             dayjs(item.pickup_date).locale("th").format("DD"),
             item,
@@ -392,7 +392,7 @@ export default function SimpleDialogDemo() {
     let newMonth = [
       ...new Map(
         order
-          ?.filter((item) => item.customer._id === selectedCustomer._id)
+          ?.filter((item) => item.customer === selectedCustomer._id)
           .map((item) => [
             dayjs(item.pickup_date).locale("th").format("MMMM"),
             item,
@@ -412,7 +412,7 @@ export default function SimpleDialogDemo() {
 
   let yearQuery = useMemo(() => {
     let newOrders = order?.filter(
-      (item) => item.customer._id === selectedCustomer._id
+      (item) => item.customer === selectedCustomer._id
     );
     let newYear = [
       ...new Map(

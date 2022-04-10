@@ -395,7 +395,7 @@ const Employee = () => {
     if (!order) return [];
 
     let newOrders = order?.filter(
-      (item) => item.personnel._id === userSelected._id
+      (item) => item.personnel === userSelected._id
     );
 
     if (valueTabs !== "ทั้งหมด") {
@@ -471,7 +471,7 @@ const Employee = () => {
             ).then(() => window.location.reload());
           }
         } catch (error) {
-          console.log(error.respose);
+          console.log(error.response.data.error.message);
         } finally {
           setLoadingData(false);
         }
@@ -530,7 +530,7 @@ const Employee = () => {
 
   let yearQuery = useMemo(() => {
     let newOrders = order?.filter(
-      (item) => item.personnel._id === userSelected._id
+      (item) => item.personnel === userSelected._id
     );
     let newYear = [
       ...new Map(
@@ -544,12 +544,20 @@ const Employee = () => {
     let now = newYear.find(
       (y) => y === dayjs(new Date()).locale("th").format("BBBB")
     );
-   
+
     if (!now) {
       newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
     }
- 
+
     return newYear;
+  }, [userSelected, order]);
+
+  let orderUserSelected = useMemo(() => {
+    if (!order) return [];
+    let newOrders = order?.filter(
+      (item) => item.personnel === userSelected._id
+    );
+    return newOrders;
   }, [userSelected, order]);
 
   const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
@@ -558,7 +566,7 @@ const Employee = () => {
         ? yearQuery
         : [
             ...new Map(
-              [...userSelected.orders].map((item) => [
+              orderUserSelected.map((item) => [
                 dayjs(item.pickup_date).locale("th").format(dateFormat),
                 dayjs(item.pickup_date).locale("th").format(dateFormat),
               ])
@@ -701,7 +709,9 @@ const Employee = () => {
               <Button
                 startIcon={<ManageAccounts />}
                 onClick={() =>
-                  navigate("/profileemployee", { state: { user: userSelected } })
+                  navigate("/profileemployee", {
+                    state: { user: userSelected },
+                  })
                 }
                 sx={{
                   position: "absolute",

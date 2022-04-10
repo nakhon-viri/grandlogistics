@@ -30,7 +30,6 @@ export default function AppLayOut() {
 
   useEffect(() => {
     if (!profile?.email && isLogin) {
-      console.log("AAAA");
       Swal.fire({
         title: "กรุณาใส่ email",
         input: "text",

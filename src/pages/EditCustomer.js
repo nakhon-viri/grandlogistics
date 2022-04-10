@@ -410,7 +410,7 @@ const EditCustomer = () => {
             });
           }
         } catch (error) {
-          console.log(error.respose);
+          console.log(error.response.data.error.message);
         } finally {
           setLoadingData(false);
         }

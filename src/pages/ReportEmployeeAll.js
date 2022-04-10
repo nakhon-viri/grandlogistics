@@ -31,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { useOutletContext } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
 
 import { employeeStore } from "../store/EmployeeStore";
 import { orderStore } from "../store/OrderStore";
@@ -99,7 +100,8 @@ const ReportEmployeeAll = () => {
     if (!order) return [];
     let res = [];
     employeeList?.forEach((item) => {
-      let resOrders = order?.filter((cuur) => cuur.personnel._id === item._id);
+      let resOrders = order?.filter((cuur) => cuur.personnel === item._id);
+
       if (valueDay !== "ทั้งเดือน") {
         resOrders = resOrders.filter((order) => {
           let day = dayjs(order.pickup_date).format("D");
@@ -183,10 +185,14 @@ const ReportEmployeeAll = () => {
   }, [valueDay, valueMonth, report]);
 
   let yearQuery = useMemo(() => {
-    let res = [];
-    employeeList?.slice().forEach((emp) => {
-      res.push(...emp.orders);
-    });
+    if (!order) return [];
+    let res = cloneDeep(order);
+    // employeeList?.slice().forEach((emp) => {
+    //   // let newOrders = order?.filter(
+    //   //   (item) => item.personnel === userSelected._id
+    //   // );
+    //   res.push(...emp.orders);
+    // });
 
     res = [
       ...new Map(
@@ -210,7 +216,7 @@ const ReportEmployeeAll = () => {
       setValueYear(yearList[0]);
     }
     return yearList;
-  }, []);
+  }, [order]);
 
   useEffect(() => setTitle("การเงินพนักงาน(พนักงานทุกคน)"), []);
 

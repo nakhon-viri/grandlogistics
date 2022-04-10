@@ -49,6 +49,7 @@ import Swal from "sweetalert2";
 import cloneDeep from "lodash.clonedeep";
 
 import { employeeStore } from "../store/EmployeeStore";
+import { orderStore } from "../store/OrderStore";
 import { customerStore } from "../store/CustomerStore";
 import { addOrder } from "../store/OrderStore";
 import { useForm, Form } from "../components/useForm";
@@ -189,6 +190,7 @@ const AddOrder = () => {
   const [title, setTitle] = useOutletContext();
   const { customer } = useSelector(customerStore);
   const { employee } = useSelector(employeeStore);
+  const { order } = useSelector(orderStore);
   //Loading
   const [loading, setLoading] = useState(false);
   //Customer
@@ -276,7 +278,7 @@ const AddOrder = () => {
           title: "successfully",
         });
       } catch (error) {
-        console.log(error.response.data.error.message);
+        console.log(error.response);
       }
     }
   };
@@ -292,16 +294,17 @@ const AddOrder = () => {
   useEffect(() => setTitle("เพิ่มงาน"), []);
 
   let employeeQuery = useMemo(() => {
-    if (!employee) return [];
+    if (!employee || !order) return [];
     let empList = cloneDeep(employee);
 
     empList = empList.map((item) => {
-      item.orders = item.orders.filter((curr) => {
-        return (
-          dayjs(curr.pickup_date).format("MMMM BBBB") ==
-          dayjs(new Date()).format("MMMM BBBB")
-        );
-      });
+      item.orders = order.filter(
+        (itemCurr) =>
+          itemCurr.personnel == item._id &&
+          dayjs(itemCurr.pickup_date).format("MMMM BBBB") ==
+            dayjs(new Date()).format("MMMM BBBB")
+      );
+  
       let result = item.orders.reduce(
         (sum, curr) => {
           sum.count += 1;
@@ -334,7 +337,7 @@ const AddOrder = () => {
 
     if (sortEmp == 3) empList.sort((a, b) => a.sumWage - b.sumWage);
     return empList;
-  }, [employee, sortEmp]);
+  }, [employee, order, sortEmp]);
 
   if (openDialog) {
     return (
@@ -572,10 +575,7 @@ const AddOrder = () => {
                                 " " +
                                 item.full_name.last_name}
                             </Typography>
-                            <Typography
-                              variant="p"
-                              sx={{ ml: 2 }}
-                            >
+                            <Typography variant="p" sx={{ ml: 2 }}>
                               {item.countOrder +
                                 " งาน, " +
                                 item.sumWage +

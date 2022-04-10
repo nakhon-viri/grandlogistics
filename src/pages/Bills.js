@@ -339,7 +339,6 @@ const Bills = () => {
   const { order } = useSelector(orderStore);
   const { bill } = useSelector(billStore);
   const { customer } = useSelector(customerStore);
-  const [customerList, setCustomerList] = useState(customer?.orders?.slice());
   //Sort by Header
   const [sortType, setSortType] = useState("desc");
   const [sortByName, setSortByName] = useState("wage");
@@ -521,7 +520,7 @@ const Bills = () => {
           }
         });
       } catch (error) {
-        console.log(error.response);
+        console.log(error.response.data.error.message);
       }
     }
   };
@@ -589,6 +588,7 @@ const Bills = () => {
     return newBill;
   }, [
     bill,
+    customer,
     selectedCustomer,
     valueSubMonth,
     valueYear,
@@ -596,12 +596,6 @@ const Bills = () => {
     valueDay,
     search,
   ]);
-
-  let orderQuery = useMemo(() => {
-    let newOrder = order?.slice() || [];
-
-    return newOrder;
-  }, [order]);
 
   let listInvoice = useMemo(() => {
     let sumReport = {};

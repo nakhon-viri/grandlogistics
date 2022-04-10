@@ -211,7 +211,7 @@ const ReportEmployee = () => {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    let emp = employee?.slice();
+    let emp = cloneDeep(employee);
     if (state?._id && emp) {
       let res = emp?.filter((item) => item._id === state?._id);
       setUserSelected(cloneDeep(res)[0]);
@@ -225,7 +225,7 @@ const ReportEmployee = () => {
     if (!order) return [];
 
     let newOrders = order?.filter(
-      (item) => item.personnel._id === userSelected._id
+      (item) => item.personnel === userSelected._id
     );
 
     if (valueYear !== "ทั้งหมด") {
@@ -295,7 +295,7 @@ const ReportEmployee = () => {
   let yearQuery = useMemo(() => {
     if (!userSelected) return [];
     let newOrders = order?.filter(
-      (item) => item.personnel._id === userSelected._id
+      (item) => item.personnel === userSelected._id
     );
     let newYear = [
       ...new Map(
@@ -313,7 +313,7 @@ const ReportEmployee = () => {
     if (!now) {
       newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
     }
- 
+
     return newYear;
   }, [userSelected, order]);
 
@@ -364,13 +364,21 @@ const ReportEmployee = () => {
     ],
   };
 
+  let orderUserSelected = useMemo(() => {
+    if (!order || !userSelected) return [];
+    let newOrders = order?.filter(
+      (item) => item.personnel === userSelected._id
+    );
+    return newOrders;
+  }, [userSelected, order]);
+
   const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
     let dateQuery =
       dateFormat === "BBBB"
         ? yearQuery
         : [
             ...new Map(
-              userSelected?.orders
+              orderUserSelected
                 ?.slice()
                 .map((item) => [
                   dayjs(item.pickup_date).locale("th").format(dateFormat),

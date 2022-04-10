@@ -42,6 +42,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useOutletContext } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
 
 import { employeeStore } from "../store/EmployeeStore";
 import { customerStore } from "../store/CustomerStore";
@@ -198,44 +199,50 @@ const EditOrder = () => {
       }
     }
   };
-
+  console.log(state.order);
   useEffect(() => {
     if (!state) navigate("/order");
-    if (employee && state) {
-      let order = JSON.parse(JSON.stringify(state?.order || null));
-      setIDOrder(order._id);
-      setValues({
-        pickup_location: order.pickup_location,
-        pickup_point: {
-          pp_1: order.pickup_point.pp_1,
-          pp_2: order.pickup_point.pp_2,
-          pp_3: order.pickup_point.pp_3,
-          pp_4: order.pickup_point.pp_4,
-          pp_5: order.pickup_point.pp_5,
-        },
-        delivery_location: order.delivery_location,
-        pickup_date: order.pickup_date,
-        price_order: order.price_order,
-        wage: order.wage,
-        profit: order.profit,
-        driver: order.driver,
-        per_time: order.per_time,
-        area: order.area,
-        car_type: order.car_type,
-        personnel: JSON.stringify({
-          driver: order.personnel.full_name.first_name,
-          _id: order.personnel._id,
-        }),
-        customer: order.customer._id,
-        status: order.status,
-        detail: order.detail,
-        other_msg: order.other_msg,
-        cost: order.cost,
-        withdraw: order.withdraw,
-        amount_of_invoice: order.amount_of_invoice,
-      });
-    }
-  }, [employee, state]);
+    if (!state.order || !employee) return;
+
+    let order = cloneDeep(state?.order);
+    let newEmp = cloneDeep(employee);
+
+    newEmp = newEmp.find((v) => v._id == order.personnel);
+
+    setIDOrder(order._id);
+
+    let emp = JSON.stringify({
+      driver: newEmp.full_name.first_name,
+      _id: newEmp._id,
+    });
+    setValues({
+      pickup_location: order.pickup_location,
+      pickup_point: {
+        pp_1: order.pickup_point.pp_1,
+        pp_2: order.pickup_point.pp_2,
+        pp_3: order.pickup_point.pp_3,
+        pp_4: order.pickup_point.pp_4,
+        pp_5: order.pickup_point.pp_5,
+      },
+      delivery_location: order.delivery_location,
+      pickup_date: order.pickup_date,
+      price_order: order.price_order,
+      wage: order.wage,
+      profit: order.profit,
+      driver: order.driver,
+      per_time: order.per_time,
+      area: order.area,
+      car_type: order.car_type,
+      personnel: emp,
+      customer: order.customer._id,
+      status: order.status,
+      detail: order.detail,
+      other_msg: order.other_msg,
+      cost: order.cost,
+      withdraw: order.withdraw,
+      amount_of_invoice: order.amount_of_invoice,
+    });
+  }, [state]);
 
   useEffect(() => setTitle("แก้ไขงาน"), []);
 

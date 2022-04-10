@@ -99,7 +99,7 @@ const Report = () => {
     let newOrder = cloneDeep(order);
 
     if (company !== "ทั้งหมด") {
-      newOrder = newOrder.filter((item) => item.customer._id === company);
+      newOrder = newOrder.filter((item) => item.customer === company);
     }
 
     if (valueSubMonth !== "ทั้งเดือน") {
