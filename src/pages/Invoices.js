@@ -30,24 +30,15 @@ import { useOutletContext } from "react-router-dom";
 
 import { invoiceStore } from "../store/InvoiceStore";
 import { orderStore } from "../store/OrderStore";
+import { customerStore } from "../store/CustomerStore";
+import { billStore } from "../store/BillStore";
 import TableHeader from "../components/TableHeader";
 import ReportInvoice from "../components/ReportInvoice";
-
-function descendingComparator(a, b, sortByName) {
-  if (b[sortByName] < a[sortByName]) {
-    return -1;
-  }
-  if (b[sortByName] > a[sortByName]) {
-    return 1;
-  }
-  return 0;
-}
-
-function getComparator(sortType, sortByName) {
-  return sortType === "desc"
-    ? (a, b) => descendingComparator(a, b, sortByName)
-    : (a, b) => -descendingComparator(a, b, sortByName);
-}
+import getComparator from "../utils/TableSort";
+import TablePagination from "../components/TablePagination";
+import TableRows from "../components/TableRows";
+import DateSort from "../components/DateSort";
+import { SearchField } from "../components/controls";
 
 const DialogInvoice = ({
   open,
@@ -118,6 +109,8 @@ const DialogInvoice = ({
 const Invoices = () => {
   const { invoice } = useSelector(invoiceStore);
   const { order } = useSelector(orderStore);
+  const { bill } = useSelector(billStore);
+  const { customer } = useSelector(customerStore);
   const [title, setTitle] = useOutletContext();
   //Sort by Header
   const [sortType, setSortType] = useState("desc");
@@ -125,6 +118,17 @@ const Invoices = () => {
   //invoice
   const [openInvoice, setOpenInvoice] = useState(false);
   const [invoiceProps, setInvoiceProps] = useState({});
+  //Pagination
+  const [dense, setDense] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [page, setPage] = useState(0);
+  //Date Sort
+  const [valueSubMonth, setValueSubMonth] = useState("ทั้งเดือน");
+  const [valueDay, setValueDay] = useState("ทั้งหมด");
+  const [valueMonth, setValueMonth] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState(dayjs(new Date()).format("BBBB"));
+  //Search
+  const [search, setSearch] = useState("");
 
   const handleRequestSort = (event, property) => {
     const isAsc = sortByName === property && sortType === "desc";
@@ -134,40 +138,30 @@ const Invoices = () => {
 
   const handleShowInvoice = (value) => {
     setInvoiceProps({
-      listBil: listInvoice(value.id_bill),
+      listBil: listInvoice(value.bill),
       docID: value._bid,
       dateDoc: {
         dateDoc: value.docDate,
         dueDate: value.dueDate,
       },
-      customerDetail: value.id_customer,
+      customerDetail: value.customer,
       handleClose: () => setOpenInvoice(false),
     });
     setOpenInvoice(true);
   };
 
   let listInvoice = (listOrder) => {
+    if (!order) return [];
     let sumReport = {};
     let newOrder = cloneDeep(order);
-    sumReport = listOrder?.reduce((acc, curr) => {
-      // let total = curr.id_order.reduce((sum, order) => {
-      //   return sum + order.price_order;
-      // }, 0);
-      let total = [];
-      newOrder.map((currOrder) => {
-        curr.id_order.map((currOrder2) => {
-          if (currOrder._id === currOrder2) {
-            total.push(currOrder.price_order);
-          }
-        });
-      });
-
-      total = total.reduce((sum, currtotal) => {
-        return sum + currtotal;
+    sumReport = listOrder.reduce((acc, curr) => {
+      let OrderCurr = newOrder.filter((item) => item.bill === curr._id);
+      let total = OrderCurr.reduce((sum, Odr) => {
+        return (sum += Odr.price_order);
       }, 0);
       const str =
         "รถกะบะ 4 ล้อ ตู้ทึบ จำนวน " +
-        curr.id_order.length +
+        OrderCurr.length +
         " คัน วิ่งงานวันที่ " +
         dayjs(curr.dateWork).format("DD/MM/BBBB") +
         "@" +
@@ -190,14 +184,65 @@ const Invoices = () => {
   };
 
   let invoiceQuery = useMemo(() => {
+    if (!invoice || !bill || !customer) return [];
+    let newBill = cloneDeep(bill);
     let newInvoice = cloneDeep(invoice);
-    newInvoice = newInvoice?.filter((item) => {
-      item.cus_name = item.id_customer.cus_name;
-      item.countBill = item.id_bill.length;
+    let newCustomer = cloneDeep(customer);
+
+    newInvoice = newInvoice.filter((item) => {
+      let resBill = newBill.filter((curr) => curr.invoice === item._id);
+      let resCus = newCustomer.find((curr) => curr._id === item.customer);
+      item.customer = resCus;
+      item.bill = resBill;
+      item.cus_name = resCus.cus_name;
+      item.countBill = resBill.length;
+
       return item;
     });
+
+    newInvoice = newInvoice.filter(
+      (a) => dayjs(a.docDate).locale("th").format("BBBB") === valueYear
+    );
+
+    if (valueSubMonth !== "ทั้งเดือน") {
+      newInvoice = newInvoice.filter((order) => {
+        let day = dayjs(order.docDate).format("D");
+        if (valueSubMonth === "ต้นเดือน") {
+          return day < 16;
+        } else {
+          return day > 15;
+        }
+      });
+    }
+
+    if (valueMonth !== "ทั้งหมด") {
+      newInvoice = newInvoice.filter(
+        (a) => dayjs(a.docDate).locale("th").format("MMMM") === valueMonth
+      );
+    }
+
+    if (valueDay !== "ทั้งหมด") {
+      newInvoice = newInvoice.filter(
+        (a) => dayjs(a.docDate).locale("th").format("DD") === valueDay
+      );
+    }
+
+    if (search) {
+      newInvoice = newInvoice.filter((s) => {
+        if (
+          s._bid
+            .trim()
+            .toString()
+            .toLowerCase()
+            .includes(search.trim().toLowerCase()) ||
+          s.cus_name.trim().toLowerCase().includes(search.trim().toLowerCase())
+        )
+          return s;
+      });
+    }
+
     return newInvoice;
-  }, [invoice]);
+  }, [invoice, bill, customer, valueDay, valueMonth, valueYear, search]);
 
   useEffect(() => setTitle("ใบแจ้งหนี้"), []);
 
@@ -227,9 +272,22 @@ const Invoices = () => {
       </Box>
       <DialogInvoice open={openInvoice} {...invoiceProps} />
       <Paper sx={{ p: 0, overflow: "hidden" }}>
+        <DateSort
+          order={invoice}
+          nameQuery={"docDate"}
+          valueDay={valueDay}
+          changeValueDay={(v) => setValueDay(v)}
+          valueMonth={valueMonth}
+          changeValueMonth={(v) => setValueMonth(v)}
+          valueYear={valueYear}
+          changeValueYear={(v) => setValueYear(v)}
+        />
+        <Box sx={{ p: 3, pt: 0 }}>
+          <SearchField handleSearch={(e) => setSearch(e.target.value)} />
+        </Box>
         <TableContainer>
           <Table
-            // size={dense ? "small" : "medium"}
+            size={dense ? "small" : "medium"}
             sx={{
               minWidth: 700,
               "& td": {
@@ -243,46 +301,65 @@ const Invoices = () => {
             <TableBody>
               {invoiceQuery
                 ?.sort(getComparator(sortType, sortByName))
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((item, index) => {
                   return (
-                    <TableRow
+                    <TableRows
+                      key={item._id}
                       hover
-                      key={index}
-                      sx={{
-                        "& td, & th": {
-                          borderBlockWidth:
-                            index === invoiceQuery.length - 1 ? 0 : 1,
+                      Cell={[
+                        {
+                          value: item.cus_name,
+                          align: "center",
                         },
-                      }}
-                    >
-                      <TableCell align="center">{item.cus_name}</TableCell>
-                      <TableCell align="center">{item._bid}</TableCell>
-                      <TableCell align="center">
-                        {dayjs(item.docDate)
-                          .locale("th")
-                          .format("DD MMMM BBBB")}
-                      </TableCell>
-                      <TableCell align="center">
-                        {" "}
-                        {dayjs(item.dueDate)
-                          .locale("th")
-                          .format("DD MMMM BBBB")}
-                      </TableCell>
-                      <TableCell align="center">{item.countBill}</TableCell>
-                      <TableCell align="center" sx={{ textAlign: "left" }}>
-                        <IconButton
-                          onClick={() => handleShowInvoice(item)}
-                          sx={{ p: 1, color: "#4287f5" }}
-                        >
-                          <RemoveRedEyeRounded />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
+                        {
+                          value: item._bid,
+                          align: "center",
+                        },
+                        {
+                          value: dayjs(item.docDate)
+                            .locale("th")
+                            .format("DD MMMM BBBB"),
+                          align: "center",
+                        },
+                        {
+                          value: dayjs(item.dueDate)
+                            .locale("th")
+                            .format("DD MMMM BBBB"),
+                          align: "center",
+                        },
+                        {
+                          value: item.countBill,
+                          align: "center",
+                        },
+                        {
+                          value: (
+                            <IconButton
+                              onClick={() => handleShowInvoice(item)}
+                              sx={{ p: 1, color: "#4287f5" }}
+                            >
+                              <RemoveRedEyeRounded />
+                            </IconButton>
+                          ),
+                          sxCell: { textAlign: "left" },
+                          align: "center",
+                        },
+                      ]}
+                    />
                   );
                 })}
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+          checked={dense}
+          onChecked={(v) => setDense(v)}
+          count={invoiceQuery.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          setPage={setPage}
+          setRowsPerPage={setRowsPerPage}
+        />
       </Paper>
     </Container>
   );

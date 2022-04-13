@@ -21,7 +21,6 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Zoom,
   FormLabel,
   RadioGroup,
   Radio,
@@ -59,10 +58,8 @@ import Controls from "../components/controls";
 import { HttpClient } from "../utils/HttpClient";
 import { useOutletContext } from "react-router-dom";
 import dayjs from "dayjs";
-
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Zoom ref={ref} {...props} />;
-});
+import { Zoom } from "../components/Transition";
+import convertToDefEventPara from "../utils/ConvertToDefEventPara";
 
 const initialValues = {
   pickup_location: "",
@@ -81,17 +78,10 @@ const initialValues = {
   driver: "",
   per_time: "",
   area: "",
-  car_type: "",
+  car_type: "รถกะบะตู้ทึบ",
   personnel: "",
   customer: "",
 };
-
-const convertToDefEventPara = (name, value) => ({
-  target: {
-    name,
-    value,
-  },
-});
 
 const InputGrid = ({ sm, error = null, ...rest }) => {
   return (
@@ -191,6 +181,7 @@ const AddOrder = () => {
   const { customer } = useSelector(customerStore);
   const { employee } = useSelector(employeeStore);
   const { order } = useSelector(orderStore);
+  const [selectedEmp, setSelectedEmp] = useState("");
   //Loading
   const [loading, setLoading] = useState(false);
   //Customer
@@ -223,8 +214,11 @@ const AddOrder = () => {
       temp.price_order = fieldValues.price_order ? "" : "โปรดใส่ข้อมูลค่างาน";
     if ("wage" in fieldValues)
       temp.wage = fieldValues.wage ? "" : "โปรดใส่ข้อมูลค่าเที่ยวพนักงาน";
-    if ("personnel" in fieldValues)
-      temp.personnel = fieldValues.personnel ? "" : "โปรดเลือกพนักงาน";
+    if (selectedEmp) {
+      temp.personnel = "";
+    } else {
+      temp.personnel = "โปรดเลือกพนักงาน";
+    }
     if ("car_type" in fieldValues)
       temp.car_type = fieldValues.car_type ? "" : "โปรดใส่ข้อมูลประเภทรถ";
     if ("area" in fieldValues)
@@ -237,7 +231,7 @@ const AddOrder = () => {
     });
     if (fieldValues == values) return Object.values(temp).every((x) => x == "");
   };
-  const { values, errors, setErrors, handleInputChange } = useForm(
+  const { values, setValues, errors, setErrors, handleInputChange } = useForm(
     initialValues,
     false,
     validate
@@ -258,7 +252,7 @@ const AddOrder = () => {
     if (validate()) {
       try {
         setLoading(true);
-        let emp = JSON.parse(values.personnel);
+        let emp = JSON.parse(selectedEmp);
         values.driver = emp.driver;
         values.personnel = emp._id;
         values.customer = selectedCustomer._id;
@@ -304,7 +298,7 @@ const AddOrder = () => {
           dayjs(itemCurr.pickup_date).format("MMMM BBBB") ==
             dayjs(new Date()).format("MMMM BBBB")
       );
-  
+
       let result = item.orders.reduce(
         (sum, curr) => {
           sum.count += 1;
@@ -534,8 +528,8 @@ const AddOrder = () => {
                   labelId="search-select-label"
                   id="search-select"
                   name="personnel"
-                  value={values.personnel}
-                  onChange={handleInputChange}
+                  value={selectedEmp}
+                  onChange={(e) => setSelectedEmp(e.target.value)}
                   input={
                     <OutlinedInput
                       sx={{

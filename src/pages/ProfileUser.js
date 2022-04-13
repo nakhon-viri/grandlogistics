@@ -503,8 +503,6 @@ const Profile = () => {
     }
   };
 
-  const handleDel = () => {};
-
   useEffect(() => {
     if (profile) {
       let newProfile = cloneDeep(profile);
@@ -961,21 +959,11 @@ const Profile = () => {
                 sx={{
                   display: "flex",
                   flexDirection: "row",
-                  alignItems: "flex-end",
-                  justifyContent: "space-between",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
                   marginTop: "24px",
                 }}
               >
-                <Button
-                  color="error"
-                  fullWidth
-                  startIcon={<DeleteRounded />}
-                  variant="contained"
-                  onClick={handleDel}
-                  sx={styles.btnDel}
-                >
-                  ลบพนักงาน
-                </Button>
                 <LoadingButton
                   type="submit"
                   startIcon={<SaveRounded />}

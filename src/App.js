@@ -13,9 +13,9 @@ import Order from "./pages/Order";
 import AddOrder from "./pages/AddOrder";
 import ProfileEmployee from "./pages/ProfileEmployee";
 import EditOrder from "./pages/EditOrder";
+import Setting from "./pages/Setting";
 import Report from "./pages/Report";
 import EditCustomer from "./pages/EditCustomer";
-import ReportCustomer from "./pages/ReportCustomer";
 import ReportEmployeeAll from "./pages/ReportEmployeeAll";
 import ReportEmployee from "./pages/ReportEmployee";
 import Trash from "./pages/Trash";
@@ -32,6 +32,7 @@ import { customerReq, customerStore } from "./store/CustomerStore";
 import { employeeReq, employeeStore } from "./store/EmployeeStore";
 import { billReq, billStore } from "./store/BillStore";
 import { invoiceReq, invoiceStore } from "./store/InvoiceStore";
+import { departmentReq, settingStore } from "./store/SettingStore";
 import { useSelector, useDispatch } from "react-redux";
 
 // import { io } from "socket.io-client";
@@ -44,6 +45,7 @@ const RequireAuth = () => {
   const { loadingOrder } = useSelector(orderStore);
   const { loadingBill } = useSelector(billStore);
   const { loadingInvoice } = useSelector(invoiceStore);
+  const { loadingSetting } = useSelector(settingStore);
   const dispatch = useDispatch();
   let location = useLocation();
   const resToken = verifyToken();
@@ -57,6 +59,7 @@ const RequireAuth = () => {
       dispatch(employeeReq());
       dispatch(billReq());
       dispatch(invoiceReq());
+      dispatch(departmentReq());
     }
   }, []);
 
@@ -84,10 +87,11 @@ const RequireAuth = () => {
     loadingCustomer ||
     loadingOrder ||
     loadingBill ||
-    loadingInvoice
+    loadingInvoice ||
+    loadingSetting
   ) {
     return <Loading />;
-  } 
+  }
 
   return <Outlet />;
 };
@@ -127,6 +131,7 @@ const App = () => {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayOut />}>
           <Route path="/" element={<Employee />} />
+          <Route path="/setting" element={<Setting />} />
           <Route path="/profileemployee" element={<ProfileEmployee />} />
           <Route path="/profile" element={<ProfileUser />} />
           <Route path="/register" element={<Register />} />
@@ -139,7 +144,6 @@ const App = () => {
           <Route path="/reportallemp" element={<ReportEmployeeAll />} />
           <Route path="/report" element={<Report />} />
           <Route path="/reportemp" element={<ReportEmployee />} />
-          <Route path="/reportCustomer" element={<ReportCustomer />} />
           <Route path="/trash" element={<Trash />} />
           <Route path="/bills" element={<Bills />} />
           <Route path="/createbill" element={<CreateBill />} />

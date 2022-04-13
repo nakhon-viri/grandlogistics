@@ -288,7 +288,7 @@ const ProfileEmployee = () => {
   const [loadingChangePassword, setLoadingChangePassword] = useState(false);
   const [IDUser, setIDUser] = useState(null);
   //Tab Menu
-  const [tabMenu, setTabMenu] = useState(2);
+  const [tabMenu, setTabMenu] = useState(1);
   //Img
   const [editor, setEditor] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);

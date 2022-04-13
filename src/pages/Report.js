@@ -97,7 +97,14 @@ const Report = () => {
   const orderList = useMemo(() => {
     if (!order) return [];
     let newOrder = cloneDeep(order);
+    let newCustomer = cloneDeep(customer);
 
+    newOrder = newOrder.map((item) => {
+      let nC = newCustomer.find((v) => v._id == item.customer);
+      item.cus_name = nC.cus_name;
+      return item;
+    });
+    console.log(newOrder);
     if (company !== "ทั้งหมด") {
       newOrder = newOrder.filter((item) => item.customer === company);
     }
@@ -134,12 +141,8 @@ const Report = () => {
     if (search) {
       newOrder = newOrder.filter((s) => {
         if (
-          s.customer.cus_name
-            .trim()
-            .toString()
-            .toLowerCase()
-            .includes(search.trim().toLowerCase()) ||
-          s._oid.trim().toLowerCase().includes(search.trim().toLowerCase())
+          s._oid.trim().toLowerCase().includes(search.trim().toLowerCase()) ||
+          s.cus_name.trim().toLowerCase().includes(search.trim().toLowerCase())
         )
           return s;
       });
@@ -150,7 +153,16 @@ const Report = () => {
     }
 
     return newOrder;
-  }, [order, company, valueSubMonth, valueYear, valueMonth, valueDay, search]);
+  }, [
+    order,
+    customer,
+    company,
+    valueSubMonth,
+    valueYear,
+    valueMonth,
+    valueDay,
+    search,
+  ]);
 
   let yearQuery = useMemo(() => {
     let newYear = [
@@ -198,7 +210,7 @@ const Report = () => {
     return total;
   }, [orderList]);
 
-  useEffect(() => setTitle("การเงินบริษัท"), []);
+  useEffect(() => setTitle("รายงานการเงินบริษัท"), []);
 
   const tableHeaderProps = {
     isOpenFirstCell: true,
@@ -312,7 +324,7 @@ const Report = () => {
     <Container>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
         <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
-          การเงินบริษัท
+          รายงานการเงินบริษัท
         </Typography>
       </Box>
       <Paper elevation={3} sx={{ p: 0, overflow: "hidden" }}>
@@ -327,7 +339,7 @@ const Report = () => {
                 onChange={(e) => {
                   setValueDay("ทั้งหมด");
                   setValueMonth("ทั้งหมด");
-                  setValueYear("ทั้งหมด");
+                  setValueYear(dayjs(new Date()).locale("th").format("BBBB"));
                   setValueSubMonth("ทั้งเดือน");
                   setCompany(e.target.value);
                 }}
@@ -530,9 +542,7 @@ const Report = () => {
                         .format("DD MMMM BBBB")}
                     </TableCell>
                     <TableCell align="center">{Cell._oid}</TableCell>
-                    <TableCell align="center">
-                      {Cell.customer.cus_name}
-                    </TableCell>
+                    <TableCell align="center">{Cell.cus_name}</TableCell>
                     <TableCell align="right">
                       {Cell.price_order.toLocaleString("en")}
                     </TableCell>

@@ -82,11 +82,11 @@ const ImageCrop = ({
             ใช้
           </Button>
           <Button
-            disableFocusRipple
-            disableRipple
             color="inherit"
             type="button"
             onClick={onClose}
+            disableFocusRipple
+            disableRipple
             sx={{
               mr: 2,
               "&.MuiButtonBase-root:hover": {

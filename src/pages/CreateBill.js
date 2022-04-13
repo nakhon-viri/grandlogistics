@@ -23,7 +23,6 @@ import {
   List,
   Avatar,
   ListItemText,
-  Zoom,
   ListItemAvatar,
   AppBar,
   Toolbar,
@@ -54,7 +53,7 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { useOutletContext } from "react-router-dom";
 
-import { orderStore } from "../store/OrderStore";
+import { orderStore, upDateSomeOrder } from "../store/OrderStore";
 import { customerStore } from "../store/CustomerStore";
 import { addBill } from "../store/BillStore";
 import TableHeader from "../components/TableHeader";
@@ -64,107 +63,13 @@ import { HttpClient } from "../utils/HttpClient";
 import StatusColor from "../components/StatusColor";
 import Loading from "../components/Loading";
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Zoom ref={ref} {...props} />;
-});
-
-function descendingComparator(a, b, sortByName) {
-  if (b[sortByName] < a[sortByName]) {
-    return -1;
-  }
-  if (b[sortByName] > a[sortByName]) {
-    return 1;
-  }
-  return 0;
-}
-
-function getComparator(sortType, sortByName) {
-  return sortType === "desc"
-    ? (a, b) => descendingComparator(a, b, sortByName)
-    : (a, b) => -descendingComparator(a, b, sortByName);
-}
-
-const SelectedCustomer = ({ onClose, selectedValue, open, listCustomer }) => {
-  const navigate = useNavigate();
-  const handleClose = () => {
-    onClose(selectedValue);
-  };
-
-  const handleListItemClick = (value) => {
-    onClose(value);
-  };
-
-  return (
-    <Dialog
-      PaperComponent={Box}
-      onClose={handleClose}
-      TransitionComponent={Transition}
-      open={open}
-    >
-      <Paper sx={{ px: 0, overflow: "hidden" }}>
-        <Box sx={{ backgroundColor: "rgba(145, 158, 171, 0.16)", p: 2 }}>
-          <Typography
-            variant="h5"
-            sx={{ fontFamily: "Itim", textAlign: "center" }}
-          >
-            เลือกบริษัทลูกค้า
-          </Typography>
-        </Box>
-        <Box sx={{ maxHeight: "300px", px: 1, overflow: "auto" }}>
-          <List sx={{ pt: 0 }}>
-            {listCustomer?.map((item, index) => (
-              <ListItem
-                button
-                onClick={() => handleListItemClick(item)}
-                key={index}
-                sx={{ borderRadius: 2, mt: index === 0 && 1 }}
-              >
-                <ListItemAvatar>
-                  <Avatar
-                    sx={{
-                      bgcolor: "#bbdefb",
-                      color: "#1e88e5",
-                    }}
-                    // alt={"value.full_name.first_name"}
-                    src={item.cus_img}
-                  >
-                    {item.cus_name.charAt(0).toUpperCase()}
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText primary={item.cus_name} />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-        <Box
-          sx={{
-            p: 1,
-            backgroundColor: "rgba(145, 158, 171, 0.16)",
-          }}
-        >
-          <ListItem
-            autoFocus
-            sx={{
-              borderRadius: 2,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            button
-            onClick={() => navigate("/addcustomer")}
-          >
-            <ListItemAvatar>
-              <Avatar>
-                <Add sx={{ color: "#fff" }} />
-              </Avatar>
-            </ListItemAvatar>
-            <Typography>เพิ่มบริษัทคู่ค้า</Typography>
-          </ListItem>
-        </Box>
-      </Paper>
-    </Dialog>
-  );
-};
+import DateSort from "../components/DateSort";
+import getComparator from "../utils/TableSort";
+import TableToolbar from "../components/TableToolbar";
+import SelectedCustomer from "../components/SelectedCustomer";
+import TabStatus from "../components/TabStatus";
+import TablePaginations from "../components/TablePagination";
+import TableRows from "../components/TableRows";
 
 const DialogPDF = ({
   open,
@@ -233,42 +138,6 @@ const DialogPDF = ({
   );
 };
 
-const EnhancedTableToolbar = ({ numSelected, handleSavePDF }) => {
-  return (
-    <Toolbar
-      sx={{
-        pl: { sm: 2 },
-        pr: { xs: 1, sm: 1 },
-        bgcolor: (theme) =>
-          alpha(
-            theme.palette.primary.main,
-            theme.palette.action.activatedOpacity
-          ),
-      }}
-    >
-      <Typography
-        sx={{ flex: 1 }}
-        color="inherit"
-        variant="subtitle1"
-        component="div"
-      >
-        {numSelected} selected
-      </Typography>
-
-      <Tooltip title="บันทึกใบวางบิล">
-        <Button
-          color="primary"
-          sx={{ borderRadius: 2 }}
-          onClick={handleSavePDF}
-          startIcon={<NoteAddRounded />}
-        >
-          บันทึกใบวางบิล
-        </Button>
-      </Tooltip>
-    </Toolbar>
-  );
-};
-
 const CreateBill = () => {
   const { order } = useSelector(orderStore);
   const [title, setTitle] = useOutletContext();
@@ -284,7 +153,7 @@ const CreateBill = () => {
   //Filter by Date
   const [valueDay, setValueDay] = useState("ทั้งหมด");
   const [valueMonth, setValueMonth] = useState("ทั้งหมด");
-  const [valueYear, setValueYear] = useState("ทั้งหมด");
+  const [valueYear, setValueYear] = useState(dayjs(new Date()).format("BBBB"));
   //Search
   const [search, setSearch] = useState("");
   //Dialog
@@ -313,21 +182,18 @@ const CreateBill = () => {
   };
   const handleClose = (value) => {
     setOpenDialog(false);
+    if (value != selectedCustomer) {
+      setValueDay("ทั้งหมด");
+      setValueMonth("ทั้งหมด");
+      setValueYear(dayjs(new Date()).format("BBBB"));
+    }
     setSelectedCustomer(value);
   };
-
+  //Table Sort
   const handleRequestSort = (event, property) => {
     const isAsc = sortByName === property && sortType === "desc";
     setSortType(isAsc ? "asc" : "desc");
     setSortByName(property);
-  };
-  //Pagination
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
   };
 
   //CheckBox
@@ -377,41 +243,65 @@ const CreateBill = () => {
     return Object.values(error).every((x) => x == "");
   };
 
-  const handleSavePDF = async () => {
+  const handleSavePDF = () => {
     if (vetify()) {
-      try {
-        setLoadingSubmit(true);
-        let listID = selected.map((item) => {
-          return item._id;
-        });
-        let res = await HttpClient.post("/bill", {
-          id_order: listID,
-          id_customer: selectedCustomer._id,
-          docDate: dateDoc,
-          dueDate,
-          dateWork,
-          _bid: docID,
-        });
-        dispatch(addBill(res.data));
-        setLoadingSubmit(false);
+      setLoadingSubmit(true);
+
+      let listIdOrder = selected.map((item) => item._id);
+
+      let check = selected.filter((x) => !!x.bill);
+      let text = check
+        .map((item) => item._oid)
+        .toString()
+        .replace(/,/g, "\n");
+
+      if (check.length > 0) {
+        console.log("asdf");
         Swal.fire({
-          title: "บันทึกเสร็จสิ้น",
-          text: "คุณต้องการที่จะดูใบวางบิลหรือไม่",
-          icon: "success",
+          title: `มีงานที่ถูกเพิ่มลงในบิลแล้ว\nคุณต้องการที่จะเพิ่มงานนี้ใช่หรือไม่ งานนี้ในบิลอื่น ๆ จะถูกลบ รหัสงานได้แก่ ${text}`,
+          icon: "warning",
           showCancelButton: true,
           confirmButtonColor: "#3085d6",
           cancelButtonColor: "#aaa",
           confirmButtonText: "เปิด",
           cancelButtonText: "ปิด",
-        }).then((result) => {
+        }).then(async (result) => {
           if (result.isConfirmed) {
-            setPDFOpen(true);
-          } else if (result.dismiss === Swal.DismissReason.cancel) {
-            navigate("/bills");
+            try {
+              let { data } = await HttpClient.post("/bill", {
+                order: listIdOrder,
+                bill: {
+                  id_customer: selectedCustomer._id,
+                  docDate: dateDoc,
+                  dueDate,
+                  dateWork,
+                  _bid: docID,
+                },
+              });
+              dispatch(addBill(data.bill));
+              dispatch(upDateSomeOrder(data.order));
+              setLoadingSubmit(false);
+              Swal.fire({
+                title: "บันทึกเสร็จสิ้น",
+                text: "คุณต้องการที่จะดูใบวางบิลหรือไม่",
+                icon: "success",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#aaa",
+                confirmButtonText: "ตกลง",
+                cancelButtonText: "ยกเลิก",
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  setPDFOpen(true);
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                  navigate("/bills");
+                }
+              });
+            } catch (error) {
+              console.log(error);
+            }
           }
         });
-      } catch (error) {
-        console.log(error.response.data.error.message);
       }
     }
   };
@@ -444,19 +334,28 @@ const CreateBill = () => {
 
   useEffect(() => setTitle("สร้างใบวางบิล"), []);
 
-  let orderQuery = useMemo(() => {
-    if (!order) return [];
+  let orderCustomer = useMemo(() => {
     let newOrder = cloneDeep(order);
+
+    let result = newOrder?.filter(
+      (item) => item.customer === selectedCustomer._id
+    );
+
+    return result;
+  }, [order, selectedCustomer]);
+
+  let orderQuery = useMemo(() => {
+    if (!orderCustomer) return [];
+    let newOrder = cloneDeep(orderCustomer);
 
     if (valueTabs !== "ทั้งหมด") {
       newOrder = newOrder.filter((item) => item.status === valueTabs);
     }
 
-    if (valueDay !== "ทั้งหมด") {
-      newOrder = newOrder.filter(
-        (item) => dayjs(item.pickup_date).locale("th").format("DD") === valueDay
-      );
-    }
+    newOrder = newOrder.filter(
+      (item) =>
+        dayjs(item.pickup_date).locale("th").format("BBBB") === valueYear
+    );
 
     if (valueMonth !== "ทั้งหมด") {
       newOrder = newOrder.filter(
@@ -465,10 +364,9 @@ const CreateBill = () => {
       );
     }
 
-    if (valueYear !== "ทั้งหมด") {
+    if (valueDay !== "ทั้งหมด") {
       newOrder = newOrder.filter(
-        (item) =>
-          dayjs(item.pickup_date).locale("th").format("BBBB") === valueYear
+        (item) => dayjs(item.pickup_date).locale("th").format("DD") === valueDay
       );
     }
 
@@ -495,7 +393,7 @@ const CreateBill = () => {
     }
 
     return newOrder;
-  }, [order, valueDay, valueMonth, valueYear, search, valueTabs]);
+  }, [orderCustomer, valueDay, valueMonth, valueYear, search, valueTabs]);
 
   let listBil = useMemo(() => {
     let sumReport = {};
@@ -525,82 +423,6 @@ const CreateBill = () => {
     }
     return DR;
   }, [selected]);
-
-  const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
-    return (
-      <Grid item {...rest}>
-        <FormControl sx={{ width: "100%" }}>
-          <InputLabel id="demo-multiple-name-label">{text}</InputLabel>
-          <Select
-            labelId="demo-multiple-name-label"
-            id="demo-multiple-name"
-            value={value}
-            onChange={changeValue}
-            input={
-              <OutlinedInput
-                sx={{
-                  width: "100%",
-                  borderRadius: 2,
-                  "& fieldset": {
-                    borderRadius: 2,
-                  },
-                }}
-                label={text}
-              />
-            }
-            MenuProps={{
-              PaperProps: {
-                style: {
-                  maxHeight: 200,
-                },
-              },
-            }}
-          >
-            <MenuItem
-              value="ทั้งหมด"
-              sx={{
-                width: "100%",
-                borderRadius: "8px",
-                mb: 1,
-              }}
-            >
-              {text}ทั้งหมด
-            </MenuItem>
-            {[
-              ...new Map(
-                order
-                  ?.slice()
-                  .filter((item) => item.deleted === false)
-                  .map((item) => [
-                    dayjs(item.pickup_date).locale("th").format(dateFormat),
-                    item,
-                  ])
-              ).values(),
-            ]
-              .sort(function (a, b) {
-                return (
-                  dayjs(b.pickup_date).format(dateFormat) -
-                  dayjs(a.pickup_date).format(dateFormat)
-                );
-              })
-              .map((row, index) => (
-                <MenuItem
-                  key={index}
-                  value={dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                  sx={{
-                    width: "100%",
-                    borderRadius: "8px",
-                    mb: 1,
-                  }}
-                >
-                  {dayjs(row.pickup_date).locale("th").format(dateFormat)}
-                </MenuItem>
-              ))}
-          </Select>
-        </FormControl>
-      </Grid>
-    );
-  };
 
   if (loading) return <Loading />;
 
@@ -716,88 +538,34 @@ const CreateBill = () => {
             />
           </Grid>
         </Grid>
-        <Tabs
-          value={valueTabs}
-          onChange={(e, v) => setValueTabs(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            px: 2,
-            maxHeight: 48,
-            backgroundColor: "rgba(145, 158, 171, 0.16)",
-          }}
-        >
-          <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
-          <Tab value="มอบหมายงานเเล้ว" label="มอบหมายงานเเล้ว" disableRipple />
-          <Tab value="ปฏิเสธงาน" label="ปฏิเสธงาน" disableRipple />
-          <Tab value="ยอมรับ" label="ยอมรับ" disableRipple />
-          <Tab value="ส่งงานเเล้ว" label="ส่งงานเเล้ว" disableRipple />
-        </Tabs>
-        <Grid container spacing={2} sx={{ p: 3 }}>
-          <FormSelected
-            text="วัน"
-            dateFormat="DD"
-            xs={6}
-            sm={4}
-            md={2}
-            value={valueDay}
-            changeValue={(e) => setValueDay(e.target.value)}
-          />
-          <FormSelected
-            text="เดือน"
-            dateFormat="MMMM"
-            xs={6}
-            sm={4}
-            md={2}
-            value={valueMonth}
-            changeValue={(e) => setValueMonth(e.target.value)}
-          />
-          <FormSelected
-            text="ปี"
-            dateFormat="BBBB"
-            xs={12}
-            sm={4}
-            md={2}
-            value={valueYear}
-            changeValue={(e) => setValueYear(e.target.value)}
-          />
-          <Grid item xs={12} sm={12} md={6}>
-            <FormControl
-              sx={{
-                width: "100%",
-                "& .MuiOutlinedInput-root": { borderRadius: 2 },
-              }}
-            >
-              <TextField
-                placeholder="Search"
-                type="search"
-                variant="outlined"
-                fullWidth
-                autoComplete="off"
-                size="medium"
-                onChange={(e) => setSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </FormControl>
-          </Grid>
-        </Grid>
+        <TabStatus value={valueTabs} onChange={(v) => setValueTabs(v)} />
+        <DateSort
+          order={orderCustomer}
+          valueDay={valueDay}
+          changeValueDay={(v) => setValueDay(v)}
+          valueMonth={valueMonth}
+          changeValueMonth={(v) => setValueMonth(v)}
+          valueYear={valueYear}
+          changeValueYear={(v) => setValueYear(v)}
+        />
         <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
           {selected.length ? (
-            <EnhancedTableToolbar
-              numSelected={selected.length}
-              handleSavePDF={handleSavePDF}
-            />
+            <TableToolbar numSelected={selected.length}>
+              <Tooltip title="บันทึกใบวางบิล">
+                <Button
+                  sx={{ borderRadius: 2 }}
+                  onClick={handleSavePDF}
+                  startIcon={<NoteAddRounded />}
+                >
+                  บันทึกใบวางบิล
+                </Button>
+              </Tooltip>
+            </TableToolbar>
           ) : null}
           <TableContainer>
             <Table size={dense ? "small" : "normall"}>
               <TableHeader {...tableHeaderProps}>
-                <TableCell padding="checkbox" sx={{ p: 0, ml: dense ? 0 : 3 }}>
+                <TableCell sx={{ p: 0, ml: 3 }}>
                   <Checkbox
                     color="primary"
                     indeterminate={
@@ -811,7 +579,7 @@ const CreateBill = () => {
                     inputProps={{
                       "aria-label": "select all desserts",
                     }}
-                    sx={{ ml: dense ? 0 : 3 }}
+                    sx={{ ml: 3 }}
                   />
                 </TableCell>
               </TableHeader>
@@ -819,121 +587,111 @@ const CreateBill = () => {
                 {orderQuery
                   ?.sort(getComparator(sortType, sortByName))
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((Cell, index) => {
-                    const isItemSelected = isSelected(Cell);
+                  .map((item, index) => {
+                    const isItemSelected = isSelected(item);
                     const labelId = `enhanced-table-checkbox-${index}`;
                     return (
-                      <TableRow key={Cell._id}>
-                        <TableCell
-                          role="checkbox"
-                          tabIndex={-1}
-                          aria-checked={isItemSelected}
-                          selected={isItemSelected}
-                          padding="checkbox"
-                          sx={{ p: 0, cursor: "pointer", px: 3 }}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleClick(event, Cell);
-                          }}
-                        >
-                          <Checkbox
-                            color="primary"
-                            checked={isItemSelected}
-                            inputProps={{
-                              "aria-labelledby": labelId,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {Cell.row_number.toLocaleString("en")}
-                        </TableCell>
-                        <TableCell>{Cell._oid}</TableCell>
-                        <TableCell>
-                          {dayjs(Cell.pickup_date)
-                            .locale("th")
-                            .format("DD MMMM BBBB")}
-                        </TableCell>
-                        <TableCell>{Cell.pickup_location}</TableCell>
-                        <TableCell>{Cell.delivery_location}</TableCell>
-                        <TableCell>
-                          {Cell.price_order.toLocaleString("en")}
-                        </TableCell>
-                        <TableCell>{Cell.car_type}</TableCell>
-                        <TableCell>{Cell.per_time}</TableCell>
-                        <TableCell>
-                          <Typography
-                            variant="p"
-                            sx={{
-                              bgcolor: StatusColor.colorBgStatus(
-                                Cell.status,
-                                theme.palette.mode
-                              ),
-                              color: StatusColor.colorTextStatus(
-                                Cell.status,
-                                theme.palette.mode
-                              ),
-                              px: 0.7,
-                              py: 0.5,
-                              fontSize: "0.8rem",
-                              borderRadius: 2,
-                              fontFamily: "Prompt",
-                              fontWeight: 500,
-                              height: "22px",
-                            }}
-                          >
-                            {Cell.status}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
+                      <TableRows
+                        key={item._id}
+                        Cell={[
+                          {
+                            value: (
+                              <Checkbox
+                                tabIndex={-1}
+                                aria-checked={isItemSelected}
+                                selected={isItemSelected}
+                                color="primary"
+                                checked={isItemSelected}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleClick(event, item);
+                                }}
+                                sx={{ ml: 3 }}
+                                inputProps={{
+                                  "aria-labelledby": labelId,
+                                }}
+                              />
+                            ),
+                            sxCell: { p: 0, ml: 3 },
+                          },
+                          {
+                            value: item.row_number,
+                            align: "right",
+                          },
+                          {
+                            value: item._oid,
+                            align: "center",
+                          },
+                          {
+                            value: dayjs(item.pickup_date)
+                              .locale("th")
+                              .format("DD MMMM BBBB"),
+                            align: "center",
+                          },
+                          {
+                            value: item.pickup_location,
+                            align: "left",
+                          },
+                          {
+                            value: item.delivery_location,
+                            align: "left",
+                          },
+                          {
+                            value: item.price_order,
+                            align: "right",
+                          },
+                          {
+                            value: item.car_type,
+                            align: "left",
+                          },
+                          {
+                            value: item.per_time,
+                            align: "left",
+                          },
+                          {
+                            value: (
+                              <Typography
+                                variant="p"
+                                sx={{
+                                  bgcolor: StatusColor.colorBgStatus(
+                                    item.status,
+                                    theme.palette.mode
+                                  ),
+                                  color: StatusColor.colorTextStatus(
+                                    item.status,
+                                    theme.palette.mode
+                                  ),
+                                  px: 0.7,
+                                  py: 0.5,
+                                  fontSize: "0.8rem",
+                                  borderRadius: 2,
+                                  fontFamily: "Prompt",
+                                  fontWeight: 500,
+                                  height: "22px",
+                                }}
+                              >
+                                {item.status}
+                              </Typography>
+                            ),
+                            align: "center",
+                          },
+                        ]}
+                      />
                     );
                   })}
               </TableBody>
             </Table>
           </TableContainer>
         </Box>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "row",
-            overflowX: "hidden",
-          }}
-        >
-          <FormControlLabel
-            control={
-              <>
-                <Controls.AntSwitch
-                  checked={dense}
-                  onChange={(e) => setDense(e.target.checked)}
-                  inputProps={{ "aria-label": "ant design" }}
-                />
-                <Typography sx={{ ml: 1 }}>แคบ</Typography>
-              </>
-            }
-            label={""}
-            sx={{
-              flex: 1,
-              margin: 0,
-              pl: "31px",
-              mb: 1,
-            }}
-          />
-          <TablePagination
-            rowsPerPageOptions={[10, 20, 25, 30, 35, 40, 45]}
-            component="div"
-            count={orderQuery?.length || 0}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage={"จำนวนแถว"}
-            sx={{
-              "& .MuiToolbar-root": {
-                p: 0,
-                pr: 2,
-              },
-            }}
-          />
-        </Box>
+        <TablePaginations
+          checked={dense}
+          onChecked={(v) => setDense(v)}
+          count={orderQuery.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          setPage={setPage}
+          setRowsPerPage={setRowsPerPage}
+        />
       </Paper>
     </Container>
   );

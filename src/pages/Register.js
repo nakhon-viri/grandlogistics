@@ -33,11 +33,12 @@ import {
 import { useState, useRef, useMemo, useEffect } from "react";
 import "dayjs/locale/th";
 import { addEmployee } from "../store/EmployeeStore";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useOutletContext } from "react-router-dom";
 
+import { settingStore } from "../store/SettingStore";
 import { useForm, Form } from "../components/useForm";
 import useHover from "../hooks/UseHover";
 import ImageCrop from "../utils/ImageCrop";
@@ -312,6 +313,7 @@ const convertToDefEventPara = (name, value) => ({
 const Register = () => {
   let navigate = useNavigate();
   let dispatch = useDispatch();
+  let { department } = useSelector(settingStore);
   const [title, setTitle] = useOutletContext();
   const [loading, setLoading] = useState(false);
   //Img
@@ -756,14 +758,61 @@ const Register = () => {
                     </FormHelperText>
                   </FormControl>
                 </Grid>
-                <InputGrid
-                  label="แพนก"
-                  type="text"
-                  name="department"
-                  onChange={handleInputChange}
-                  value={values.department}
-                  error={errors.department}
-                />
+                <Grid item xs={12} sm={6}>
+                  <FormControl
+                    fullWidth
+                    {...(errors.department && { error: true })}
+                  >
+                    <InputLabel id="select-gender">แพนก</InputLabel>
+                    <Select
+                      labelId="select-gender"
+                      name="department"
+                      value={values.department}
+                      label="เพศ"
+                      sx={{
+                        width: "100%",
+                        borderRadius: 2,
+                        "& fieldset": {
+                          borderRadius: 2,
+                        },
+                      }}
+                      onChange={handleInputChange}
+                    >
+                      {department?.map((item, index) => (
+                        <MenuItem
+                          key={index}
+                          value={item}
+                          sx={{
+                            width: "100%",
+                            borderRadius: "8px",
+                            mb: 1,
+                          }}
+                        >
+                          {item.department}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "space-between" }}
+                    >
+                      <FormHelperText>
+                        {errors.department && errors.department}
+                      </FormHelperText>
+                      <Typography
+                        color="primary"
+                        onClick={() => navigate("/setting")}
+                        sx={{
+                          fontSize: "12px",
+                          m: "3px 14px 0px",
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                        }}
+                      >
+                        เพิ่มเติม
+                      </Typography>
+                    </Box>
+                  </FormControl>
+                </Grid>
                 <InputGrid
                   label="บัตรประชาชน"
                   type="text"

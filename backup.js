@@ -1,398 +1,1010 @@
-import React, { useState, useEffect } from "react";
-import { styled } from "@mui/material/styles";
-import MuiDrawer from "@mui/material/Drawer";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import ListSubheader from "@mui/material/ListSubheader";
-import List from "@mui/material/List";
-import MailIcon from "@mui/icons-material/Mail";
+import * as React from "react";
+import PropTypes from "prop-types";
+import { alpha } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
-import Avatar from "@mui/material/Avatar";
+import Container from "@mui/material/Container";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell, { tableCellClasses } from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TablePagination from "@mui/material/TablePagination";
+import TableRow from "@mui/material/TableRow";
+import TableSortLabel from "@mui/material/TableSortLabel";
+import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import Hidden from "@mui/material/Hidden";
-import CloseIcon from "@mui/icons-material/Close";
-import FolderSharedTwoToneIcon from "@mui/icons-material/FolderSharedTwoTone";
-import GroupAddTwoToneIcon from "@mui/icons-material/GroupAddTwoTone";
-import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import StoreRoundedIcon from "@mui/icons-material/StoreRounded";
-import WorkRoundedIcon from "@mui/icons-material/WorkRounded";
-import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
-import AddBoxRoundedIcon from "@mui/icons-material/AddBoxRounded";
-import AddBusinessRoundedIcon from "@mui/icons-material/AddBusinessRounded";
-import DescriptionIcon from "@mui/icons-material/Description";
-import FileCopyIcon from "@mui/icons-material/FileCopy";
-import { useLocation, useNavigate } from "react-router-dom";
-import cloneDeep from "lodash.clonedeep";
+import Paper from "@mui/material/Paper";
+import Checkbox from "@mui/material/Checkbox";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import DeleteIcon from "@mui/icons-material/Delete";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import { visuallyHidden } from "@mui/utils";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Divider from "@mui/material/Divider";
+import TextField from "@mui/material/TextField";
+import MenuItem from "@mui/material/MenuItem";
+import { styled, useTheme } from "@mui/material/styles";
+import { Block } from "@mui/icons-material";
+import Select from "@mui/material/Select";
+import OutlinedInput from "@mui/material/OutlinedInput";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import Button from "@mui/material/Button";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import Collapse from "@mui/material/Collapse";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import Add from "@mui/icons-material/Add";
+import dayjs from "dayjs";
+import "dayjs/locale/th";
+import { orderStore, deleteOrder } from "../store/OrderStore";
+import { useSelector, useDispatch } from "react-redux";
+import SearchIcon from "@mui/icons-material/Search";
+import InputAdornment from "@mui/material/InputAdornment";
+import Grid from "@mui/material/Grid";
+import StatusColor from "../components/StatusColor";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { useOutletContext } from "react-router-dom";
+import cloneDeep from "lodash.clonedeep";
 
-import { themeStore } from "../../../store/ThemeStore";
-import { authStore } from "../../../store/AuthStore";
-import { useSelector } from "react-redux";
+import { HttpClient } from "../utils/HttpClient";
+import Loading from "../components/Loading";
 
-const drawerWidth = 280;
+function descendingComparator(a, b, orderBy) {
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
+  return 0;
+}
 
-const openedMixin = (theme) => ({
-  width: drawerWidth,
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
-    // duration: "100ms",
-  }),
-  overflowX: "hidden",
-  // backgroundColor: theme.palette.mode === "dark" && "rgb(22, 28, 36)",
-});
-
-const closedMixin = (theme) => ({
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-    // duration: "100ms",
-  }),
-  overflowX: "hidden",
-  width: 0,
-  [theme.breakpoints.up("sm")]: {
-    width: `calc(${theme.spacing(10)} + 7px)`,
+function getComparator(orderSort, orderBy) {
+  return orderSort === "desc"
+    ? (a, b) => descendingComparator(a, b, orderBy)
+    : (a, b) => -descendingComparator(a, b, orderBy);
+}
+const headCells = [
+  {
+    id: "row_number",
+    numeric: true,
+    disablePadding: true,
+    label: "ลำดับ",
   },
-  // backgroundColor: theme.palette.mode === "dark" && "rgb(22, 28, 36)",
-});
+  {
+    id: "_oid",
+    numeric: false,
+    disablePadding: true,
+    label: "รหัสงาน",
+  },
+  {
+    id: "pickup_date",
+    numeric: false,
+    disablePadding: true,
+    label: "วันที่",
+  },
+  {
+    id: "pickup_location",
+    numeric: false,
+    disablePadding: false,
+    label: "สถานที่รับ",
+  },
+  {
+    id: "delivery_location",
+    numeric: false,
+    disablePadding: false,
+    label: "สถานที่ส่ง",
+  },
+  {
+    id: "driver",
+    numeric: false,
+    disablePadding: false,
+    label: "พนักงาน",
+  },
+  {
+    id: "per_time",
+    numeric: false,
+    disablePadding: false,
+    label: "รอบ",
+  },
+  {
+    id: "price_order",
+    numeric: true,
+    disablePadding: false,
+    label: "ค่าเที่ยว(บาท)",
+  },
+  {
+    id: "status",
+    numeric: false,
+    disablePadding: false,
+    label: "สถานะ",
+  },
+];
 
-const DrawerFull = styled(MuiDrawer, {
-  shouldForwardProp: (prop) => prop !== "open",
-})(({ theme, open }) => ({
-  width: drawerWidth,
-  flexShrink: 0,
-  whiteSpace: "nowrap",
-  backgroundImage: "none",
-  boxSizing: "border-box",
-  ...(open && {
-    ...openedMixin(theme),
-    "& .MuiDrawer-paper": openedMixin(theme),
-    "& .MuiDrawer-paper .drawerHover": { opacity: 1 },
-    "& .MuiDrawer-paper .containerCardHover": {
-      backgroundColor: "rgba(145, 158, 171, 0.12)",
-      padding: "16px 20px",
+function EnhancedTableHead(props) {
+  const { order, orderBy, onRequestSort } = props;
+  const matches = useMediaQuery("(max-width:900px)");
+  const createSortHandler = (property) => (event) => {
+    onRequestSort(event, property);
+  };
+
+  return (
+    <TableHead>
+      <TableRow sx={{ backgroundColor: "rgba(145, 158, 171, 0.16)" }}>
+        <TableCell sx={{ p: 0, pl: 3, maxWidth: "40px" }} />
+        {headCells.map((headCell, index) => (
+          <TableCell
+            key={headCell.id}
+            align={"center"}
+            sx={{
+              py: 2,
+              px: 2,
+              color: "text.secondary",
+            }}
+            sortDirection={orderBy === headCell.id ? order : false}
+          >
+            <TableSortLabel
+              active={orderBy === headCell.id}
+              direction={orderBy === headCell.id ? order : "asc"}
+              onClick={createSortHandler(headCell.id)}
+              sx={{
+                width: matches && index !== 0 ? "90px" : "auto",
+                textAlign: "center",
+              }}
+            >
+              {headCell.label}
+              {orderBy === headCell.id ? (
+                <Box component="span" sx={visuallyHidden}>
+                  {order === "desc" ? "sorted descending" : "sorted ascending"}
+                </Box>
+              ) : null}
+            </TableSortLabel>
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  );
+}
+
+EnhancedTableHead.propTypes = {
+  numSelected: PropTypes.number.isRequired,
+  onRequestSort: PropTypes.func.isRequired,
+  onSelectAllClick: PropTypes.func.isRequired,
+  order: PropTypes.oneOf(["asc", "desc"]).isRequired,
+  orderBy: PropTypes.string.isRequired,
+  rowCount: PropTypes.number.isRequired,
+};
+
+const AntSwitch = styled(Switch)(({ theme }) => ({
+  width: 28,
+  height: 16,
+  padding: 0,
+  display: "flex",
+  "&:active": {
+    "& .MuiSwitch-thumb": {
+      width: 15,
     },
-    "& .MuiDrawer-paper .titleName ": { opacity: 1 },
-    "& .MuiDrawer-paper .listItemText ": { opacity: 1 },
-    "& .MuiDrawer-paper .listsubheader ": { opacity: 1 },
-  }),
-  ...(!open && {
-    ...closedMixin(theme),
-    "& .MuiDrawer-paper": closedMixin(theme),
-    "&:hover  .MuiDrawer-paper": {
-      width: drawerWidth,
-      transition: theme.transitions.create("width", {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      overflowX: "hidden",
-      backdropFilter: " blur(2px)",
-      backgroundColor:
-        theme.palette.mode === "dark"
-          ? "rgb(22, 28, 36,0.85)"
-          : "rgb(255, 255, 255,0.85)",
-      boxShadow: "rgb(0 0 0 / 15%) 0px 24px 48px 0px",
+    "& .MuiSwitch-switchBase.Mui-checked": {
+      transform: "translateX(9px)",
     },
-    "& .MuiDrawer-paper .drawerHover": { opacity: 0 },
-    "&:hover  .MuiDrawer-paper .drawerHover ": { opacity: 1 },
-    "& .MuiDrawer-paper .listItemText": { opacity: 0 },
-    "&:hover  .MuiDrawer-paper .listItemText ": { opacity: 1 },
-    "& .MuiDrawer-paper .listsubheader": { opacity: 0 },
-    "&:hover  .MuiDrawer-paper .listsubheader ": { opacity: 1 },
-    "& .MuiDrawer-paper .titleName": { opacity: 0 },
-    "&:hover  .MuiDrawer-paper .titleName ": { opacity: 1 },
-    "& .MuiDrawer-paper .containerCardHover": {
-      backgroundColor: "none",
-      padding: "16px 0px",
+  },
+  "& .MuiSwitch-switchBase": {
+    padding: 2,
+    "&.Mui-checked": {
+      transform: "translateX(12px)",
+      color: "#fff",
+      "& + .MuiSwitch-track": {
+        opacity: 1,
+        backgroundColor: theme.palette.mode === "dark" ? "#177ddc" : "#1890ff",
+      },
     },
-    "&:hover  .MuiDrawer-paper .containerCardHover ": {
-      backgroundColor: "rgba(145, 158, 171, 0.12)",
-      padding: "16px 20px",
-    },
-  }),
+  },
+  "& .MuiSwitch-thumb": {
+    boxShadow: "0 2px 4px 0 rgb(0 35 11 / 20%)",
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    transition: theme.transitions.create(["width"], {
+      duration: 200,
+    }),
+  },
+  "& .MuiSwitch-track": {
+    borderRadius: 16 / 2,
+    opacity: 1,
+    backgroundColor:
+      theme.palette.mode === "dark"
+        ? "rgba(255,255,255,.35)"
+        : "rgba(0,0,0,.25)",
+    boxSizing: "border-box",
+  },
 }));
 
-const Menu = ({ handleDrawer2, open }) => {
-  const matches = useMediaQuery("(max-width:1200px)");
-  let { profile } = useSelector(authStore);
-  const [user, setUser] = useState(null);
-  useEffect(() => {
-    if (profile) {
-      const user = cloneDeep(profile);
-      setUser(user);
-    }
-  }, [profile]);
+const ITEM_HEIGHT = 48;
+const ITEM_PADDING_TOP = 8;
+const MenuProps = {
+  PaperProps: {
+    style: {
+      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+    },
+  },
+};
+const Row = ({ row, isItemSelected, labelId, handleClick, setLoadingData }) => {
+  const theme = useTheme();
+  let navigate = useNavigate();
+  const [open, setOpen] = React.useState(false);
 
-  const Brand = ({ text, ...rest }) => (
-    <Typography {...rest} variant="h5" sx={styles.nameBrand}>
-      {text}
-    </Typography>
-  );
-
-  const ListGroup = ({ title, children }) => {
-    let mode = useSelector(themeStore);
-    return (
-      <List
-        subheader={
-          <ListSubheader
-            disableSticky
-            component="li"
-            className="listsubheader"
-            sx={styles.listsubheader(mode)}
-            id="nested-list-subheader"
-          >
-            {title}
-          </ListSubheader>
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "คุณต้องการที่จะลบเที่ยววิ่งนี้ใช่หรือไม่",
+      icon: "warning",
+      showCancelButton: true,
+      showConfirmButton: false,
+      showDenyButton: true,
+      denyButtonText: "ตกลง",
+      cancelButtonText: "ปิด",
+    }).then(async (result) => {
+      if (result.isDenied) {
+        try {
+          setLoadingData(true);
+          let res = await HttpClient.delete("/order/" + id);
+          if (res.data.sucess) {
+            dispatch(deleteOrder(id));
+            Swal.fire("ลบเสร็จสิ้น!", "", "success");
+          } else {
+            Swal.fire(
+              "อาจมีปัญหาบางอย่างเกิดขึ้นกรุณาลองใหม่อีกครั้ง!",
+              "",
+              "warning"
+            ).then(() => window.location.reload());
+          }
+        } catch (error) {
+          console.log(error.respose);
+        } finally {
+          setLoadingData(false);
         }
-        sx={styles.list}
-      >
-        {children}
-      </List>
-    );
+      }
+    });
   };
 
-  const ListLink = ({ to, text, icon }) => {
-    let navigate = useNavigate();
-    let { pathname } = useLocation();
-    return (
-      <ListItemButton
-        sx={pathname === to ? styles.listButton : null}
-        className={pathname === to ? " Mui-selected" : null}
-        onClick={() => {
-          if (matches) handleDrawer2();
-          navigate(to);
-        }}
-      >
-        <ListItemIcon
-          sx={{
-            ".Mui-selected > &": {
-              color: (theme) => theme.palette.primary.main,
-            },
-            color: "text.secondary",
-          }}
-        >
-          {icon}
-        </ListItemIcon>
-        <ListItemText
-          className="listItemText"
-          sx={{
-            color: pathname === to ? "primary.main" : "text.secondary",
-          }}
-          primary={text}
-        />
-      </ListItemButton>
-    );
-  };
-
-  const ListMenu = () => (
-    <>
-      <Box sx={styles.container}>
-        <Box sx={styles.headerBrand}>
-          <img src="/img/loggrand.png" style={styles.logo} />
-          <Box className="drawerHover" pt={0.5} sx={styles.containerNameBrand}>
-            <Brand text="Grand" color="primary" />
-            <Brand text="Logistics" />
-          </Box>
-        </Box>
-        <Typography
-          className="containerCardHover"
-          component="div"
-          sx={styles.containerCard}
-        >
-          <Avatar src={user?.photo || null} />
-          <Box className="titleName" sx={styles.cardDetail}>
-            <Typography variant="h6" sx={styles.nameUser}>
-              {user?.full_name.first_name + " " + user?.full_name?.last_name}
-            </Typography>
-            <Typography
-              variant="p"
-              color="text.secondary"
-              sx={styles.department}
-            >
-              {user?.role}
-            </Typography>
-          </Box>
-        </Typography>
-      </Box>
-      <ListGroup title="พนักงาน">
-        <ListLink to="/" text="พนักงานทั้งหมด" icon={<PersonRoundedIcon />} />
-        <ListLink
-          to="/register"
-          text="ลงทะเบียนพนักงาน"
-          icon={<GroupAddTwoToneIcon />}
-        />
-      </ListGroup>
-      <ListGroup title="งาน">
-        <ListLink
-          to="/order"
-          text="เที่ยววิ่งทั้งหมด"
-          icon={<WorkRoundedIcon />}
-        />
-        <ListLink to="/addorder" text="เพิ่มงาน" icon={<AddBoxRoundedIcon />} />
-      </ListGroup>
-      <ListGroup title="ลูกค้า">
-        <ListLink
-          to="/customer"
-          text="บริษัทคู่ค้า"
-          icon={<StoreRoundedIcon />}
-        />
-        <ListLink
-          to="/addcustomer"
-          text="เพิ่มบริษัทคู่ค้า"
-          icon={<AddBusinessRoundedIcon />}
-        />
-      </ListGroup>
-      <ListGroup title="รายงาน">
-        <ListLink to="/report" text="รายงาน" icon={<MailIcon />} />
-        <ListLink
-          to="/reportcustomer"
-          text="รายงานบริษัทคู่ค้า"
-          icon={<MailIcon />}
-        />
-        <ListLink
-          to="/reportallemp"
-          text="รายงานพนักงานทั้งหมด"
-          icon={<MailIcon />}
-        />
-        <ListLink
-          to="/reportemp"
-          text="รายงานพนักงานรายบุคคล"
-          icon={<MailIcon />}
-        />
-      </ListGroup>
-      <ListGroup title="ใบแจ้งหนี้">
-        <ListLink to="/bills" text="ใบวางบิล" icon={<FileCopyIcon />} />
-        <ListLink
-          to="/createbill"
-          text="สร้างใบวางบิล"
-          icon={<FileCopyIcon />}
-        />
-        <ListLink to="/invoices" text="ใบแจ้งหนี้" icon={<DescriptionIcon />} />
-      </ListGroup>
-      <ListGroup title="ถังขยะ">
-        <ListLink to="/trash" text="ถังขยะ" icon={<DeleteRoundedIcon />} />
-      </ListGroup>
-    </>
-  );
   return (
     <>
-      <Hidden lgDown>
-        <DrawerFull variant="permanent" sx={styles.drawer} open={open}>
-          {ListMenu()}
-        </DrawerFull>
-      </Hidden>
-      <Hidden lgUp>
-        <MuiDrawer
-          sx={styles.drawer}
-          anchor={"left"}
-          open={open}
-          onClose={handleDrawer2}
-        >
-          {ListMenu()}
-        </MuiDrawer>
-      </Hidden>
+      <TableRow
+        hover
+        onClick={() => setOpen(!open)}
+        role="checkbox"
+        sx={{
+          backgroundColor: open ? "#c7dcff" : null,
+          "&&:hover": {
+            backgroundColor: open ? "#b3d0ff" : null,
+          },
+        }}
+      >
+        <TableCell sx={{ p: 0, px: "24px", maxWidth: "40px" }}>
+          <IconButton aria-label="expand row" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        <TableCell align="left" sx={{ paddingRight: 6 }}>
+          {row.row_number.toLocaleString("en")}
+        </TableCell>
+        <TableCell align="left">{row._oid}</TableCell>
+        <TableCell align="left" id={labelId}>
+          {dayjs(row.pickup_date).locale("th").format("DD MMMM BBBB")}
+        </TableCell>
+        <TableCell align="left">{row.pickup_location}</TableCell>
+        <TableCell align="left">{row.delivery_location}</TableCell>
+        <TableCell align="left">{row.driver}</TableCell>
+        <TableCell align="left">{row.per_time}</TableCell>
+        <TableCell align="right">
+          {row.price_order.toLocaleString("en")}
+        </TableCell>
+        <TableCell align="center">
+          <Typography
+            variant="p"
+            sx={{
+              bgcolor: StatusColor.colorBgStatus(
+                row.status,
+                theme.palette.mode
+              ),
+              color: StatusColor.colorTextStatus(
+                row.status,
+                theme.palette.mode
+              ),
+              px: 0.7,
+              py: 0.5,
+              fontSize: "0.8rem",
+              borderRadius: 2,
+              fontFamily: "Prompt",
+              fontWeight: 500,
+              height: "22px",
+            }}
+          >
+            {row.status}
+          </Typography>
+        </TableCell>
+      </TableRow>
+      <TableRow
+        sx={{
+          borderBottom: open ? 1 : 0,
+          borderBottomColor: "#ccc",
+        }}
+      >
+        <TableCell sx={{ paddingBottom: 0, paddingTop: 0 }} colSpan={18}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box
+              sx={{
+                margin: 1,
+                borderBottom: 1,
+                borderBottomColor: "#aeaeae",
+              }}
+            >
+              <Typography variant="h6" gutterBottom component="div">
+                รายละเอียด
+              </Typography>
+              <Table size="normal">
+                <TableHead>
+                  <TableRow
+                    sx={{
+                      backgroundColor: "rgba(145, 158, 171, 0.16)",
+                      borderRadius: 2,
+                    }}
+                  >
+                    {Object.entries(row.pickup_point).map((p, i) => {
+                      if (p[1]) {
+                        return (
+                          <TableCell
+                            key={i}
+                            sx={{
+                              py: 2.5,
+                              borderRadius: i === 0 ? "16px 0px 0px 16px" : 0,
+                            }}
+                          >
+                            {"จุดที่ " + (i + 1)}
+                          </TableCell>
+                        );
+                      }
+                    })}
+                    <TableCell>ค่าเที่ยววิ่งพนักงาน(บาท)</TableCell>
+                    <TableCell>กำไร(บาท)</TableCell>
+                    <TableCell align="right">น้ำมัน(บาท)</TableCell>
+                    <TableCell align="right">ตจว./กทม.</TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{ borderRadius: "0px 16px 16px 0px" }}
+                    >
+                      Action
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    {Object.entries(row.pickup_point).map((p, i) => {
+                      if (p[1]) {
+                        return <TableCell key={i}>{p[1]}</TableCell>;
+                      }
+                    })}
+                    <TableCell>{row.wage.toLocaleString("en")}</TableCell>
+                    <TableCell>{row.profit.toLocaleString("en")}</TableCell>
+                    <TableCell align="right">
+                      {row.cost.toLocaleString("en")}
+                    </TableCell>
+                    <TableCell align="right">{row.area}</TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        onClick={() =>
+                          navigate("/editorder", { state: { order: row } })
+                        }
+                        color="warning"
+                      >
+                        <EditRoundedIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleDelete(row._id)}
+                        color="error"
+                      >
+                        <DeleteRoundedIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Box>
+            <Box>Something Feature</Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
     </>
   );
 };
 
-const styles = {
-  drawer: {
-    "& .MuiPaper-root": {
-      border: "1px dashed rgba(145, 158, 171, 0.24)",
-      borderBlock: 0,
-      borderLeft: 0,
-      overflowY: "overlay",
-      borderRadius: 0,
-      paddingInline: 0,
-    },
-    "& .MuiPaper-root::-webkit-scrollbar": {
-      width: 10,
-      background: "transparent",
-      position: "absolute",
-    },
+const EnhancedTableToolbar = ({ numSelected }) => {
+  return (
+    <Toolbar
+      sx={{
+        pl: { sm: 2 },
+        pr: { xs: 1, sm: 1 },
+        bgcolor: (theme) =>
+          alpha(
+            theme.palette.primary.main,
+            theme.palette.action.activatedOpacity
+          ),
+      }}
+    >
+      <Typography
+        sx={{ flex: "1 1 100%" }}
+        color="inherit"
+        variant="subtitle1"
+        component="div"
+      >
+        {numSelected} selected
+      </Typography>
 
-    "& .MuiPaper-root::-webkit-scrollbar-track": {
-      background: "transparent",
-    },
-    "& .MuiPaper-root::-webkit-scrollbar-thumb": {
-      background: "transparent",
-    },
-    "&:hover .MuiPaper-root::-webkit-scrollbar-thumb": {
-      background: "#ddd",
-      borderRadius: 2,
-      border: "2px solid transparent",
-      backgroundClip: "content-box",
-    },
-  },
-  container: {
-    padding: "24px 20px 16px",
-    width: "100%",
-    maxWidth: 360,
-  },
-  headerBrand: {
-    display: "flex",
-    animationDuration: "400ms",
-  },
-  logo: {
-    width: 40,
-    height: 40,
-  },
-  containerNameBrand: {
-    display: "flex",
-    marginLeft: 1,
-  },
-  nameBrand: {
-    fontFamily: "Prompt",
-    fontWeight: "700",
-  },
-  containerCard: {
-    display: "flex",
-    alignItems: "center",
-    mt: 3,
-    borderRadius: 3,
-    transition: "200ms  ",
-  },
-  cardDetail: {
-    ml: 2,
-    maxHeight: "44px",
-  },
-  nameUser: {
-    fontWeight: 600,
-    fontSize: "0.875rem",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    width: "150px",
-  },
-  department: {
-    fontSize: "0.9rem",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    width: "150px",
-    fontWeight: "600",
-  },
-  list: { padding: "0px 16px", maxWidth: 360, width: "100%" },
-  listsubheader: (mode) => {
-    return {
-      pt: 3,
-      pb: 1,
-      pl: 2,
-      lineHeight: 1.5,
-      color: "text.primary",
-      backgroundImage: "none",
-      backgroundColor:
-        mode === "dark" ? "rgb(22, 28, 36,0)" : "rgb(255, 255, 255, 0)",
-    };
-  },
-  listButton: {
-    "&& .MuiTouchRipple-child": {
-      backgroundColor: "#007bff",
-    },
-    backgroundColor: "#007bff14",
-  },
-  closeBtn: { position: "absolute", top: 10, right: 10 },
+      <Tooltip title="Delete">
+        <IconButton>
+          <DeleteIcon />
+        </IconButton>
+      </Tooltip>
+    </Toolbar>
+  );
 };
 
-export default Menu;
+export default function EnhancedTable() {
+  let dispatch = useDispatch();
+  let navigate = useNavigate();
+  const [title, setTitle] = useOutletContext();
+  const [orderSort, setOrderSort] = React.useState("desc");
+  const [orderBy, setOrderBy] = React.useState("pickup_date");
+  const [selected, setSelected] = React.useState([]);
+  const [page, setPage] = React.useState(0);
+  const [dense, setDense] = React.useState(false);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [valueTabs, setValueTabs] = React.useState("ทั้งหมด");
+  const [filterYear, setFilterYear] = React.useState(
+    dayjs(new Date()).format("BBBB")
+  );
+  const { order } = useSelector(orderStore);
+  const [loadingData, setLoadingData] = React.useState(false);
+
+  const tablePagination = useMediaQuery("(min-width:600px)");
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
+
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && orderSort === "asc";
+    setOrderSort(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelecteds = newOrder.map((n) => n);
+      setSelected(newSelecteds);
+      return;
+    }
+    setSelected([]);
+  };
+
+  const handleClick = (event, row) => {
+    const selectedIndex = selected.indexOf(row);
+    let newSelected = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, row);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
+    }
+    setSelected(newSelected);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleChangeDense = (event) => {
+    setDense(event.target.checked);
+  };
+
+  const isSelected = (name) => selected.indexOf(name) !== -1;
+
+  const [personName, setPersonName] = React.useState("ทั้งหมด");
+  const [filterDay, setFilterDay] = React.useState([]);
+  const [month, setMonth] = React.useState([]);
+  const [filterMonth, setFilterMonth] = React.useState("ทั้งหมด");
+  const [search, setSearch] = React.useState("");
+  const handleChange2 = (event) => {
+    const {
+      target: { value },
+    } = event;
+    setPage(0);
+    setPersonName(value);
+  };
+  const handleChageMonth = (e) => {
+    const {
+      target: { value },
+    } = e;
+    setPage(0);
+    setFilterMonth(value);
+  };
+
+  const handleChageYear = (e) => {
+    const {
+      target: { value },
+    } = e;
+    setPage(0);
+    setFilterYear(value);
+  };
+
+  const handleSearchFieldOnChange = (e) => {
+    const {
+      target: { value },
+    } = e;
+    setSearch(value);
+  };
+
+  // console.log = console.warn = console.error = () => {};
+  const newOrder =
+    React.useMemo(() => {
+      if (!order) return [];
+      let queryOrder = cloneDeep(order);
+
+      if (valueTabs !== "ทั้งหมด") {
+        queryOrder = queryOrder.filter((a) => a.status === valueTabs);
+      }
+
+      queryOrder = queryOrder.filter((a) => {
+        if (filterYear !== "ทั้งหมด") {
+          return dayjs(a.pickup_date).format("BBBB") === filterYear;
+        }
+        return a;
+      });
+
+      setMonth([...queryOrder]);
+      queryOrder = queryOrder.filter((a) => {
+        if (filterMonth !== "ทั้งหมด") {
+          return (
+            dayjs(a.pickup_date).locale("th").format("MMMM") === filterMonth
+          );
+        }
+        return a;
+      });
+      setFilterDay([...queryOrder]);
+      queryOrder = queryOrder.filter((a) => {
+        if (personName !== "ทั้งหมด") {
+          return dayjs(a.pickup_date).locale("th").format("DD") === personName;
+        }
+        return a;
+      });
+
+      for (var i = 0; i < queryOrder.length; i++) {
+        queryOrder[i] = { ...queryOrder[i], row_number: i + 1 };
+      }
+
+      if (search) {
+        queryOrder = queryOrder.filter((s) => {
+          if (
+            s.delivery_location
+              .trim()
+              .toString()
+              .toLowerCase()
+              .includes(search.trim().toLowerCase()) ||
+            s.pickup_location
+              .trim()
+              .toLowerCase()
+              .includes(search.trim().toLowerCase())
+          )
+            return s;
+        });
+      }
+
+      return queryOrder;
+    }, [order, filterYear, filterMonth, personName, search, valueTabs]) || [];
+
+  const emptyRows =
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - newOrder.length) : 0;
+  React.useEffect(() => setTitle("งานทั้งหมด"), []);
+  if (loadingData) return <Loading />;
+
+  let yearQuery = React.useMemo(() => {
+    let newYear = [
+      ...new Map(
+        order?.map((item) => [
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+          dayjs(item.pickup_date).locale("th").format("BBBB"),
+        ])
+      ).values(),
+    ];
+
+    let now = newYear.find(
+      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
+    );
+
+    if (!now) {
+      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
+    }
+
+    return newYear;
+  }, [order]);
+
+  return (
+    <Box>
+      <Box sx={{ display: "flex", alignItems: "center", marginBottom: 5 }}>
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
+            งานทั้งหมด
+          </Typography>
+        </Box>
+        <Box>
+          <Button
+            startIcon={<Add />}
+            onClick={() => navigate("/addorder")}
+            variant="contained"
+            sx={{
+              backgroundColor: "rgb(32, 101, 209)",
+              boxShadow: "rgb(32 101 209 / 24%) 0px 8px 16px 0px",
+              borderRadius: 2,
+              "&:hover": {
+                boxShadow: "none",
+              },
+            }}
+          >
+            เพิ่มงาน
+          </Button>
+        </Box>
+      </Box>
+      <Paper
+        sx={{
+          paddingInline: 0,
+          boxSizing: "border-box",
+          mb: 2,
+          borderRadius: 4,
+          overflow: "hidden",
+        }}
+      >
+        <Tabs
+          value={valueTabs}
+          onChange={(e, v) => setValueTabs(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            px: 2,
+            maxHeight: 48,
+            backgroundColor: "rgba(145, 158, 171, 0.16)",
+          }}
+        >
+          <Tab value="ทั้งหมด" label="ทั้งหมด" disableRipple />
+          <Tab value="มอบหมายงานเเล้ว" label="มอบหมายงานเเล้ว" disableRipple />
+          <Tab value="ปฏิเสธงาน" label="ปฏิเสธงาน" disableRipple />
+          <Tab value="ยอมรับ" label="ยอมรับ" disableRipple />
+          <Tab value="ส่งงานเเล้ว" label="ส่งงานเเล้ว" disableRipple />
+        </Tabs>
+        <Divider />
+        <Grid container spacing={2} sx={{ p: 3 }}>
+          <Grid item xs={6} sm={4} md={2}>
+            <FormControl sx={{ width: "100%" }}>
+              <InputLabel id="demo-multiple-name-label">วัน</InputLabel>
+              <Select
+                labelId="demo-multiple-name-label"
+                id="demo-multiple-name"
+                value={personName}
+                onChange={handleChange2}
+                input={
+                  <OutlinedInput
+                    sx={{
+                      width: "100%",
+                      borderRadius: 2,
+                      "& fieldset": {
+                        borderRadius: 2,
+                      },
+                    }}
+                    label="Name"
+                  />
+                }
+                MenuProps={MenuProps}
+              >
+                <MenuItem
+                  value="ทั้งหมด"
+                  sx={{
+                    width: "100%",
+                    borderRadius: "8px",
+                    mb: 1,
+                  }}
+                >
+                  วันทั้งหมด
+                </MenuItem>
+
+                {[
+                  ...new Map(
+                    filterDay.map((item) => [
+                      dayjs(item.pickup_date).locale("th").format("DD"),
+                      item,
+                    ])
+                  ).values(),
+                ]
+                  .sort(function (a, b) {
+                    return (
+                      dayjs(b.pickup_date).format("DD") -
+                      dayjs(a.pickup_date).format("DD")
+                    );
+                  })
+                  .map((row, index) => (
+                    <MenuItem
+                      key={index}
+                      value={dayjs(row.pickup_date).locale("th").format("DD")}
+                      sx={{
+                        width: "100%",
+                        borderRadius: "8px",
+                        mb: 1,
+                      }}
+                    >
+                      {dayjs(row.pickup_date).locale("th").format("DD")}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
+            <FormControl sx={{ width: "100%" }}>
+              <InputLabel id="demo-multiple-name-label">เดือน</InputLabel>
+              <Select
+                labelId="demo-multiple-name-label"
+                id="demo-multiple-name"
+                value={filterMonth}
+                onChange={handleChageMonth}
+                input={
+                  <OutlinedInput
+                    sx={{
+                      width: "100%",
+                      borderRadius: 2,
+                      "& fieldset": {
+                        borderRadius: 2,
+                      },
+                    }}
+                    label="Name"
+                  />
+                }
+                MenuProps={MenuProps}
+              >
+                <MenuItem
+                  value="ทั้งหมด"
+                  sx={{
+                    width: "100%",
+                    borderRadius: "8px",
+                    mb: 1,
+                  }}
+                >
+                  เดือนทั้งหมด
+                </MenuItem>
+                {[
+                  ...new Map(
+                    month?.map((item) => [
+                      dayjs(item.pickup_date).format("MMMM"),
+                      item,
+                    ])
+                  ).values(),
+                ]
+                  .sort(function (a, b) {
+                    return new Date(b.pickup_date) - new Date(a.pickup_date);
+                  })
+                  .map((month, index) => (
+                    <MenuItem
+                      key={index}
+                      value={dayjs(month.pickup_date)
+                        .locale("th")
+                        .format("MMMM")}
+                      sx={{
+                        width: "100%",
+                        borderRadius: "8px",
+                        mb: 1,
+                      }}
+                    >
+                      {dayjs(month.pickup_date).locale("th").format("MMMM")}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={4} md={2}>
+            <FormControl sx={{ width: "100%" }}>
+              <InputLabel
+                sx={{ textAlign: "center" }}
+                id="demo-multiple-name-label"
+              >
+                ปี
+              </InputLabel>
+              <Select
+                labe="demo-multiple-name-label"
+                id="demo-multiple-name"
+                value={filterYear}
+                onChange={handleChageYear}
+                input={
+                  <OutlinedInput
+                    sx={{
+                      width: "100%",
+                      borderRadius: 2,
+                      "& fieldset": {
+                        borderRadius: 2,
+                      },
+                    }}
+                    label="Name"
+                  />
+                }
+                MenuProps={MenuProps}
+              >
+                {yearQuery
+                  .sort(function (a, b) {
+                    return a - b;
+                  })
+                  .map((row, index) => (
+                    <MenuItem
+                      key={index}
+                      value={row}
+                      sx={{
+                        width: "100%",
+                        borderRadius: "8px",
+                        mb: 1,
+                      }}
+                    >
+                      {row}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={12} md={6}>
+            <FormControl
+              sx={{
+                width: "100%",
+                "& .MuiOutlinedInput-root": { borderRadius: 2 },
+              }}
+            >
+              <TextField
+                placeholder="Search"
+                type="search"
+                variant="outlined"
+                fullWidth
+                autoComplete="off"
+                size="medium"
+                onChange={handleSearchFieldOnChange}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </FormControl>
+          </Grid>
+        </Grid>
+        {selected.length ? (
+          <EnhancedTableToolbar numSelected={selected.length} />
+        ) : null}
+        <Box sx={{ overflow: "auto" }}>
+          <TableContainer
+            sx={{
+              position: "relative",
+              minWidth: "1119px",
+            }}
+          >
+            <Table
+              sx={{
+                "& td": dense ? { lineHeight: 0 } : null,
+                "& .MuiCheckbox-root": {
+                  p: 0,
+                  ml: "16px",
+                },
+              }}
+              aria-labelledby="tableTitle"
+            >
+              <EnhancedTableHead
+                order={orderSort}
+                orderBy={orderBy}
+                onRequestSort={handleRequestSort}
+              />
+              <TableBody>
+                {newOrder !== null
+                  ? newOrder
+                      .sort(getComparator(orderSort, orderBy))
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((row, index) => {
+                        const isItemSelected = isSelected(row);
+                        const labelId = `enhanced-table-checkbox-${index}`;
+                        return (
+                          <Row
+                            key={row._id}
+                            row={row}
+                            isItemSelected={isItemSelected}
+                            labelId={labelId}
+                            handleClick={handleClick}
+                            newOrder={newOrder}
+                            setLoadingData={setLoadingData}
+                          />
+                        );
+                      })
+                  : null}
+                {emptyRows > 0 && (
+                  <TableRow
+                    style={{
+                      height: (dense ? 33 : 53) * emptyRows,
+                    }}
+                  >
+                    <TableCell colSpan={6} />
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: tablePagination ? "row" : "column-reverse",
+            overflowX: "hidden",
+          }}
+        >
+          <FormControlLabel
+            control={
+              <>
+                <AntSwitch
+                  checked={dense}
+                  onChange={handleChangeDense}
+                  inputProps={{ "aria-label": "ant design" }}
+                />
+                <Typography sx={{ ml: 1 }}>แคบ</Typography>
+              </>
+            }
+            label={""}
+            sx={{
+              flex: 1,
+              margin: 0,
+              pl: "31px",
+              mb: tablePagination ? 0 : 1,
+            }}
+          />
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 20, 25, 30, 35, 40, 45]}
+            component="div"
+            count={newOrder?.length || 0}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage={"จำนวนแถว"}
+            sx={{
+              "& .MuiToolbar-root": {
+                p: 0,
+                pr: 2,
+              },
+            }}
+          />
+        </Box>
+      </Paper>
+    </Box>
+  );
+}

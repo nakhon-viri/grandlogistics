@@ -3,7 +3,6 @@ import { HttpClient } from "../utils/HttpClient";
 
 const stateDefault = {
   order: null,
-  orderDeleted: null,
   loadingOrder: false,
   error: null,
 };
@@ -13,11 +12,7 @@ export const orderReducer = createSlice({
   initialState: { value: stateDefault },
   reducers: {
     upDateOrder: (state, action) => {
-      state.value = {
-        ...stateDefault,
-        order: action.payload.filter((item) => item.deleted === false),
-        orderDeleted: action.payload.filter((item) => item.deleted === true),
-      };
+      state.value = { ...stateDefault, order: action.payload };
     },
     upDateLoading: (state, action) => {
       state.value = { ...stateDefault, loadingOrder: true };
@@ -29,36 +24,36 @@ export const orderReducer = createSlice({
       state.value.order.push(action.payload);
     },
     deleteOrder: (state, action) => {
-      let orderDeleted = [];
       state.value.order = state.value.order.filter((item) => {
         if (item._id === action.payload) {
           item.deleted = true;
-          orderDeleted.push(item);
-          return;
+          return item;
         }
         return item;
       });
-
-      state.value.orderDeleted.push(...orderDeleted);
     },
     recoverOrder: (state, action) => {
-      let order = [];
-      let orderDeleted = [];
-      order = state.value.orderDeleted.filter((item) => {
+      state.value.order = state.value.order.filter((item) => {
         if (item._id === action.payload) {
           item.deleted = false;
           return item;
-        } else {
-          orderDeleted.push(item);
         }
+        return item;
       });
-      state.value.order.push(...order);
-      state.value.orderDeleted = orderDeleted;
     },
     editOrder: (state, action) => {
       state.value.order = state.value.order.map((item) => {
         if (item._id === action.payload._id) {
           return action.payload;
+        }
+        return item;
+      });
+    },
+    upDateSomeOrder: (state, action) => {
+      state.value.order = state.value.order.map((item) => {
+        let newSomeOrder = action.payload.find((curr) => curr._id === item._id);
+        if (newSomeOrder) {
+          return newSomeOrder;
         }
         return item;
       });
@@ -74,9 +69,25 @@ export const {
   addOrder,
   upDateError,
   editOrder,
+  upDateSomeOrder,
 } = orderReducer.actions;
 
-export const orderStore = (state) => state.order.value;
+// export const orderStore = (state) => state.order.value;
+
+export const orderStore = (state) => {
+  let { order, loadingOrder, error } = state.order.value;
+  if (!order) return state.order.value;
+  let orderDeleted = [];
+  let newOrder = order?.filter((item) => {
+    if (!item.deleted) {
+      return item;
+    } else {
+      orderDeleted.push(item);
+    }
+  });
+  order = newOrder;
+  return { order, orderDeleted, loadingOrder, error };
+};
 
 export const orderReq = () => async (dispatch) => {
   try {

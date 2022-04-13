@@ -43,6 +43,10 @@ export default function Theme({ children }) {
                 borderRadius: "16px",
                 paddingInline: 8,
                 backgroundImage: "none",
+                boxShadow:
+                  mode === "dark"
+                    ? "rgb(0 0 0 / 20%) 0px 0px 2px 0px, rgb(0 0 0 / 12%) 0px 12px 24px -4px"
+                    : "rgb(134 147 160 / 20%) 0px 0px 2px 0px, rgb(134 147 160 / 12%) 0px 12px 24px -4px",
               },
             },
           },

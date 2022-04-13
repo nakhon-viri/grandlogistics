@@ -227,11 +227,7 @@ const Menu = ({ handleDrawer2, open }) => {
         />
       </ListGroup>
       <ListGroup title="งาน">
-        <ListLink
-          to="/order"
-          text="เที่ยววิ่งทั้งหมด"
-          icon={<WorkRoundedIcon />}
-        />
+        <ListLink to="/order" text="งานทั้งหมด" icon={<WorkRoundedIcon />} />
         <ListLink to="/addorder" text="เพิ่มงาน" icon={<AddBoxRoundedIcon />} />
       </ListGroup>
       <ListGroup title="ลูกค้า">
@@ -248,11 +244,6 @@ const Menu = ({ handleDrawer2, open }) => {
       </ListGroup>
       <ListGroup title="รายงาน">
         <ListLink to="/report" text="รายงาน" icon={<MailIcon />} />
-        <ListLink
-          to="/reportcustomer"
-          text="รายงานบริษัทคู่ค้า"
-          icon={<MailIcon />}
-        />
         <ListLink
           to="/reportallemp"
           text="รายงานพนักงานทั้งหมด"

@@ -23,11 +23,25 @@ export const billReducer = createSlice({
     addBill: (state, action) => {
       state.value.bill.push(action.payload);
     },
+    upDateSomeBill: (state, action) => {
+      state.value.bill = state.value.bill.map((item) => {
+        let result = action.payload.find((curr) => curr._id === item._id);
+        if (result) {
+          return result;
+        }
+        return item;
+      });
+    },
   },
 });
 
-export const { upDatebill, addBill, upDateLoading, upDateError } =
-  billReducer.actions;
+export const {
+  upDatebill,
+  addBill,
+  upDateLoading,
+  upDateError,
+  upDateSomeBill,
+} = billReducer.actions;
 
 export const billStore = (state) => state.bill.value;
 

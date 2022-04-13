@@ -109,6 +109,7 @@ const EditOrder = () => {
   const [title, setTitle] = useOutletContext();
   const { employee } = useSelector(employeeStore);
   const [IDOrder, setIDOrder] = useState(null);
+  const [selectedEmp, setSelectedEmp] = useState("");
   //Loading
   const [loading, setLoading] = useState(false);
   //Employee
@@ -136,8 +137,11 @@ const EditOrder = () => {
       temp.wage = fieldValues.wage.toString()
         ? ""
         : "โปรดใส่ข้อมูลค่าเที่ยวพนักงาน";
-    if ("personnel" in fieldValues)
-      temp.personnel = fieldValues.personnel ? "" : "โปรดเลือกพนักงาน";
+    if (selectedEmp) {
+      temp.personnel = "";
+    } else {
+      temp.personnel = "โปรดเลือกพนักงาน";
+    }
     if ("car_type" in fieldValues)
       temp.car_type = fieldValues.car_type ? "" : "โปรดใส่ข้อมูลประเภทรถ";
     if ("area" in fieldValues)
@@ -183,7 +187,7 @@ const EditOrder = () => {
     if (validate()) {
       try {
         setLoading(true);
-        let emp = JSON.parse(values.personnel);
+        let emp = JSON.parse(selectedEmp);
         values.driver = emp.driver;
         values.personnel = emp._id;
         values.profit = values.price_order - values.wage;
@@ -199,7 +203,7 @@ const EditOrder = () => {
       }
     }
   };
-  console.log(state.order);
+
   useEffect(() => {
     if (!state) navigate("/order");
     if (!state.order || !employee) return;
@@ -215,6 +219,7 @@ const EditOrder = () => {
       driver: newEmp.full_name.first_name,
       _id: newEmp._id,
     });
+    setSelectedEmp(emp);
     setValues({
       pickup_location: order.pickup_location,
       pickup_point: {
@@ -233,7 +238,7 @@ const EditOrder = () => {
       per_time: order.per_time,
       area: order.area,
       car_type: order.car_type,
-      personnel: emp,
+      personnel: "",
       customer: order.customer._id,
       status: order.status,
       detail: order.detail,
@@ -369,7 +374,7 @@ const EditOrder = () => {
               onChange={handleInputChange}
               error={errors.car_type}
             />
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <FormControl fullWidth {...(errors.personnel && { error: true })}>
                 <InputLabel id="search-select-label">พนักงาน*</InputLabel>
                 <Select
@@ -393,8 +398,8 @@ const EditOrder = () => {
                   labelId="search-select-label"
                   id="search-select"
                   name="personnel"
-                  value={values.personnel}
-                  onChange={handleInputChange}
+                  value={selectedEmp}
+                  onChange={(e) => setSelectedEmp(e.target.value)}
                   input={
                     <OutlinedInput
                       sx={{
@@ -524,7 +529,7 @@ const EditOrder = () => {
               error={errors.area}
             />
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth {...(errors.personnel && { error: true })}>
+              <FormControl fullWidth>
                 <InputLabel id="search-select-label">สถานะ</InputLabel>
                 <Select
                   MenuProps={{

@@ -18,6 +18,7 @@ import Tooltip from "@mui/material/Tooltip";
 import PersonAdd from "@mui/icons-material/PersonAdd";
 import Settings from "@mui/icons-material/Settings";
 import Logout from "@mui/icons-material/Logout";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 import { useNavigate } from "react-router-dom";
 
@@ -190,7 +191,7 @@ const Header = ({ handleDrawer, open, title }) => {
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <Box p={1}>
+        <Box p={1} pb={0}>
           <MenuItem
             sx={{
               width: "100%",
@@ -202,6 +203,20 @@ const Header = ({ handleDrawer, open, title }) => {
               <ManageAccountsIcon fontSize="small" />
             </ListItemIcon>
             โปรไฟล์
+          </MenuItem>
+        </Box>
+        <Box p={1} pt={0}>
+          <MenuItem
+            sx={{
+              width: "100%",
+              borderRadius: "8px",
+            }}
+            onClick={() => navigate("/setting")}
+          >
+            <ListItemIcon>
+              <SettingsIcon fontSize="small" />
+            </ListItemIcon>
+            การตั้งค่า
           </MenuItem>
         </Box>
         <Divider sx={{ borderStyle: "dashed" }} />

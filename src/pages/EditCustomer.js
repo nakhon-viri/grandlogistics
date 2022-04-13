@@ -50,85 +50,9 @@ import ImageCrop from "../utils/ImageCrop";
 import { HttpClient } from "../utils/HttpClient";
 import Loading from "../components/Loading";
 
-const Provinces = [
-  "กระบี่",
-  "กรุงเทพมหานคร",
-  "กาญจนบุรี",
-  "กาฬสินธุ์",
-  "กำแพงเพชร",
-  "ขอนแก่น",
-  "จันทบุรี",
-  "ฉะเชิงเทรา",
-  "ชลบุรี",
-  "ชัยนาท",
-  "ชัยภูมิ",
-  "ชุมพร",
-  "เชียงราย",
-  "เชียงใหม่",
-  "ตรัง",
-  "ตราด",
-  "ตาก",
-  "นครนายก",
-  "นครปฐม",
-  "นครพนม",
-  "นครราชสีมา",
-  "นครศรีธรรมราช",
-  "นครสวรรค์",
-  "นนทบุรี",
-  "นราธิวาส",
-  "น่าน",
-  "บุรีรัมย์",
-  "บึงกาฬ",
-  "ปทุมธานี",
-  "ประจวบคีรีขันธ์",
-  "ปราจีนบุรี",
-  "ปัตตานี",
-  "พะเยา",
-  "พังงา",
-  "พัทลุง",
-  "พิจิตร",
-  "พิษณุโลก",
-  "เพชรบุรี",
-  "เพชรบูรณ์",
-  "แพร่",
-  "ภูเก็ต",
-  "มหาสารคาม",
-  "มุกดาหาร",
-  "แม่ฮ่องสอน",
-  "ยโสธร",
-  "ยะลา",
-  "ร้อยเอ็ด",
-  "ระนอง",
-  "ระยอง",
-  "ราชบุรี",
-  "ลพบุรี",
-  "ลำปาง",
-  "ลำพูน",
-  "เลย",
-  "ศรีสะเกษ",
-  "สกลนคร",
-  "สงขลา",
-  "สตูล",
-  "สมุทรปราการ",
-  "สมุทรสงคราม",
-  "สมุทรสาคร",
-  "สระแก้ว",
-  "สระบุรี",
-  "สิงห์บุรี",
-  "สุโขทัย",
-  "สุพรรณบุรี",
-  "สุราษฎร์ธานี",
-  "สุรินทร์",
-  "หนองคาย",
-  "หนองบัวลำภู",
-  "พระนครศรีอยุธยา",
-  "อ่างทอง",
-  "อำนาจเจริญ",
-  "อุดรธานี",
-  "อุตรดิตถ์",
-  "อุทัยธานี",
-  "อุบลราชธานี",
-];
+import Provinces from '../utils/Provinces';
+import convertToDefEventPara from '../utils/ConvertToDefEventPara';
+
 
 const initialValues = {
   cus_name: "",
@@ -145,21 +69,6 @@ const initialValues = {
   cus_img: "",
   text_id: "",
 };
-
-const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: 200,
-    },
-  },
-};
-
-const convertToDefEventPara = (name, value) => ({
-  target: {
-    name,
-    value,
-  },
-});
 
 const formatID = (value, index) =>
   value.substring(0, index) + "-" + value.substring(index, value.length);
@@ -192,7 +101,13 @@ const InputGridAddress = ({
       <FormControl fullWidth {...(error && { error: true })}>
         <InputLabel id="search-select-label">{title}</InputLabel>
         <Select
-          MenuProps={MenuProps}
+          MenuProps={{
+            PaperProps: {
+              style: {
+                maxHeight: 200,
+              },
+            },
+          }}
           labelId="search-select-label"
           id="search-select"
           {...rest}

@@ -13,7 +13,6 @@ import { orderStore, recoverOrder } from "../store/OrderStore";
 import { employeeStore, recoverEmployee } from "../store/EmployeeStore";
 import { customerStore, recoverCustomer } from "../store/CustomerStore";
 import cloneDeep from "lodash.clonedeep";
-import { useHorizontalScroll } from "../hooks/useSideScroll";
 import { HttpClient } from "../utils/HttpClient";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
@@ -25,7 +24,6 @@ const Trash = () => {
   let { orderDeleted } = useSelector(orderStore);
   let { deletedEmployee } = useSelector(employeeStore);
   let { deletedCustomer } = useSelector(customerStore);
-  const scrollRef = useHorizontalScroll();
   const [order, setOrder] = useState(null);
   const [employee, setEmployee] = useState(null);
   const [customer, setCustomer] = useState(null);
@@ -80,7 +78,9 @@ const Trash = () => {
             <Typography>{label}</Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography sx={{ pl: 2 }}>{value}</Typography>
+            <Typography sx={{ pl: 2, overflowWrap: "break-word" }}>
+              {value}
+            </Typography>
           </Grid>
         </Grid>
       </Grid>
@@ -88,16 +88,7 @@ const Trash = () => {
   };
 
   return (
-    <Container
-      maxWidth={false}
-      sx={{
-        maxWidth: {
-          lg: "921px",
-          xl: "1200px",
-          md: "621px",
-        },
-      }}
-    >
+    <Box>
       <Box>
         <Box sx={{ display: "flex", mb: 1 }}>
           <Typography variant="h4" sx={{ flex: 1, fontFamily: "Itim" }}>
@@ -108,12 +99,10 @@ const Trash = () => {
           </Typography>
         </Box>
         <Box
-          ref={scrollRef}
           sx={{
             display: "flex",
             overflow: "auto",
             p: "24px",
-            height: "460px",
             flexWrap: "nowrap",
             bgcolor: "background.paper",
             borderRadius: 2,
@@ -183,12 +172,10 @@ const Trash = () => {
           </Typography>
         </Box>
         <Box
-          ref={scrollRef}
           sx={{
             display: "flex",
             overflow: "auto",
             p: "24px",
-            height: "460px",
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: "inset 1.5px 1.5px 8px #e0e0e0",
@@ -218,7 +205,7 @@ const Trash = () => {
                     label="อายุ"
                     value={
                       new Date().getFullYear() -
-                      dayjs(item.birthday).format("BBBB")
+                      parseInt(item.birthday.split("-")[0])
                     }
                   />
                   <RowGrid label="รหัสพนักงาน" value={item._uid} />
@@ -265,12 +252,10 @@ const Trash = () => {
           </Typography>
         </Box>
         <Box
-          ref={scrollRef}
           sx={{
             display: "flex",
             overflow: "auto",
             p: "24px",
-            height: "384px",
             bgcolor: "background.paper",
             borderRadius: 2,
             boxShadow: "inset 1.5px 1.5px 8px #e0e0e0",
@@ -327,7 +312,7 @@ const Trash = () => {
           })}
         </Box>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

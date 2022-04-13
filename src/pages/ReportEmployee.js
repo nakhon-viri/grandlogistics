@@ -25,7 +25,6 @@ import {
   TableCell,
   TableBody,
   Switch,
-  TablePagination,
   FormControlLabel,
   InputAdornment,
   Collapse,
@@ -39,6 +38,10 @@ import {
   KeyboardArrowUp,
   KeyboardArrowDown,
   Search,
+  MonetizationOnRounded,
+  LocalShippingRounded,
+  AccountBalanceWalletRounded,
+  AttachMoneyRounded,
 } from "@mui/icons-material";
 import { styled, useTheme } from "@mui/material/styles";
 
@@ -53,7 +56,11 @@ import { useOutletContext } from "react-router-dom";
 import { employeeStore } from "../store/EmployeeStore";
 import { orderStore } from "../store/OrderStore";
 import TableHeader from "../components/TableHeader";
-import Controls from "../components/controls";
+import Controls, { SearchField } from "../components/controls";
+import DateSort from "../components/DateSort";
+import TablePagination from "../components/TablePagination";
+import TableRows from "../components/TableRows";
+import getComparator from "../utils/TableSort";
 
 const UserList = ({ employee, userSelected, handleSelectedUser }) => {
   const media = useMediaQuery("(max-width:1200px)");
@@ -133,57 +140,8 @@ const UserList = ({ employee, userSelected, handleSelectedUser }) => {
   );
 };
 
-function descendingComparator(a, b, sortByName) {
-  if (b[sortByName] < a[sortByName]) {
-    return -1;
-  }
-  if (b[sortByName] > a[sortByName]) {
-    return 1;
-  }
-  return 0;
-}
-
-function getComparator(sortType, sortByName) {
-  return sortType === "desc"
-    ? (a, b) => descendingComparator(a, b, sortByName)
-    : (a, b) => -descendingComparator(a, b, sortByName);
-}
-
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-    },
-  },
-};
-
 const Row = ({ Cell }) => {
-  return (
-    <>
-      <TableRow hover>
-        <TableCell />
-        <TableCell align="center">
-          {Cell.row_number.toLocaleString("en")}
-        </TableCell>
-        <TableCell component="th" scope="row">
-          {dayjs(Cell.pickup_date).locale("th").format("DD MMMM BBBB")}
-        </TableCell>
-        <TableCell align="right">{Cell.pickup_location}</TableCell>
-        <TableCell align="right">{Cell.delivery_location}</TableCell>
-        <TableCell align="right">{Cell.profit.toLocaleString("en")}</TableCell>
-        <TableCell align="right">{Cell.wage.toLocaleString("en")}</TableCell>
-        <TableCell align="right">{Cell.cost.toLocaleString("en")}</TableCell>
-        <TableCell align="right">
-          {Cell.withdraw.toLocaleString("en")}
-        </TableCell>
-        <TableCell align="right">
-          {(Cell.wage - Cell.cost - Cell.withdraw).toLocaleString("en")}
-        </TableCell>
-      </TableRow>
-    </>
-  );
+  return <></>;
 };
 
 const ReportEmployee = () => {
@@ -210,128 +168,10 @@ const ReportEmployee = () => {
   //Search
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    let emp = cloneDeep(employee);
-    if (state?._id && emp) {
-      let res = emp?.filter((item) => item._id === state?._id);
-      setUserSelected(cloneDeep(res)[0]);
-    } else if (employee) {
-      setUserSelected(...employee.slice(0, 1));
-    }
-  }, [employee, state]);
-
-  let orders = useMemo(() => {
-    if (!userSelected) return;
-    if (!order) return [];
-
-    let newOrders = order?.filter(
-      (item) => item.personnel === userSelected._id
-    );
-
-    if (valueYear !== "ทั้งหมด") {
-      newOrders = newOrders.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("BBBB") === valueYear
-      );
-    }
-
-    if (valueMonth !== "ทั้งหมด") {
-      newOrders = newOrders.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("MMMM") === valueMonth
-      );
-    }
-
-    if (valueDay !== "ทั้งหมด") {
-      newOrders = newOrders.filter(
-        (a) => dayjs(a.pickup_date).locale("th").format("DD") === valueDay
-      );
-    }
-
-    for (var i = 0; i < newOrders.length; i++) {
-      newOrders[i] = { ...newOrders[i], row_number: i };
-    }
-
-    for (var i = 0; i < newOrders.length; i++) {
-      newOrders[i] = { ...newOrders[i], row_number: i };
-    }
-
-    if (search) {
-      newOrders = newOrders.filter((s) => {
-        if (
-          s.delivery_location
-            .trim()
-            .toString()
-            .toLowerCase()
-            .includes(search.trim().toLowerCase()) ||
-          s.pickup_location
-            .trim()
-            .toLowerCase()
-            .includes(search.trim().toLowerCase())
-        )
-          return s;
-      });
-    }
-
-    return newOrders;
-  }, [userSelected, employee, valueDay, valueMonth, valueYear, search]);
-
-  let total = useMemo(() => {
-    if (!orders) return;
-    let total = orders.reduce(
-      (sum, number) => {
-        sum.wage += number.wage;
-        sum.price_order += number.price_order;
-        sum.profit += number.profit;
-        sum.withdraw += number.withdraw;
-        sum.cost += number.cost;
-        sum.balance += number.wage - number.cost - number.withdraw;
-        return sum;
-      },
-      { price_order: 0, wage: 0, profit: 0, withdraw: 0, cost: 0, balance: 0 }
-    );
-    total.full_name = "Total";
-    return total;
-  }, [orders]);
-
-  let yearQuery = useMemo(() => {
-    if (!userSelected) return [];
-    let newOrders = order?.filter(
-      (item) => item.personnel === userSelected._id
-    );
-    let newYear = [
-      ...new Map(
-        newOrders?.map((item) => [
-          dayjs(item.pickup_date).locale("th").format("BBBB"),
-          dayjs(item.pickup_date).locale("th").format("BBBB"),
-        ])
-      ).values(),
-    ];
-
-    let now = newYear.find(
-      (y) => y === dayjs(new Date()).locale("th").format("BBBB")
-    );
-
-    if (!now) {
-      newYear.push(dayjs(new Date()).locale("th").format("BBBB"));
-    }
-
-    return newYear;
-  }, [userSelected, order]);
-
-  useEffect(() => setTitle("การเงินพนักงานรายบุลคล"), []);
-
   const handleRequestSort = (event, property) => {
     const isAsc = sortByName === property && sortType === "asc";
     setSortType(isAsc ? "desc" : "asc");
     setSortByName(property);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
   };
 
   const userListProps = {
@@ -364,6 +204,48 @@ const ReportEmployee = () => {
     ],
   };
 
+  const BoxReport = ({ icon, title, number, unit }) => {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "row",
+          minWidth: "200px",
+          borderRightWidth: 1,
+          borderRightColor: "red",
+          width: "100%",
+          mr: 3,
+          my: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            px: 3,
+            "& .MuiSvgIcon-root": {
+              fontSize: "52px",
+              color: "#007bff",
+            },
+          }}
+        >
+          {icon}
+        </Box>
+        <Box>
+          <Typography sx={{ fontWeight: 800, fontSize: "1.3rem" }}>
+            {title}
+          </Typography>
+          <Typography sx={{ color: "text.secondary" }}>
+            <span style={{ fontWeight: 600 }}>{number}</span>
+            {" " + unit}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  };
+
   let orderUserSelected = useMemo(() => {
     if (!order || !userSelected) return [];
     let newOrders = order?.filter(
@@ -372,146 +254,179 @@ const ReportEmployee = () => {
     return newOrders;
   }, [userSelected, order]);
 
-  const FormSelected = ({ text, changeValue, value, dateFormat, ...rest }) => {
-    let dateQuery =
-      dateFormat === "BBBB"
-        ? yearQuery
-        : [
-            ...new Map(
-              orderUserSelected
-                ?.slice()
-                .map((item) => [
-                  dayjs(item.pickup_date).locale("th").format(dateFormat),
-                  item,
-                ])
-            ).values(),
-          ]
-            .sort(function (a, b) {
-              return (
-                dayjs(b.pickup_date).format(dateFormat) -
-                dayjs(a.pickup_date).format(dateFormat)
-              );
-            })
-            .map((item) =>
-              dayjs(item.pickup_date).locale("th").format(dateFormat)
-            );
+  useEffect(() => {
+    let emp = cloneDeep(employee);
+    if (state?._id && emp) {
+      let res = emp?.filter((item) => item._id === state?._id);
+      setUserSelected(cloneDeep(res)[0]);
+    } else if (employee) {
+      setUserSelected(...employee.slice(0, 1));
+    }
+  }, [employee, state]);
 
-    return (
-      <Grid item {...rest}>
-        <FormControl sx={{ width: "100%" }}>
-          <InputLabel id="demo-multiple-name-label">{text}</InputLabel>
-          <Select
-            labelId="demo-multiple-name-label"
-            id="demo-multiple-name"
-            value={value}
-            onChange={changeValue}
-            input={
-              <OutlinedInput
-                sx={{
-                  width: "100%",
-                  borderRadius: 2,
-                  "& fieldset": {
-                    borderRadius: 2,
-                  },
-                }}
-                label={text}
-              />
-            }
-            MenuProps={MenuProps}
-          >
-            {dateFormat !== "BBBB" ? (
-              <MenuItem
-                value="ทั้งหมด"
-                sx={{
-                  width: "100%",
-                  borderRadius: "8px",
-                  mb: 1,
-                }}
-              >
-                {text}ทั้งหมด
-              </MenuItem>
-            ) : null}
-            {dateQuery.map((row, index) => (
-              <MenuItem
-                key={index}
-                value={row}
-                sx={{
-                  width: "100%",
-                  borderRadius: "8px",
-                  mb: 1,
-                }}
-              >
-                {row}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Grid>
-    );
-  };
+  let orders = useMemo(() => {
+    if (!userSelected || !order) return [];
 
-  const BoxReport = ({ title, sum }) => {
-    return (
-      <Box justifyContent="space-between" display="flex" mb={0.8}>
-        <Typography>{title}</Typography>
-        <Typography>{sum}</Typography>
-      </Box>
+    let newOrders = orderUserSelected;
+
+    newOrders = newOrders.filter(
+      (a) => dayjs(a.pickup_date).locale("th").format("BBBB") === valueYear
     );
-  };
+
+    if (valueMonth !== "ทั้งหมด") {
+      newOrders = newOrders.filter(
+        (a) => dayjs(a.pickup_date).locale("th").format("MMMM") === valueMonth
+      );
+    }
+
+    if (valueDay !== "ทั้งหมด") {
+      newOrders = newOrders.filter(
+        (a) => dayjs(a.pickup_date).locale("th").format("DD") === valueDay
+      );
+    }
+
+    if (search) {
+      newOrders = newOrders.filter((s) => {
+        if (
+          s.delivery_location
+            .trim()
+            .toString()
+            .toLowerCase()
+            .includes(search.trim().toLowerCase()) ||
+          s.pickup_location
+            .trim()
+            .toLowerCase()
+            .includes(search.trim().toLowerCase())
+        )
+          return s;
+      });
+    }
+
+    for (var i = 0; i < newOrders.length; i++) {
+      newOrders[i] = { ...newOrders[i], row_number: i };
+    }
+
+    return newOrders;
+  }, [userSelected, employee, valueDay, valueMonth, valueYear, search]);
+
+  let total = useMemo(() => {
+    if (!orders) return;
+    let total = orders.reduce(
+      (sum, number) => {
+        sum.wage += number.wage;
+        sum.price_order += number.price_order;
+        sum.profit += number.profit;
+        sum.withdraw += number.withdraw;
+        sum.cost += number.cost;
+        sum.balance += number.wage - number.cost - number.withdraw;
+        return sum;
+      },
+      { price_order: 0, wage: 0, profit: 0, withdraw: 0, cost: 0, balance: 0 }
+    );
+    total.full_name = "Total";
+    return total;
+  }, [orders]);
+
+  useEffect(() => setTitle("รายงานการเงินพนักงานรายบุคคล"), []);
 
   return (
     <Box>
       <Box sx={{ flexGrow: 1, mb: 5 }}>
         <Typography variant="h4" sx={{ fontFamily: "Itim" }}>
-          การเงินพนักงานรายบุลคล
+          รายงานการเงินพนักงานรายบุคคล
         </Typography>
+      </Box>
+      <Box sx={{ width: "100%" }}>
+        <Paper
+          sx={{
+            p: 0,
+            py: 2,
+            display: "flex",
+            justifyContent: "flex-start",
+            alignItems: "center",
+            flexDirection: "row",
+            overflow: "auto",
+            mb: 2,
+            width: "100%",
+          }}
+        >
+          {total ? (
+            <>
+              <BoxReport
+                icon={
+                  <Typography
+                    variant="h3"
+                    sx={{ fontWeight: 800, color: "#007bff" }}
+                  >
+                    All
+                  </Typography>
+                }
+                title="จำนวนงาน"
+                number={orders?.length.toLocaleString("en")}
+                unit="งาน"
+              />
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ borderStyle: "dashed" }}
+              />
+              <BoxReport
+                icon={<MonetizationOnRounded />}
+                title="กำไรรวม"
+                number={total.profit.toLocaleString("en")}
+                unit="บาท"
+              />
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ borderStyle: "dashed" }}
+              />
+              <BoxReport
+                icon={<MonetizationOnRounded />}
+                title="ค่าเที่ยวทั้งหมด"
+                number={total.wage.toLocaleString("en")}
+                unit="บาท"
+              />
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ borderStyle: "dashed" }}
+              />
+              <BoxReport
+                icon={<LocalShippingRounded />}
+                title="ค่าน้ำมันรวม"
+                number={total.cost.toLocaleString("en")}
+                unit="บาท"
+              />
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ borderStyle: "dashed" }}
+              />
+              <BoxReport
+                icon={<AttachMoneyRounded />}
+                title="เบิกรวม"
+                number={total.withdraw.toLocaleString("en")}
+                unit="บาท"
+              />
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ borderStyle: "dashed" }}
+              />
+              <BoxReport
+                icon={<AccountBalanceWalletRounded />}
+                title="ยอดคงเหลือ"
+                number={total.balance.toLocaleString("en")}
+                unit="บาท"
+              />
+            </>
+          ) : null}
+        </Paper>
       </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} lg={3}>
           <Box>
-            <Paper sx={styles.containerUserReport} elevation={2}>
-              <Typography
-                variant="h5"
-                align={"center"}
-                sx={{ fontFamily: "Itim", fontWeight: 500, fontSize: "2rem" }}
-              >
-                {userSelected?.full_name?.first_name +
-                  " " +
-                  userSelected?.full_name?.last_name}
-              </Typography>
-              <Typography
-                variant="h5"
-                align={"center"}
-                sx={{ fontFamily: "Itim", fontWeight: 500 }}
-                mb={2}
-              >
-                สรุปการเงิน
-              </Typography>
-              {total ? (
-                <>
-                  <BoxReport
-                    title="จำนวนงานทั้งหมด"
-                    sum={orders?.length.toLocaleString("en") + " งาน"}
-                  />
-                  <BoxReport
-                    title="กำไรรวม"
-                    sum={total.profit.toLocaleString("en") + " บาท"}
-                  />
-                  <BoxReport
-                    title="ค่าน้ำมันรวม"
-                    sum={total.cost.toLocaleString("en") + " บาท"}
-                  />
-                  <BoxReport
-                    title="เบิกรวม"
-                    sum={total.withdraw.toLocaleString("en") + " บาท"}
-                  />
-                  <BoxReport
-                    title="ยอดคงเหลือรวม"
-                    sum={total.balance.toLocaleString("en") + " บาท"}
-                  />
-                </>
-              ) : null}
-            </Paper>
             <Paper sx={styles.containerUserList} elevation={2}>
               <UserList {...userListProps} />
             </Paper>
@@ -545,71 +460,27 @@ const ReportEmployee = () => {
                     userSelected?.full_name?.last_name}
                 </Typography>
               </Box>
-              <Grid container spacing={2} sx={{ p: 3 }}>
-                <Grid item xs={12} sm={12} md={6}>
-                  <FormControl
-                    sx={{
-                      width: "100%",
-                      "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                    }}
-                  >
-                    <TextField
-                      placeholder="Search"
-                      type="search"
-                      variant="outlined"
-                      fullWidth
-                      autoComplete="off"
-                      size="medium"
-                      onChange={(e) => setSearch(e.target.value)}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Search />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </FormControl>
-                </Grid>
-                <FormSelected
-                  text="วัน"
-                  dateFormat="DD"
-                  xs={6}
-                  sm={4}
-                  md={2}
-                  value={valueDay}
-                  changeValue={(e) => setValueDay(e.target.value)}
-                />
-                <FormSelected
-                  text="เดือน"
-                  dateFormat="MMMM"
-                  xs={6}
-                  sm={4}
-                  md={2}
-                  value={valueMonth}
-                  changeValue={(e) => setValueMonth(e.target.value)}
-                />
-                <FormSelected
-                  text="ปี"
-                  dateFormat="BBBB"
-                  xs={12}
-                  sm={4}
-                  md={2}
-                  value={valueYear}
-                  changeValue={(e) => setValueYear(e.target.value)}
-                />
-              </Grid>
-
+              <DateSort
+                order={orderUserSelected}
+                valueDay={valueDay}
+                changeValueDay={(v) => setValueDay(v)}
+                valueMonth={valueMonth}
+                changeValueMonth={(v) => setValueMonth(v)}
+                valueYear={valueYear}
+                changeValueYear={(v) => setValueYear(v)}
+              />
+              <Box sx={{ p: 3, pt: 0 }}>
+                <SearchField handleSearch={(e) => setSearch(e.target.value)} />
+              </Box>
               <Box sx={{ flexGrow: 1, overflow: "auto" }}>
                 <TableContainer
                   sx={{
                     position: "relative",
-                    minWidth: "800px",
+                    minWidth: "840px",
                   }}
                 >
                   <Table size={dense ? "small" : "normall"}>
                     <TableHeader {...tableHeaderProps}>
-                      {/* { id: "row_number", label: "ลำดับ" }, */}
                       <TableCell
                         sx={{
                           color: "text.secondary",
@@ -625,86 +496,112 @@ const ReportEmployee = () => {
                             page * rowsPerPage,
                             page * rowsPerPage + rowsPerPage
                           )
-                          .map((Cell) => <Row key={Cell._id} Cell={Cell} />)}
+                          .map((Cell) => (
+                            <TableRows
+                              key={Cell._id}
+                              hover
+                              Cell={[
+                                { value: "" },
+                                {
+                                  value: Cell.row_number.toLocaleString("en"),
+                                  align: "center",
+                                },
+                                {
+                                  value: dayjs(Cell.pickup_date)
+                                    .locale("th")
+                                    .format("DD MMMM BBBB"),
+                                },
+                                {
+                                  value: Cell.pickup_location,
+                                  align: "right",
+                                },
+                                {
+                                  value: Cell.delivery_location,
+                                  align: "right",
+                                },
+                                {
+                                  value: Cell.profit.toLocaleString("en"),
+                                  align: "right",
+                                },
+                                {
+                                  value: Cell.wage.toLocaleString("en"),
+                                  align: "right",
+                                },
+                                {
+                                  value: Cell.cost.toLocaleString("en"),
+                                  align: "right",
+                                },
+                                {
+                                  value: Cell.withdraw.toLocaleString("en"),
+                                  align: "right",
+                                },
+                                {
+                                  value: (
+                                    Cell.wage -
+                                    Cell.cost -
+                                    Cell.withdraw
+                                  ).toLocaleString("en"),
+                                  align: "right",
+                                },
+                              ]}
+                            />
+                          ))}
                       {total ? (
-                        <TableRow
-                          sx={{
+                        <TableRows
+                          sxRow={{
                             bgcolor: "#00f4b1",
                             "& td": {
                               color: "#555",
                               fontWeight: 700,
                             },
                           }}
-                        >
-                          <TableCell />
-                          <TableCell align="center">
-                            {orders?.length.toLocaleString("en")}
-                          </TableCell>
-                          <TableCell colSpan={3}></TableCell>
-                          <TableCell align="right">
-                            {total.profit.toLocaleString("en")}
-                          </TableCell>
-                          <TableCell align="right">
-                            {total.wage.toLocaleString("en")}
-                          </TableCell>
-                          <TableCell align="right">
-                            {total.cost.toLocaleString("en")}
-                          </TableCell>
-                          <TableCell align="right">
-                            {total.withdraw.toLocaleString("en")}
-                          </TableCell>
-                          <TableCell align="right">
-                            {total.balance.toLocaleString("en")}
-                          </TableCell>
-                        </TableRow>
+                          Cell={[
+                            { value: "" },
+                            { value: orders?.length.toLocaleString("en") },
+                            {
+                              value: orders?.length.toLocaleString("en"),
+                              align: "center",
+                            },
+                            {
+                              value: "",
+                              colSpan: 2,
+                            },
+                            {
+                              value: total.profit.toLocaleString("en"),
+                              align: "right",
+                            },
+                            {
+                              value: total.wage.toLocaleString("en"),
+                              align: "right",
+                            },
+                            {
+                              value: total.cost.toLocaleString("en"),
+                              align: "right",
+                            },
+                            {
+                              value: total.withdraw.toLocaleString("en"),
+                              align: "right",
+                            },
+                            {
+                              value: total.balance.toLocaleString("en"),
+                              align: "right",
+                            },
+                          ]}
+                        />
                       ) : null}
                     </TableBody>
                   </Table>
                 </TableContainer>
               </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "row",
-                  overflowX: "hidden",
-                }}
-              >
-                <FormControlLabel
-                  control={
-                    <>
-                      <Controls.AntSwitch
-                        checked={dense}
-                        onChange={(e) => setDense(e.target.checked)}
-                        inputProps={{ "aria-label": "ant design" }}
-                      />
-                      <Typography sx={{ ml: 1 }}>แคบ</Typography>
-                    </>
-                  }
-                  label={""}
-                  sx={{
-                    flex: 1,
-                    margin: 0,
-                    pl: "31px",
-                    mb: 1,
-                  }}
-                />
-                <TablePagination
-                  rowsPerPageOptions={[5, 10, 20, 25, 30, 35, 40, 45]}
-                  component="div"
-                  count={orders?.length || 0}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onPageChange={handleChangePage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                  labelRowsPerPage={"จำนวนแถว"}
-                  sx={{
-                    "& .MuiToolbar-root": {
-                      p: 0,
-                      pr: 2,
-                    },
-                  }}
-                />
-              </Box>
+              <TablePagination
+                checked={dense}
+                onChecked={(v) => setDense(v)}
+                count={orders.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                setPage={setPage}
+                setRowsPerPage={setRowsPerPage}
+              />
             </Paper>
           </Box>
         </Grid>

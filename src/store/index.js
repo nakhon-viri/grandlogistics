@@ -6,6 +6,7 @@ import employeeReducer from "./EmployeeStore";
 import themeReducer from "./ThemeStore";
 import billReducer from "./BillStore";
 import invoiceReducer from "./InvoiceStore";
+import settingReducer from "./SettingStore";
 
 export default configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export default configureStore({
     theme: themeReducer,
     bill: billReducer,
     invoice: invoiceReducer,
+    setting: settingReducer,
   },
   // devTools: false,
 });
