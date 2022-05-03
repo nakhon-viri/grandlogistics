@@ -4,7 +4,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import "dayjs/locale/th";
 import AdapterDayjs from "@mui/lab/AdapterDayjs";
 import { LocalizationProvider } from "@mui/lab";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Outlet } from "react-router-dom";
 import Swal from "sweetalert2";
 import { styled, useTheme } from "@mui/material/styles";
@@ -13,8 +13,9 @@ import AppBar from "./Header";
 import Drawer from "./Menu";
 import ThemeProvider from "./Theme";
 import { authStore } from "../../../store/AuthStore";
+import { upDateOneOrder } from "../../../store/OrderStore";
 import { HttpClient } from "../../../utils/HttpClient";
-
+import { io } from "socket.io-client";
 const ContainerContent = styled(Box, {
   shouldForwardProp: (prop) => prop !== "open",
 })(({ theme, open }) => ({
@@ -38,6 +39,8 @@ export default function AppLayOut() {
   let { profile, isLogin } = useSelector(authStore);
   const [open, setOpen] = useState(true);
   const [title, setTitle] = useState("");
+  const [socket, setSocket] = useState(null);
+  const dispatch = useDispatch();
   let theme = useTheme();
   const matches = useMediaQuery("(min-width:1200px)");
 
@@ -76,6 +79,32 @@ export default function AppLayOut() {
     }
   }, []);
 
+  useEffect(() => {
+    if (isLogin && !!profile) {
+      // const newSocket = io("http://localhost:5000", {
+        const newSocket = io("https://api-grandlogistics.herokuapp.com", {
+        transports: ["websocket"],
+      });
+      // {
+      //   secure: true,
+      //   transports: ["websocket"],
+      // }
+      setSocket(newSocket);
+      newSocket.emit("addUser", {
+        token: "",
+        _id: profile._id,
+        platform: "web",
+      });
+
+      newSocket.on("_UpDateOrder", (order) => {
+        console.log(order);
+        dispatch(upDateOneOrder(order));
+      });
+
+      // return () => newSocket.close();
+    }
+  }, []);
+
   return (
     <ThemeProvider>
       <LocalizationProvider
@@ -92,7 +121,7 @@ export default function AppLayOut() {
             component="main"
             sx={{ flexGrow: 1, p: "116px 24px", overflow: "hidden" }}
           >
-            <Outlet context={[title, setTitle]} />
+            <Outlet context={[title, setTitle, socket]} />
           </Box>
         </Box>
       </LocalizationProvider>

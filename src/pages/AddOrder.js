@@ -177,7 +177,8 @@ const AddOrder = () => {
   const { state } = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [title, setTitle] = useOutletContext();
+  const [title, setTitle, socket] = useOutletContext();
+  // const { socket } = useOutletContext();
   const { customer } = useSelector(customerStore);
   const { employee } = useSelector(employeeStore);
   const { order } = useSelector(orderStore);
@@ -247,11 +248,12 @@ const AddOrder = () => {
       toast.addEventListener("mouseleave", Swal.resumeTimer);
     },
   });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
       try {
-        setLoading(true);
+        // setLoading(true);
         let emp = JSON.parse(selectedEmp);
         values.driver = emp.driver;
         values.personnel = emp._id;
@@ -263,9 +265,10 @@ const AddOrder = () => {
         );
         let res = await HttpClient.post("/order", {
           _order: values,
-          customer: selectedCustomer,
+          _customer: selectedCustomer,
         });
         dispatch(addOrder(res.data));
+        socket.emit("_AddOrder", res.data);
         navigate(-1);
         Toast.fire({
           icon: "success",
@@ -333,7 +336,7 @@ const AddOrder = () => {
     return empList;
   }, [employee, order, sortEmp]);
 
-  if (openDialog) {
+  if (openDialog || !socket) {
     return (
       <Box>
         <SelectedCustomer

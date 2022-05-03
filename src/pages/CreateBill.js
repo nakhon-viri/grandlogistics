@@ -243,18 +243,22 @@ const CreateBill = () => {
     return Object.values(error).every((x) => x == "");
   };
 
-  const handleSavePDF = () => {
+  const handleSavePDF = async () => {
     if (vetify()) {
       setLoadingSubmit(true);
-
       let listIdOrder = selected.map((item) => item._id);
-
-      let check = selected.filter((x) => !!x.bill);
+      console.log("selectedInHandle", selected);
+      let check = selected.filter((x) => {
+        console.log("x.bill", x.bill);
+        if (x.bill) {
+          return x;
+        }
+      });
       let text = check
         .map((item) => item._oid)
         .toString()
         .replace(/,/g, "\n");
-
+      console.log("check,text", check, text);
       if (check.length > 0) {
         console.log("asdf");
         Swal.fire({
@@ -302,6 +306,40 @@ const CreateBill = () => {
             }
           }
         });
+      } else {
+        try {
+          let { data } = await HttpClient.post("/bill", {
+            order: listIdOrder,
+            bill: {
+              id_customer: selectedCustomer._id,
+              docDate: dateDoc,
+              dueDate,
+              dateWork,
+              _bid: docID,
+            },
+          });
+          dispatch(addBill(data.bill));
+          dispatch(upDateSomeOrder(data.order));
+          setLoadingSubmit(false);
+          Swal.fire({
+            title: "บันทึกเสร็จสิ้น",
+            text: "คุณต้องการที่จะดูใบวางบิลหรือไม่",
+            icon: "success",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#aaa",
+            confirmButtonText: "ตกลง",
+            cancelButtonText: "ยกเลิก",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              setPDFOpen(true);
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+              navigate("/bills");
+            }
+          });
+        } catch (error) {
+          console.log(error);
+        }
       }
     }
   };
@@ -423,6 +461,8 @@ const CreateBill = () => {
     }
     return DR;
   }, [selected]);
+
+  console.log("selected", selected);
 
   if (loading) return <Loading />;
 

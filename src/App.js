@@ -35,10 +35,8 @@ import { invoiceReq, invoiceStore } from "./store/InvoiceStore";
 import { departmentReq, settingStore } from "./store/SettingStore";
 import { useSelector, useDispatch } from "react-redux";
 
-// import { io } from "socket.io-client";
 
 const RequireAuth = () => {
-  const [socket, setSocket] = useState(null);
   const { isLogin, loadingAuth, profile } = useSelector(authStore);
   const { loadingEmployee } = useSelector(employeeStore);
   const { loadingCustomer } = useSelector(customerStore);
@@ -63,21 +61,6 @@ const RequireAuth = () => {
     }
   }, []);
 
-  // useEffect(() => {
-  //   if (resToken) {
-  //     const newSocket = io("https://api-grandlogistics.herokuapp.com", {
-  //       transports: ["websocket"],
-  //     });
-  //     newSocket.emit("addUser", "61e309a709a2b863241f457e");
-  //     newSocket.on("chat message", (data) => {
-  //       console.log(data);
-  //     });
-  //   }
-  //   return () => {
-  //     return resToken ? newSocket.close() : null;
-  //   };
-  // }, []);
-
   if (!isLogin && !resToken)
     return <Navigate to="/login" state={{ from: location }} replace />;
 
@@ -92,7 +75,6 @@ const RequireAuth = () => {
   ) {
     return <Loading />;
   }
-
   return <Outlet />;
 };
 

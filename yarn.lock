@@ -9450,6 +9450,11 @@ thai-address-database@^0.0.29:
     eslint-plugin-standard "^3.0.1"
     wordcut "^0.8.1"
 
+thai-baht-text@^1.0.8:
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/thai-baht-text/-/thai-baht-text-1.0.8.tgz#b91686b7a8758c8a34b1ab74c8a5e0bf2057dec8"
+  integrity sha512-kACkhZ5tiXe65dxAArEGHK1LxLzl3ciK8U6OprQ/gyeF4y4sCWr95d7t+wzqk3CaJFN5DF4rbDGmx6gyVeEqPA==
+
 throat@^6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/throat/-/throat-6.0.1.tgz#d514fedad95740c12c2d7fc70ea863eb51ade375"

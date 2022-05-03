@@ -20,7 +20,7 @@ import { useOutletContext } from "react-router-dom";
 
 const Trash = () => {
   let dispatch = useDispatch();
-  const [title, setTitle] = useOutletContext();
+  const [title, setTitle, socket] = useOutletContext();
   let { orderDeleted } = useSelector(orderStore);
   let { deletedEmployee } = useSelector(employeeStore);
   let { deletedCustomer } = useSelector(customerStore);
@@ -33,6 +33,9 @@ const Trash = () => {
       let { data } = await HttpClient.post("/order/" + id);
       if (data.sucess) {
         dispatch(recoverOrder(id));
+        let newOrder = cloneDeep(order)?.find((item) => item._id == id);
+        newOrder.deleted = false;
+        socket.emit("_EditOrder", newOrder);
       }
     } catch (error) {
       console.log(error.response.data.error.message);

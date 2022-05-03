@@ -53,7 +53,7 @@ const Order = () => {
   let navigate = useNavigate();
   let dispatch = useDispatch();
   let { order } = useSelector(orderStore);
-  const [title, setTitle] = useOutletContext();
+  const [title, setTitle, socket] = useOutletContext();
   const [loadingData, setLoadingData] = useState(false);
   const [valueTabs, setValueTabs] = useState("ทั้งหมด");
   //Pagination
@@ -93,6 +93,9 @@ const Order = () => {
           let res = await HttpClient.delete("/order/" + id);
           if (res.data.sucess) {
             dispatch(deleteOrder(id));
+            let newOrder = cloneDeep(order).find((item) => item._id == id);
+            newOrder.deleted = true;
+            socket.emit("_EditOrder", newOrder);
             Swal.fire("ลบเสร็จสิ้น!", "", "success");
           } else {
             Swal.fire(
@@ -364,6 +367,10 @@ const Order = () => {
                               </>
                             ),
                             title: "Action",
+                          },
+                          {
+                            value: <img src={item.path_image} alt="" />,
+                            title: "รูป",
                           },
                         ]}
                       />

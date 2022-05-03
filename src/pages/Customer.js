@@ -62,8 +62,8 @@ import StatusColor from "../components/StatusColor";
 import Loading from "../components/Loading";
 import { HttpClient } from "../utils/HttpClient";
 
-import SelectedCustomer from '../components/SelectedCustomer';
-import getComparator from '../utils/TableSort';
+import SelectedCustomer from "../components/SelectedCustomer";
+import getComparator from "../utils/TableSort";
 
 const Row = ({ Cell, handleDelete }) => {
   const theme = useTheme();
@@ -216,7 +216,7 @@ export default function SimpleDialogDemo() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { customer } = useSelector(customerStore);
-  const [title, setTitle] = useOutletContext();
+  const [title, setTitle, socket] = useOutletContext();
   const { order } = useSelector(orderStore);
   const [loadingData, setLoadingData] = useState(false);
   //Dialog
@@ -280,6 +280,9 @@ export default function SimpleDialogDemo() {
           let res = await HttpClient.delete("/order/" + id);
           if (res.data.sucess) {
             dispatch(deleteOrder(id));
+            let newOrder = cloneDeep(order)?.find((item) => item._id == id);
+            newOrder.deleted = true;
+            socket.emit("_EditOrder", newOrder);
             Swal.fire("ลบเสร็จสิ้น!", "", "success");
           } else {
             Swal.fire(

@@ -106,7 +106,8 @@ const EditOrder = () => {
   const { state } = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [title, setTitle] = useOutletContext();
+  const [title, setTitle, socket] = useOutletContext();
+  console.log(socket);
   const { employee } = useSelector(employeeStore);
   const [IDOrder, setIDOrder] = useState(null);
   const [selectedEmp, setSelectedEmp] = useState("");
@@ -192,6 +193,7 @@ const EditOrder = () => {
         values.personnel = emp._id;
         values.profit = values.price_order - values.wage;
         let res = await HttpClient.put("/order/" + IDOrder, values);
+        socket.emit("_EditOrder", res.data);
         dispatch(editOrder(res.data));
         navigate("/order");
         Toast.fire({

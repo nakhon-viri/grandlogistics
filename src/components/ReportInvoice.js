@@ -11,6 +11,7 @@ import {
 } from "@react-pdf/renderer";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import THBText from "thai-baht-text";
 
 Font.register({
   family: "Sarabun",
@@ -27,6 +28,7 @@ const styles = StyleSheet.create({
     display: "table",
     width: "auto",
     borderStyle: "solid",
+    position: "absolute",
     borderTopWidth: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
@@ -59,6 +61,14 @@ const styles = StyleSheet.create({
 });
 
 const MyDocument = ({ listBil, customerDetail, dateDoc, docID }) => {
+  function financial(x) {
+    return Number.parseFloat(x).toFixed(2);
+  }
+  let total = React.useMemo(
+    () => listBil.reduce((sum, curr) => sum + curr.price, 0),
+    [listBil]
+  );
+  console.log("total", total);
   return (
     <PDFViewer width={"100%"} height={"900px"}>
       <Document>
@@ -164,7 +174,7 @@ const MyDocument = ({ listBil, customerDetail, dateDoc, docID }) => {
                     </Text>
                   </View>
                 </View>
-                <View style={{ height: 350 }}>
+                <View style={{ height: 300 }}>
                   <View style={styles.table}>
                     <View style={{ ...styles.tableRow, borderBottomWidth: 1 }}>
                       <View style={styles.tableColOrder}>
@@ -174,7 +184,9 @@ const MyDocument = ({ listBil, customerDetail, dateDoc, docID }) => {
                         <Text style={styles.tableCell}>ราการ</Text>
                       </View>
                       <View style={styles.tableColPerPrice}>
-                        <Text style={styles.tableCell}>เลขที่อ้างอิงใบวางบิล</Text>
+                        <Text style={styles.tableCell}>
+                          เลขที่อ้างอิงใบวางบิล
+                        </Text>
                       </View>
                       <View style={styles.tableColPrice}>
                         <Text style={styles.tableCell}>จำนวนเงิน</Text>
@@ -203,7 +215,7 @@ const MyDocument = ({ listBil, customerDetail, dateDoc, docID }) => {
                           </View>
                           <View style={styles.tableColPrice}>
                             <Text style={styles.tableCell}>
-                              {item.price}
+                              {financial(item.price)}
                             </Text>
                           </View>
                         </View>
@@ -212,11 +224,10 @@ const MyDocument = ({ listBil, customerDetail, dateDoc, docID }) => {
                   </View>
                   <View
                     style={{
-                      height: 350,
+                      height: "100%",
                       width: "100%",
                       flex: 1,
                       flexDirection: "row",
-                      position: "absolute",
                       zIndex: 99,
                       borderTopWidth: 1,
                     }}
@@ -253,9 +264,144 @@ const MyDocument = ({ listBil, customerDetail, dateDoc, docID }) => {
                       }}
                     />
                   </View>
+                  <View
+                    style={{
+                      width: "100%",
+                      flexDirection: "row",
+                      zIndex: 99,
+                      borderTopWidth: 1,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: "68%",
+                        height: "100%",
+                        borderRightWidth: 1,
+                        borderColor: "#000",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <Text style={{ fontSize: 10 }}>จำนวนเงิน (ตัวอักษร)</Text>
+                      <Text style={{ fontSize: 10 }}>
+                        {THBText(total - total * 0.01)}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        width: "20%",
+                        height: "100%",
+                        borderRightWidth: 1,
+                        borderColor: "#000",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <Text style={{ fontSize: 10 }}>รวม</Text>
+                      <Text style={{ fontSize: 10 }}>
+                        หัก ภาษีหัก ณ ที่จ่าย 1%
+                      </Text>
+                      <Text style={{ fontSize: 10 }}>จำนวนเงินสุทธิ</Text>
+                    </View>
+                    <View
+                      style={{
+                        width: "12%",
+                        height: "100%",
+                        borderColor: "#000",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          borderBottomWidth: 1,
+                          textAlign: "right",
+                        }}
+                      >
+                        {financial(total)}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          borderBottomWidth: 1,
+                          textAlign: "right",
+                        }}
+                      >
+                        {financial(total * 0.01)}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          borderBottomWidth: 1,
+                          textAlign: "right",
+                        }}
+                      >
+                        {financial(total - total * 0.01)}
+                      </Text>
+                      <View style={{ height: 1 }} />
+                    </View>
+                  </View>
                 </View>
               </View>
             </View>
+            <View style={{ height: 160, width: "100%" }}>
+              <View
+                style={{
+                  display: "flex",
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "flex-end",
+                  justifyContent: "space-around",
+                }}
+              >
+                <View>
+                  <Text style={styles.tableCell}>
+                    ผู้รับวางบิล ...........................................
+                  </Text>
+                  <Text style={styles.tableCell}>
+                    วันที่
+                    ......................................................
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.tableCell}>
+                    ผู้วางบิล ...............................................
+                  </Text>
+                  <Text style={styles.tableCell}>
+                    วันที่......................................................
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={{
+                  display: "flex",
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "flex-end",
+                  justifyContent: "space-around",
+                  paddingBottom: 20,
+                }}
+              >
+                <View>
+                  <Text style={styles.tableCell}>
+                    ผู้ตรวจบิล ............................................
+                  </Text>
+                  <Text style={styles.tableCell}>
+                    วันที่......................................................
+                  </Text>
+                </View>
+                <View style={{ opacity: 0 }}>
+                  <Text style={styles.tableCell}>
+                    ผู้ตรวจบิล ............................................
+                  </Text>
+                  <Text style={styles.tableCell}>
+                    วันที่......................................................
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <Text style={{ fontSize: 10, textAlign: "center" }}>
+              *** ชำระเงินโดยการโอน ในนาม “บริษัท แกรนด์ โลจิสติกส์ จำกัด”
+              ธนาคาร: กสิกรไทย เลขที่บัญชี 0661331402
+            </Text>
           </View>
         </Page>
       </Document>

@@ -354,51 +354,85 @@ const Bills = () => {
         .map((item) => item._bid)
         .toString()
         .replace(/,/g, "\n");
-
-      Swal.fire({
-        title: `มีใบวางบิลที่ถูกเพิ่มลงในใบแจ้งหนี้แล้ว\nคุณต้องการที่จะเพิ่มใบวางบิลนี้ใช่หรือไม่ ใบวางบิลนี้ในใบแจ้งหนี้อื่น ๆ จะถูกลบ เลขเอกสารได้แก่ ${text}`,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#aaa",
-        confirmButtonText: "ตกลง",
-        cancelButtonText: "ยกเลิก",
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            let { data } = await HttpClient.post("/invoice", {
-              bill: listID,
-              invoice: {
-                customer: selectedCustomer._id,
-                docDate: dateDoc,
-                dueDate,
-                _bid: docID,
-              },
-            });
-            dispatch(addInvoice(data.invoice));
-            dispatch(upDateSomeBill(data.bill));
-            setLoadingSubmit(false);
-            Swal.fire({
-              title: "บันทึกเสร็จสิ้น",
-              text: "คุณต้องการที่จะดูใบวางบิลหรือไม่",
-              icon: "success",
-              showCancelButton: true,
-              confirmButtonColor: "#3085d6",
-              cancelButtonColor: "#aaa",
-              confirmButtonText: "เปิด",
-              cancelButtonText: "ปิด",
-            }).then((result) => {
-              if (result.isConfirmed) {
-                setOpenInvoice(true);
-              } else if (result.dismiss === Swal.DismissReason.cancel) {
-                navigate("/invoices");
-              }
-            });
-          } catch (error) {
-            console.log(error.response.data.error.message);
+      if (check.length > 0) {
+        Swal.fire({
+          title: `มีใบวางบิลที่ถูกเพิ่มลงในใบแจ้งหนี้แล้ว\nคุณต้องการที่จะเพิ่มใบวางบิลนี้ใช่หรือไม่ ใบวางบิลนี้ในใบแจ้งหนี้อื่น ๆ จะถูกลบ เลขเอกสารได้แก่ ${text}`,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#aaa",
+          confirmButtonText: "ตกลง",
+          cancelButtonText: "ยกเลิก",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              let { data } = await HttpClient.post("/invoice", {
+                bill: listID,
+                invoice: {
+                  customer: selectedCustomer._id,
+                  docDate: dateDoc,
+                  dueDate,
+                  _bid: docID,
+                },
+              });
+              dispatch(addInvoice(data.invoice));
+              dispatch(upDateSomeBill(data.bill));
+              setLoadingSubmit(false);
+              Swal.fire({
+                title: "บันทึกเสร็จสิ้น",
+                text: "คุณต้องการที่จะดูใบวางบิลหรือไม่",
+                icon: "success",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#aaa",
+                confirmButtonText: "เปิด",
+                cancelButtonText: "ปิด",
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  setOpenInvoice(true);
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                  navigate("/invoices");
+                }
+              });
+            } catch (error) {
+              console.log(error.response.data.error.message);
+            }
           }
+        });
+      } else {
+        try {
+          let { data } = await HttpClient.post("/invoice", {
+            bill: listID,
+            invoice: {
+              customer: selectedCustomer._id,
+              docDate: dateDoc,
+              dueDate,
+              _bid: docID,
+            },
+          });
+          dispatch(addInvoice(data.invoice));
+          dispatch(upDateSomeBill(data.bill));
+          setLoadingSubmit(false);
+          Swal.fire({
+            title: "บันทึกเสร็จสิ้น",
+            text: "คุณต้องการที่จะดูใบวางบิลหรือไม่",
+            icon: "success",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#aaa",
+            confirmButtonText: "เปิด",
+            cancelButtonText: "ปิด",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              setOpenInvoice(true);
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+              navigate("/invoices");
+            }
+          });
+        } catch (error) {
+          console.log(error.response.data.error.message);
         }
-      });
+      }
     }
   };
 
@@ -528,7 +562,7 @@ const Bills = () => {
       { id: "", label: "" },
     ],
   };
- 
+
   if (loading) return <Loading />;
 
   return (

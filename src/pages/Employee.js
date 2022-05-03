@@ -363,7 +363,7 @@ const Employee = () => {
   const dispatch = useDispatch();
   const { employee } = useSelector(employeeStore);
   const { order } = useSelector(orderStore);
-  const [title, setTitle] = useOutletContext();
+  const [title, setTitle, socket] = useOutletContext();
   const [loadingData, setLoadingData] = useState(false);
   const [employeeList, setEmployeeList] = useState(employee?.slice());
   const [userSelected, setUserSelected] = useState({ orders: [] });
@@ -462,6 +462,9 @@ const Employee = () => {
           let res = await HttpClient.delete("/order/" + id);
           if (res.data.sucess) {
             dispatch(deleteOrder(id));
+            let newOrder = cloneDeep(order)?.find((item) => item._id == id);
+            newOrder.deleted = true;
+            socket.emit("_EditOrder", newOrder);
             Swal.fire("ลบเสร็จสิ้น!", "", "success");
           } else {
             Swal.fire(
